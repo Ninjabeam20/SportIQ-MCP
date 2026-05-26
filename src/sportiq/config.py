@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,8 +16,14 @@ class Settings(BaseSettings):
     apifootball_key: str | None = None
     rapidapi_key: str | None = None
 
-    enable_cricbuzz_scraper: bool = False
-    enable_ndtv_scraper: bool = False
+    enable_cricbuzz_scraper: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("SPORTIQ_ENABLE_CRICBUZZ", "enable_cricbuzz_scraper"),
+    )
+    enable_ndtv_scraper: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("SPORTIQ_ENABLE_NDTV", "enable_ndtv_scraper"),
+    )
 
     redis_url: str | None = None
 
