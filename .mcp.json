@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "sportiq": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "sportiq.server"],
+      "env": {}
+    }
+  }
+}

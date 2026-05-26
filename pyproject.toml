@@ -1,0 +1,69 @@
+[project]
+name = "sportiq-mcp"
+version = "0.1.0"
+description = "MCP server for IPL cricket, Formula 1, and FIFA World Cup 2026 intelligence tools."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Utkarsh Gupta", email = "utkarshgupta885@gmail.com" }]
+keywords = ["mcp", "cricket", "f1", "football", "fantasy", "sports"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+]
+
+dependencies = [
+    "mcp>=1.2.0",
+    "httpx>=0.27.0",
+    "tenacity>=9.0.0",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.4.0",
+    "redis>=5.1.0",
+    "diskcache>=5.6.3",
+    "structlog>=24.4.0",
+    "pulp>=2.9.0",
+    "scipy>=1.13.0",
+    "numpy>=1.26.0",
+    "pandas>=2.2.0",
+]
+
+[project.optional-dependencies]
+f1 = ["fastf1>=3.4.0"]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "respx>=0.21.0",
+    "ruff>=0.6.0",
+]
+
+[project.scripts]
+sportiq-mcp = "sportiq.server:main"
+
+[project.urls]
+Homepage = "https://github.com/Ninjabeam20/sportiq-mcp"
+Issues = "https://github.com/Ninjabeam20/sportiq-mcp/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sportiq"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q --strict-markers"

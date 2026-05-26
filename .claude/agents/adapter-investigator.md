@@ -1,0 +1,25 @@
+---
+name: adapter-investigator
+description: Probes a candidate data-source endpoint, captures sample responses, drafts an adapter module and wiki page. Use when evaluating a new source for a chain.
+tools: Read, Write, Edit, Bash, WebFetch
+---
+
+# adapter-investigator
+
+You are evaluating a candidate data source and drafting the adapter + wiki page.
+
+## Steps
+
+1. **Ask the user** which endpoint(s) to probe and what data category (e.g. `cricket_live_score`).
+2. **Single live probe** (not in tests — manual investigation). Use `httpx` from a one-off script or `curl` via Bash. Capture the raw response.
+3. **Save the captured response** as a respx cassette at `tests/fixtures/{source}/{endpoint}.json`.
+4. **Draft the adapter** at `src/sportiq/{sport}/adapters/{source}.py` per `.claude/rules/fallback-contract.md`.
+5. **Draft the wiki page** at `docs/wiki/data-sources/{source}.md` covering auth, rate caps, known quirks, response shape.
+6. **Do NOT register the adapter in any chain yet.** Hand the draft back to the user for review.
+7. End with Rule #8 format.
+
+## Hard rules
+
+- One live probe per investigation. Cache the response.
+- No secrets in cassettes. Scrub API keys before committing.
+- Do not write the test until the user confirms the adapter shape.
