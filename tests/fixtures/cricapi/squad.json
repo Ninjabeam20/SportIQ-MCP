@@ -1,0 +1,20 @@
+{
+  "apikey": "test_key",
+  "data": {
+    "id": "series001",
+    "name": "IPL 2026",
+    "squad": [
+      {
+        "team": "Mumbai Indians",
+        "players": [
+          {"id": "p001", "name": "Rohit Sharma", "role": "BAT"},
+          {"id": "p002", "name": "Jasprit Bumrah", "role": "BOWL"},
+          {"id": "p003", "name": "Hardik Pandya", "role": "ALL"},
+          {"id": "p004", "name": "Suryakumar Yadav", "role": "BAT"},
+          {"id": "p005", "name": "Ishan Kishan", "role": "WK-BAT"}
+        ]
+      }
+    ]
+  },
+  "status": "success"
+}

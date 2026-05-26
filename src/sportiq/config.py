@@ -13,6 +13,10 @@ class Settings(BaseSettings):
 
     cricapi_key: str | None = None
     apifootball_key: str | None = None
+    rapidapi_key: str | None = None
+
+    enable_cricbuzz_scraper: bool = False
+    enable_ndtv_scraper: bool = False
 
     redis_url: str | None = None
 

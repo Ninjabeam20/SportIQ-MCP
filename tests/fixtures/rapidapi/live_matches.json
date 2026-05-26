@@ -1,0 +1,27 @@
+{
+  "typeMatches": [
+    {
+      "matchType": "International",
+      "seriesMatches": [
+        {
+          "seriesAdWrapper": {
+            "seriesName": "India Tour of Australia 2026",
+            "matches": [
+              {
+                "matchInfo": {
+                  "matchId": 99001,
+                  "seriesName": "India Tour of Australia 2026",
+                  "matchDesc": "1st T20I",
+                  "team1": {"teamName": "India", "teamSName": "IND"},
+                  "team2": {"teamName": "Australia", "teamSName": "AUS"},
+                  "venueInfo": {"ground": "MCG", "city": "Melbourne"},
+                  "status": "India won by 6 wickets"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

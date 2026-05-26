@@ -1,0 +1,30 @@
+{
+  "apikey": "test_key",
+  "data": [
+    {
+      "id": "sched001",
+      "name": "RCB vs KKR",
+      "matchType": "t20",
+      "status": "Match not started",
+      "venue": "M Chinnaswamy Stadium, Bengaluru",
+      "date": "2026-05-28",
+      "dateTimeGMT": "2026-05-28T14:00:00",
+      "teams": ["Royal Challengers Bengaluru", "Kolkata Knight Riders"],
+      "matchStarted": false,
+      "matchEnded": false
+    },
+    {
+      "id": "sched002",
+      "name": "SRH vs DC",
+      "matchType": "t20",
+      "status": "Match not started",
+      "venue": "Rajiv Gandhi International Cricket Stadium, Hyderabad",
+      "date": "2026-05-29",
+      "dateTimeGMT": "2026-05-29T14:00:00",
+      "teams": ["Sunrisers Hyderabad", "Delhi Capitals"],
+      "matchStarted": false,
+      "matchEnded": false
+    }
+  ],
+  "status": "success"
+}

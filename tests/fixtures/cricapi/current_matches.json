@@ -1,0 +1,47 @@
+{
+  "apikey": "test_key",
+  "data": [
+    {
+      "id": "abc123",
+      "name": "India vs Australia",
+      "matchType": "t20",
+      "status": "India won by 6 wickets",
+      "venue": "Wankhede Stadium, Mumbai",
+      "date": "2026-05-26",
+      "dateTimeGMT": "2026-05-26T14:00:00",
+      "teams": ["India", "Australia"],
+      "teamInfo": [
+        {"name": "India", "shortname": "IND"},
+        {"name": "Australia", "shortname": "AUS"}
+      ],
+      "score": [
+        {"r": 185, "w": 4, "o": 20, "inning": "India Inning 1"},
+        {"r": 182, "w": 8, "o": 20, "inning": "Australia Inning 1"}
+      ],
+      "matchStarted": true,
+      "matchEnded": true
+    },
+    {
+      "id": "def456",
+      "name": "Mumbai Indians vs Chennai Super Kings",
+      "matchType": "t20",
+      "status": "Mumbai Indians won by 5 wickets",
+      "venue": "Wankhede Stadium, Mumbai",
+      "date": "2026-05-26",
+      "dateTimeGMT": "2026-05-26T14:30:00",
+      "teams": ["Mumbai Indians", "Chennai Super Kings"],
+      "teamInfo": [
+        {"name": "Mumbai Indians", "shortname": "MI"},
+        {"name": "Chennai Super Kings", "shortname": "CSK"}
+      ],
+      "score": [
+        {"r": 180, "w": 6, "o": 20, "inning": "CSK Inning 1"},
+        {"r": 182, "w": 5, "o": 19.3, "inning": "MI Inning 1"}
+      ],
+      "matchStarted": true,
+      "matchEnded": true
+    }
+  ],
+  "status": "success",
+  "info": {"hitsToday": 2, "hitsUsed": 2, "hitsLimit": 100}
+}

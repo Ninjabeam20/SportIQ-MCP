@@ -55,3 +55,13 @@ class NotFoundError(SportiqError):
 
 class InvalidInputError(SportiqError):
     code: ErrorCode = "INVALID_INPUT"
+
+
+class MissingCredentialsError(SportiqError):
+    """Raised by an adapter when required env credentials are absent.
+
+    The chain treats this exactly like any other adapter failure and walks past
+    it. Code is ALL_SOURCES_FAILED so the error envelope stays consistent.
+    """
+
+    code: ErrorCode = "ALL_SOURCES_FAILED"

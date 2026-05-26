@@ -1,0 +1,13 @@
+{
+  "apikey": "test_key",
+  "data": {
+    "seriesName": "IPL 2026",
+    "pointsTable": [
+      {"team": "CSK", "matches": 10, "won": 7, "lost": 3, "tied": 0, "nrr": "+0.842", "points": 14},
+      {"team": "MI",  "matches": 10, "won": 6, "lost": 4, "tied": 0, "nrr": "+0.512", "points": 12},
+      {"team": "RCB", "matches": 10, "won": 6, "lost": 4, "tied": 0, "nrr": "+0.210", "points": 12},
+      {"team": "KKR", "matches": 10, "won": 5, "lost": 5, "tied": 0, "nrr": "-0.102", "points": 10}
+    ]
+  },
+  "status": "success"
+}

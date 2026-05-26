@@ -1,0 +1,30 @@
+{
+  "apikey": "test_key",
+  "data": {
+    "id": "abc123",
+    "name": "India vs Australia",
+    "matchType": "t20",
+    "status": "India won by 6 wickets",
+    "venue": "Wankhede Stadium, Mumbai",
+    "date": "2026-05-26",
+    "teams": ["India", "Australia"],
+    "score": [
+      {"r": 185, "w": 4, "o": 20, "inning": "India Inning 1"},
+      {"r": 182, "w": 8, "o": 20, "inning": "Australia Inning 1"}
+    ],
+    "scorecard": [
+      {
+        "inning": "India Inning 1",
+        "batting": [
+          {"batsman": "Rohit Sharma", "r": 65, "b": 42, "4s": 7, "6s": 3, "sr": 154.76, "out-by": "caught"},
+          {"batsman": "Virat Kohli", "r": 72, "b": 51, "4s": 6, "6s": 4, "sr": 141.18, "out-by": "not out"}
+        ],
+        "bowling": [
+          {"bowler": "Mitchell Starc", "o": 4, "m": 0, "r": 38, "w": 2, "eco": 9.5},
+          {"bowler": "Pat Cummins", "o": 4, "m": 0, "r": 35, "w": 1, "eco": 8.75}
+        ]
+      }
+    ]
+  },
+  "status": "success"
+}

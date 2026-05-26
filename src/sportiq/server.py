@@ -15,6 +15,8 @@ mcp = FastMCP("sportiq")
 
 register_health_tool(mcp)
 
+import sportiq.cricket.tools  # noqa: E402, F401 — registers @mcp.tool() decorators
+
 
 def main() -> None:
     """uvx entry point. Runs the MCP server on stdio."""

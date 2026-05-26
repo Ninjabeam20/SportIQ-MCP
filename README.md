@@ -10,7 +10,29 @@ Three flagship intelligence tools sit on top of raw-data primitives:
 
 ## Status
 
-Phase 0 (spine). Only `sportiq_health` is registered. See `plan.md` for the full build plan.
+Phase 1 complete — 5 cricket RAW tools live. See `plan.md` for the full build plan.
+
+## Cricket tools
+
+| Tool | What it does |
+| :--- | :--- |
+| `cricket_get_live_matches` | All currently live matches across all series |
+| `cricket_get_scorecard` | Full scorecard for a match by ID |
+| `cricket_get_points_table` | Series standings / points table |
+| `cricket_get_schedule` | Upcoming fixtures, optionally by series |
+| `cricket_get_squad` | Team roster; always succeeds via static seed fallback |
+
+### Cricket adapter defaults
+
+By default only CricAPI (key required) and static data are active. Opt-in adapters:
+
+```bash
+SPORTIQ_ENABLE_NDTV=1         # NDTV Sports scraper (operator accepts ToS risk)
+SPORTIQ_ENABLE_CRICBUZZ=1     # Cricbuzz scraper (operator accepts ToS risk)
+RAPIDAPI_KEY=your_key         # Licensed Cricbuzz mirror via RapidAPI
+```
+
+Copy `.env.example` to `.env` and fill in keys.
 
 ## Install
 

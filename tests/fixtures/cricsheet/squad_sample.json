@@ -1,0 +1,20 @@
+[
+  {
+    "key": "kohli_v",
+    "name": "Virat Kohli",
+    "unique_name": "V Kohli",
+    "teams": ["India", "Royal Challengers Bengaluru"]
+  },
+  {
+    "key": "rohit_r",
+    "name": "Rohit Sharma",
+    "unique_name": "R Sharma",
+    "teams": ["India", "Mumbai Indians"]
+  },
+  {
+    "key": "bumrah_j",
+    "name": "Jasprit Bumrah",
+    "unique_name": "J Bumrah",
+    "teams": ["India", "Mumbai Indians"]
+  }
+]
