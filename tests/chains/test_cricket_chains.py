@@ -68,7 +68,6 @@ async def test_squad_chain_falls_through_to_static_seed():
         name="cricket:squad",
         adapters=[
             _Fail("cricapi"),
-            _Fail("cricsheet"),
             _OK("static_seed", {"players": [{"name": "Rohit Sharma"}], "team": "MI"}),
         ],
         cache_key_fn=_key,
@@ -92,6 +91,16 @@ async def test_chain_raises_when_all_fail_and_no_cache():
         await chain.fetch()
     assert len(exc.value.attempts) == 4
     assert all(a["status"] == "error" for a in exc.value.attempts)
+
+
+async def test_scorecard_chain_keys_by_match_id():
+    from sportiq.cricket import chains
+
+    key_abc = chains.scorecard_chain.cache_key_fn(match_id="abc")
+    key_xyz = chains.scorecard_chain.cache_key_fn(match_id="xyz")
+    assert key_abc != key_xyz
+    assert "abc" in key_abc
+    assert "xyz" in key_xyz
 
 
 async def test_chain_serves_stale_when_all_fail():

@@ -15,6 +15,7 @@ from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
 from sportiq.core.cache import get_cache
 from sportiq.core.errors import AllSourcesFailedError
 from sportiq.core.logging import get_logger
+from sportiq.core.ratelimit import Budget, check_and_consume
 
 log = get_logger(__name__)
 
@@ -24,6 +25,10 @@ T = TypeVar("T")
 @runtime_checkable
 class Adapter(Protocol, Generic[T]):
     name: str
+    # Optional per-source rate-limit budget. The chain checks-and-consumes
+    # before calling fetch(); on exhaustion the adapter is skipped silently.
+    # Adapters without a budget (scrapers, static seeds, paid-by-plan) set None.
+    budget: Budget | None
 
     async def fetch(self, **kwargs: Any) -> T: ...
 
@@ -78,6 +83,24 @@ class FallbackChain(Generic[T]):
 
         attempts: list[dict] = []
         for index, adapter in enumerate(self.adapters):
+            budget: Budget | None = getattr(adapter, "budget", None)
+            if budget is not None and not await check_and_consume(budget):
+                attempts.append(
+                    {
+                        "name": adapter.name,
+                        "status": "skipped",
+                        "reason": "rate_limited",
+                        "duration_ms": 0,
+                    }
+                )
+                log.warning(
+                    "chain.adapter.rate_limited",
+                    chain=self.name,
+                    adapter=adapter.name,
+                    source=budget.source,
+                )
+                continue
+
             adapter_started = time.monotonic()
             try:
                 value = await adapter.fetch(**kwargs)

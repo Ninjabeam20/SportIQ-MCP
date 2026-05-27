@@ -3,8 +3,8 @@ title: "ADR-0007: Cricket Fallback Strategy — Opt-in Scrapers + Paid Escape Ha
 type: decision
 tags: [cricket, scraper, fallback, tos]
 sources: []
-last_updated: 2026-05-26
-related: [[cricapi]], [[ndtv-sports-scraper]], [[cricbuzz-scraper]], [[rapidapi-cricbuzz]], [[cricsheet]]
+last_updated: 2026-05-27
+related: [[cricapi]], [[ndtv-sports-scraper]], [[cricbuzz-scraper]], [[rapidapi-cricbuzz]], [[static-seed]]
 ---
 
 # ADR-0007: Cricket Fallback Strategy — Opt-in Scrapers + Paid Escape Hatch
@@ -26,7 +26,6 @@ Option 3 was chosen.
 ## Decision
 
 - **CricAPI**: primary for live scores, fixtures, standings, squad. 100 req/day; runs when `CRICAPI_KEY` is set.
-- **CricSheet**: free + public-domain. Primary for player stats and squad fallback. Always enabled.
 - **NDTV Sports scraper**: opt-in via `SPORTIQ_ENABLE_NDTV=1`. Operator explicitly accepts any ToS risk.
 - **Cricbuzz scraper**: opt-in via `SPORTIQ_ENABLE_CRICBUZZ=1`. Same posture.
 - **RapidAPI Cricbuzz**: licensed paid mirror. Opt-in via `RAPIDAPI_KEY`. The escape hatch for operators who need reliable live data without scraper fragility.
@@ -38,3 +37,7 @@ Option 3 was chosen.
 - Adapter constructors never raise. `healthcheck()` returns `False` and `fetch()` raises `MissingCredentialsError` when disabled/unconfigured. Chain walks past silently.
 - `sportiq_health()` lists all adapters including disabled ones, giving operators a clear picture of what needs configuring.
 - `static_seed.py` was pulled forward from Phase 2 to serve as the squad chain terminator. Phase 2 will add `venues.json` but does not need to re-create the adapter.
+
+## 2026-05-27 Amendment — CricSheet dropped
+
+`cricsheet.org/register/people.json` returned 404 at runtime (the live URL is `people.csv` now, and the CSV schema has no `teams` column, so `CricSheetSquadAdapter`'s team-filter logic was structurally unworkable). Both `CricSheetSquadAdapter` and `CricSheetPlayerStatsAdapter` are removed. The squad chain becomes `cricapi → static_seed`; player_stats data is deferred to Phase 3 (when Dream11 needs it, we'll source it through CricAPI or a paid mirror, not CricSheet).

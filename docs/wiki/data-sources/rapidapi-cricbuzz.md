@@ -3,8 +3,8 @@ title: RapidAPI Cricbuzz
 type: data-source
 tags: [cricket, live-scores, fixtures, standings, paid, opt-in]
 sources: []
-last_updated: 2026-05-26
-related: [[cricket-live-score-chain]], [[cricket-fixtures-chain]], [[cricket-standings-chain]], [[0007-cricket-fallback-strategy]]
+last_updated: 2026-05-27
+related: [[cricket-live-score-chain]], [[cricket-scorecard-chain]], [[cricket-fixtures-chain]], [[cricket-standings-chain]], [[0007-cricket-fallback-strategy]]
 ---
 
 # RapidAPI Cricbuzz
@@ -20,6 +20,7 @@ Set `RAPIDAPI_KEY`. Without a key the adapter raises `MissingCredentialsError` a
 | Endpoint | Chain |
 | :--- | :--- |
 | `/matches/v1/live` | [[cricket-live-score-chain]] |
+| `/mcenter/v1/{match_id}/scard` | [[cricket-scorecard-chain]] |
 | `/matches/v1/upcoming` | [[cricket-fixtures-chain]] |
 | `/series/v1/{id}/points-table` | [[cricket-standings-chain]] |
 
@@ -32,3 +33,4 @@ Set `RAPIDAPI_KEY`. Without a key the adapter raises `MissingCredentialsError` a
 ## Test fixtures
 
 `tests/fixtures/rapidapi/live_matches.json` — from RapidAPI's public sample-response tab.
+`tests/fixtures/rapidapi/scorecard.json` — synthetic shape representative of the `/mcenter/v1/{id}/scard` response.

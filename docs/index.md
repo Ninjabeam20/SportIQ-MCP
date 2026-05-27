@@ -21,20 +21,20 @@ _(none yet — Phase 2 adds Dream11 scoring + form index.)_
 ### Cricket
 
 - [[cricket-live-score-chain]] — cricapi → ndtv → cricbuzz → rapidapi; 30s TTL.
+- [[cricket-scorecard-chain]] — cricapi → rapidapi; 30s TTL; isolated cache key per match_id.
 - [[cricket-fixtures-chain]] — cricapi → ndtv → rapidapi; 6h TTL.
 - [[cricket-standings-chain]] — cricapi → rapidapi; 10min TTL.
-- [[cricket-squad-chain]] — cricapi → cricsheet → static_seed; 12h TTL; always terminates.
-- [[cricket-player-stats-chain]] — cricsheet → cricapi; 24h TTL.
+- [[cricket-squad-chain]] — cricapi → static_seed; 12h TTL; always terminates.
 
 ## Data sources
 
 ### Cricket
 
 - [[cricapi]] — Free JSON API; primary for live, fixtures, standings, squad; 100 req/day.
-- [[cricsheet]] — Free public-domain data; always enabled; used for player stats and squad.
 - [[ndtv-sports-scraper]] — Opt-in scraper (SPORTIQ_ENABLE_NDTV=1); live scores + fixtures.
 - [[cricbuzz-scraper]] — Opt-in scraper (SPORTIQ_ENABLE_CRICBUZZ=1); live scores.
 - [[rapidapi-cricbuzz]] — Paid licensed Cricbuzz mirror; escape hatch; requires RAPIDAPI_KEY.
+- [[static-seed]] — Local JSON reader; always-on squad chain terminator; ships IPL 2026 rosters.
 
 ## Findings
 

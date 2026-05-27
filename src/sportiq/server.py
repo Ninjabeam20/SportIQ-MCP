@@ -8,14 +8,14 @@ from mcp.server.fastmcp import FastMCP
 
 from sportiq.core.health import register_health_tool
 from sportiq.core.logging import configure_logging
+from sportiq.cricket.tools import register_cricket_tools
 
 configure_logging()
 
 mcp = FastMCP("sportiq")
 
 register_health_tool(mcp)
-
-import sportiq.cricket.tools  # noqa: E402, F401 — registers @mcp.tool() decorators
+register_cricket_tools(mcp)
 
 
 def main() -> None:

@@ -3,8 +3,8 @@ title: Cricket Squad Chain
 type: chain
 tags: [cricket, squad, roster]
 sources: []
-last_updated: 2026-05-26
-related: [[cricapi]], [[cricsheet]], [[static-seed]]
+last_updated: 2026-05-27
+related: [[cricapi]], [[static-seed]]
 ---
 
 # Cricket Squad Chain
@@ -13,7 +13,7 @@ related: [[cricapi]], [[cricsheet]], [[static-seed]]
 
 ## Resolution order
 
-`cricapi` → `cricsheet` → `static_seed`
+`cricapi` → `static_seed`
 
 `static_seed` is always enabled and serves IPL 2026 rosters from `src/sportiq/cricket/data/squads.json`.
 

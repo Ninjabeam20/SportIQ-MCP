@@ -1,0 +1,32 @@
+{
+  "matchHeader": {
+    "matchId": 12345,
+    "matchDescription": "1st T20I",
+    "matchFormat": "T20",
+    "matchType": "International",
+    "status": "India won by 6 wickets",
+    "state": "Complete",
+    "team1": {"id": 2, "name": "India", "shortName": "IND"},
+    "team2": {"id": 4, "name": "Australia", "shortName": "AUS"}
+  },
+  "scorecard": [
+    {
+      "inningsId": 1,
+      "batTeamDetails": {
+        "batTeamId": 4,
+        "batTeamShortName": "AUS",
+        "batsmenData": {
+          "0": {"batName": "Travis Head", "runs": 45, "balls": 32, "fours": 5, "sixes": 1, "outDesc": "c Kohli b Bumrah"}
+        }
+      },
+      "bowlTeamDetails": {
+        "bowlTeamId": 2,
+        "bowlTeamShortName": "IND",
+        "bowlersData": {
+          "0": {"bowlName": "Jasprit Bumrah", "overs": "4.0", "maidens": 0, "runs": 28, "wickets": 2, "economy": 7.0}
+        }
+      },
+      "scoreDetails": {"runs": 182, "wickets": 8, "overs": 20.0}
+    }
+  ]
+}

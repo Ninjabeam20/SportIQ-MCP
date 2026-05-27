@@ -27,6 +27,7 @@ def _headers() -> dict:
 
 class RapidAPICricbuzzLiveAdapter:
     name = "rapidapi_cricbuzz"
+    budget = None  # free-tier limits vary by plan; not centrally tracked
 
     async def fetch(self, **kwargs) -> dict:
         h = _headers()
@@ -42,8 +43,21 @@ class RapidAPICricbuzzLiveAdapter:
         return bool(settings.rapidapi_key)
 
 
+class RapidAPICricbuzzScorecardAdapter:
+    name = "rapidapi_cricbuzz"
+    budget = None
+
+    async def fetch(self, match_id: str, **kwargs) -> dict:
+        h = _headers()
+        return await get_json(f"{_BASE}/mcenter/v1/{match_id}/scard", headers=h)
+
+    async def healthcheck(self) -> bool:
+        return bool(settings.rapidapi_key)
+
+
 class RapidAPICricbuzzScheduleAdapter:
     name = "rapidapi_cricbuzz"
+    budget = None
 
     async def fetch(self, series_id: str | None = None, **kwargs) -> dict:
         h = _headers()
@@ -62,6 +76,7 @@ class RapidAPICricbuzzScheduleAdapter:
 
 class RapidAPICricbuzzStandingsAdapter:
     name = "rapidapi_cricbuzz"
+    budget = None
 
     async def fetch(self, series_id: str, **kwargs) -> dict:
         h = _headers()

@@ -17,7 +17,13 @@
 
 ## Key pattern
 
-`sportiq:{sport}:{category}:{hash(args)}` — for example `sportiq:cricket:live_score:8f3a...`.
+Keys are `sportiq:{sport}:{category}:{readable_args}` where `readable_args` is a
+colon-joined string of the inputs (e.g. `sportiq:cricket:fixtures:ipl2026`,
+`sportiq:cricket:squad:MI:none`). Use `none` / `all` for absent optional args.
+
+Hashing is only required when args are unbounded or contain user-supplied
+strings that could include `:` or `*` — in that case hash with
+`hashlib.blake2s(..., digest_size=8).hexdigest()`.
 
 Rate-limit counters use `ratelimit:{source}:{minute|day}`.
 

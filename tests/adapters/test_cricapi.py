@@ -11,9 +11,10 @@ from httpx import Response
 
 from sportiq.cricket.adapters.cricapi import (
     CricAPILiveMatchesAdapter,
-    CricAPIScheduleAdapter,
-    CricAPISquadAdapter,
     CricAPIPointsTableAdapter,
+    CricAPIScheduleAdapter,
+    CricAPIScorecardAdapter,
+    CricAPISquadAdapter,
 )
 from sportiq.core.errors import MissingCredentialsError
 
@@ -73,6 +74,18 @@ async def test_squad_adapter_parses_squad():
     adapter = CricAPISquadAdapter()
     result = await adapter.fetch(series_id="series001")
     assert result["data"]["squad"][0]["team"] == "Mumbai Indians"
+
+
+@respx.mock
+async def test_scorecard_adapter_fetches_by_id():
+    fixture = _load("match_scorecard.json")
+    respx.get("https://api.cricapi.com/v1/match_scorecard").mock(
+        return_value=Response(200, json=fixture)
+    )
+    adapter = CricAPIScorecardAdapter()
+    result = await adapter.fetch(match_id="abc123")
+    assert result["data"]["id"] == "abc123"
+    assert result["status"] == "success"
 
 
 @respx.mock

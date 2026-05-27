@@ -5,7 +5,6 @@ Free-tier limits per source. NEVER bypass cache to "make sure data is fresh." Bu
 | Source | Free-tier limit | Notes |
 | :--- | :--- | :--- |
 | CricAPI | 100 req/day | Token via `CRICAPI_KEY`. Hard daily cap — exhaust it and live scores die until reset. |
-| CricSheet | None | Free + public-domain. No key. Rate-limit to ≤1 req/5s to be a good citizen. |
 | NDTV Sports scraper | None (informal) | Opt-in (`SPORTIQ_ENABLE_NDTV=1`). Rate-limit to ≤1 req/3s to avoid IP block. |
 | Cricbuzz scraper | None (informal) | Opt-in (`SPORTIQ_ENABLE_CRICBUZZ=1`). Rate-limit to ≤1 req/3s. ToS-risky; operator opt-in required. |
 | RapidAPI Cricbuzz | Varies by plan | Token via `RAPIDAPI_KEY`. Free tier limited; paid plans from $10/mo. Paid escape hatch. |

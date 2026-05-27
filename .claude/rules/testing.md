@@ -28,8 +28,7 @@
 How to produce the initial fixture for a new adapter (run once during development, then commit):
 
 1. **CricAPI** — copy example payloads from CricAPI's published API docs page into `tests/fixtures/cricapi/`. No live call required; the docs include real-shape sample responses.
-2. **CricSheet** — download a single tournament JSON from `cricsheet.org` (public dataset, redistributable), subset it to ≤5 records, save as `tests/fixtures/cricsheet/{name}.json`.
-3. **NDTV / Cricbuzz scrapers** — one live `httpx` fetch during adapter development to capture HTML shape. Save as `tests/fixtures/{source}/live_page.html`. Scrub any `Set-Cookie` headers or session tokens before commit.
-4. **RapidAPI Cricbuzz** — capture from the RapidAPI portal's "Test Endpoint" sample-response tab. No paid call required; the portal shows real response shapes for free.
+2. **NDTV / Cricbuzz scrapers** — one live `httpx` fetch during adapter development to capture HTML shape. Save as `tests/fixtures/{source}/live_page.html`. Scrub any `Set-Cookie` headers or session tokens before commit.
+3. **RapidAPI Cricbuzz** — capture from the RapidAPI portal's "Test Endpoint" sample-response tab. No paid call required; the portal shows real response shapes for free.
 
 Re-recording is manual only. Never auto-re-record in CI.

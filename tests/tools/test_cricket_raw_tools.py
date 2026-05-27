@@ -80,7 +80,7 @@ async def test_get_scorecard_success():
     from sportiq.cricket import tools
 
     mock_result = _ok_result({"id": "abc123", "scorecard": []})
-    with patch("sportiq.cricket.tools.live_score_chain") as mock_chain:
+    with patch("sportiq.cricket.tools.scorecard_chain") as mock_chain:
         mock_chain.fetch = AsyncMock(return_value=mock_result)
         response = await tools.cricket_get_scorecard("abc123")
 

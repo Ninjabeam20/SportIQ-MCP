@@ -35,6 +35,7 @@ def _check_enabled() -> None:
 
 class NDTVLiveMatchesAdapter:
     name = "ndtv_sports_scraper"
+    budget = None  # informal scraper limit; courtesy throttling happens in core/http
 
     async def fetch(self, **kwargs) -> dict:
         _check_enabled()
@@ -51,6 +52,7 @@ class NDTVLiveMatchesAdapter:
 
 class NDTVScheduleAdapter:
     name = "ndtv_sports_scraper"
+    budget = None
 
     async def fetch(self, series_id: str | None = None, **kwargs) -> dict:
         _check_enabled()

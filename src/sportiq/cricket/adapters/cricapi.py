@@ -10,10 +10,15 @@ from sportiq.config import settings
 from sportiq.core.errors import MissingCredentialsError
 from sportiq.core.http import get_json
 from sportiq.core.logging import get_logger
+from sportiq.core.ratelimit import Budget
 
 log = get_logger(__name__)
 
 _BASE = "https://api.cricapi.com/v1"
+
+# Shared per-source budget. CricAPI's free tier is 100 req/day across every
+# endpoint, so all CricAPI adapters share one counter via the `source` key.
+_CRICAPI_BUDGET = Budget(source="cricapi", per_day=100)
 
 
 def _key() -> str:
@@ -24,6 +29,7 @@ def _key() -> str:
 
 class CricAPILiveMatchesAdapter:
     name = "cricapi"
+    budget = _CRICAPI_BUDGET
 
     async def fetch(self, **kwargs) -> dict:
         k = _key()
@@ -42,6 +48,7 @@ class CricAPILiveMatchesAdapter:
 
 class CricAPIScorecardAdapter:
     name = "cricapi"
+    budget = _CRICAPI_BUDGET
 
     async def fetch(self, match_id: str, **kwargs) -> dict:
         k = _key()
@@ -53,6 +60,7 @@ class CricAPIScorecardAdapter:
 
 class CricAPIPointsTableAdapter:
     name = "cricapi"
+    budget = _CRICAPI_BUDGET
 
     async def fetch(self, series_id: str, **kwargs) -> dict:
         k = _key()
@@ -64,6 +72,7 @@ class CricAPIPointsTableAdapter:
 
 class CricAPIScheduleAdapter:
     name = "cricapi"
+    budget = _CRICAPI_BUDGET
 
     async def fetch(self, series_id: str | None = None, **kwargs) -> dict:
         k = _key()
@@ -79,6 +88,7 @@ class CricAPIScheduleAdapter:
 
 class CricAPISquadAdapter:
     name = "cricapi"
+    budget = _CRICAPI_BUDGET
 
     async def fetch(self, series_id: str, **kwargs) -> dict:
         k = _key()

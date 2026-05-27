@@ -37,6 +37,7 @@ def _check_enabled() -> None:
 
 class CricbuzzLiveMatchesAdapter:
     name = "cricbuzz_scraper"
+    budget = None
 
     async def fetch(self, **kwargs) -> dict:
         _check_enabled()

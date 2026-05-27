@@ -3,8 +3,8 @@ title: CricAPI
 type: data-source
 tags: [cricket, live-scores, fixtures, standings, squad]
 sources: []
-last_updated: 2026-05-26
-related: [[cricket-live-score-chain]], [[cricket-fixtures-chain]], [[cricket-standings-chain]], [[cricket-squad-chain]]
+last_updated: 2026-05-27
+related: [[cricket-live-score-chain]], [[cricket-scorecard-chain]], [[cricket-fixtures-chain]], [[cricket-standings-chain]], [[cricket-squad-chain]]
 ---
 
 # CricAPI
@@ -24,7 +24,7 @@ Set `CRICAPI_KEY` in the environment. The key is obtained from [cricapi.com](htt
 | Endpoint | Tool | Chain |
 | :--- | :--- | :--- |
 | `/v1/currentMatches` | `cricket_get_live_matches` | [[cricket-live-score-chain]] |
-| `/v1/match_scorecard` | `cricket_get_scorecard` | [[cricket-live-score-chain]] |
+| `/v1/match_scorecard` | `cricket_get_scorecard` | [[cricket-scorecard-chain]] |
 | `/v1/matches` | `cricket_get_schedule` | [[cricket-fixtures-chain]] |
 | `/v1/series_points_table` | `cricket_get_points_table` | [[cricket-standings-chain]] |
 | `/v1/series_squad` | `cricket_get_squad` | [[cricket-squad-chain]] |
