@@ -8,8 +8,8 @@ import pytest
 import respx
 from httpx import Response
 
-from sportiq.cricket.adapters.ndtv_sports_scraper import NDTVLiveMatchesAdapter
 from sportiq.core.errors import MissingCredentialsError
+from sportiq.cricket.adapters.ndtv_sports_scraper import NDTVLiveMatchesAdapter
 
 _HTML = (Path(__file__).parent.parent / "fixtures" / "ndtv_sports" / "live_page.html").read_text()
 

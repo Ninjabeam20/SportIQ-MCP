@@ -103,6 +103,33 @@ async def test_scorecard_chain_keys_by_match_id():
     assert "xyz" in key_xyz
 
 
+async def test_player_stats_chain_keys_by_player_id():
+    from sportiq.cricket import chains
+
+    a = chains.player_stats_chain.cache_key_fn(player_id="p1")
+    b = chains.player_stats_chain.cache_key_fn(player_id="p2")
+    assert a != b
+    assert "p1" in a
+    assert "p2" in b
+
+
+async def test_player_stats_chain_falls_through_to_rapidapi():
+    chain = FallbackChain(
+        name="cricket:player_stats",
+        adapters=[
+            _Fail("cricapi"),
+            _OK("rapidapi_cricbuzz", {"values": [{"name": "T20I", "runs": "4008"}]}),
+        ],
+        cache_key_fn=lambda player_id, **_: f"sportiq:cricket:player_stats:{player_id}",
+        fresh_ttl=86400,
+        stale_ttl=604800,
+    )
+    result = await chain.fetch(player_id="p_kohli_001")
+    assert result.source == "rapidapi_cricbuzz"
+    assert result.fallback_used is True
+    assert result.value["values"][0]["runs"] == "4008"
+
+
 async def test_chain_serves_stale_when_all_fail():
     chain = FallbackChain(
         name="cricket:live_score",

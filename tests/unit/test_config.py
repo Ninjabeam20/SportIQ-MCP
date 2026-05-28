@@ -1,4 +1,3 @@
-import pytest
 
 
 def test_enable_ndtv_scraper_via_documented_env_var(monkeypatch):

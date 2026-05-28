@@ -85,3 +85,19 @@ class RapidAPICricbuzzStandingsAdapter:
 
     async def healthcheck(self) -> bool:
         return bool(settings.rapidapi_key)
+
+
+class RapidAPICricbuzzPlayerStatsAdapter:
+    """`/stats/v1/player/{id}/career` — per-format career stats from Cricbuzz."""
+
+    name = "rapidapi_cricbuzz"
+    budget = None
+
+    async def fetch(self, player_id: str, **kwargs) -> dict:
+        h = _headers()
+        return await get_json(
+            f"{_BASE}/stats/v1/player/{player_id}/career", headers=h
+        )
+
+    async def healthcheck(self) -> bool:
+        return bool(settings.rapidapi_key)

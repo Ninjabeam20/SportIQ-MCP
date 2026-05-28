@@ -8,8 +8,8 @@ import pytest
 import respx
 from httpx import Response
 
-from sportiq.cricket.adapters.cricbuzz_scraper import CricbuzzLiveMatchesAdapter
 from sportiq.core.errors import MissingCredentialsError
+from sportiq.cricket.adapters.cricbuzz_scraper import CricbuzzLiveMatchesAdapter
 
 _HTML = (Path(__file__).parent.parent / "fixtures" / "cricbuzz" / "live_page.html").read_text()
 

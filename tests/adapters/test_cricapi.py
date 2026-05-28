@@ -9,14 +9,15 @@ import pytest
 import respx
 from httpx import Response
 
+from sportiq.core.errors import MissingCredentialsError
 from sportiq.cricket.adapters.cricapi import (
     CricAPILiveMatchesAdapter,
+    CricAPIPlayerInfoAdapter,
     CricAPIPointsTableAdapter,
     CricAPIScheduleAdapter,
     CricAPIScorecardAdapter,
     CricAPISquadAdapter,
 )
-from sportiq.core.errors import MissingCredentialsError
 
 _FIXTURES = Path(__file__).parent.parent / "fixtures" / "cricapi"
 
@@ -73,7 +74,25 @@ async def test_squad_adapter_parses_squad():
     )
     adapter = CricAPISquadAdapter()
     result = await adapter.fetch(series_id="series001")
-    assert result["data"]["squad"][0]["team"] == "Mumbai Indians"
+    # Normalised shape: {"players": [...], "team": ..., "source": "cricapi"}
+    assert result["source"] == "cricapi"
+    assert result["team"] == "Mumbai Indians"
+    assert len(result["players"]) == 5
+    assert result["players"][0]["name"] == "Rohit Sharma"
+    assert result["players"][0]["role"] == "BAT"
+    assert result["players"][0]["team"] == "Mumbai Indians"
+
+
+@respx.mock
+async def test_squad_adapter_filters_by_team():
+    """team= kwarg keeps only the matching block from the series payload."""
+    fixture = _load("squad.json")
+    respx.get("https://api.cricapi.com/v1/series_squad").mock(
+        return_value=Response(200, json=fixture)
+    )
+    adapter = CricAPISquadAdapter()
+    result = await adapter.fetch(series_id="series001", team="mumbai")
+    assert all(p["team"] == "Mumbai Indians" for p in result["players"])
 
 
 @respx.mock
@@ -110,3 +129,20 @@ async def test_healthcheck_false_when_key_missing(monkeypatch):
     monkeypatch.setattr("sportiq.config.settings.cricapi_key", None)
     adapter = CricAPILiveMatchesAdapter()
     assert await adapter.healthcheck() is False
+
+
+@respx.mock
+async def test_player_info_adapter_returns_profile_and_stats():
+    fixture = _load("players_info.json")
+    respx.get("https://api.cricapi.com/v1/players_info").mock(
+        return_value=Response(200, json=fixture)
+    )
+    adapter = CricAPIPlayerInfoAdapter()
+    result = await adapter.fetch(player_id="p_kohli_001")
+    assert result["data"]["id"] == "p_kohli_001"
+    assert result["data"]["name"] == "Virat Kohli"
+    t20i_runs = next(
+        s for s in result["data"]["stats"]
+        if s["matchtype"] == "t20i" and s["stat"] == "Runs"
+    )
+    assert t20i_runs["value"] == "4008"

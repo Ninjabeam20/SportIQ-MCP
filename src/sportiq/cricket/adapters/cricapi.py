@@ -86,13 +86,50 @@ class CricAPIScheduleAdapter:
         return bool(settings.cricapi_key)
 
 
+class CricAPIPlayerInfoAdapter:
+    """`/v1/players_info?id=<player_id>` — player profile + career stats by id."""
+
+    name = "cricapi"
+    budget = _CRICAPI_BUDGET
+
+    async def fetch(self, player_id: str, **kwargs) -> dict:
+        k = _key()
+        return await get_json(
+            f"{_BASE}/players_info", params={"apikey": k, "id": player_id}
+        )
+
+    async def healthcheck(self) -> bool:
+        return bool(settings.cricapi_key)
+
+
+class CricAPIPlayerSearchAdapter:
+    """`/v1/players?search=<name>` — directory search by player name."""
+
+    name = "cricapi"
+    budget = _CRICAPI_BUDGET
+
+    async def fetch(self, name: str, **kwargs) -> dict:
+        k = _key()
+        return await get_json(
+            f"{_BASE}/players", params={"apikey": k, "offset": 0, "search": name}
+        )
+
+    async def healthcheck(self) -> bool:
+        return bool(settings.cricapi_key)
+
+
 class CricAPISquadAdapter:
     name = "cricapi"
     budget = _CRICAPI_BUDGET
 
-    async def fetch(self, series_id: str, **kwargs) -> dict:
+    async def fetch(self, series_id: str, team: str | None = None, **kwargs) -> dict:
+        from sportiq.cricket.adapters._normalize import normalise_squad_payload
+
         k = _key()
-        return await get_json(f"{_BASE}/series_squad", params={"apikey": k, "id": series_id})
+        raw = await get_json(
+            f"{_BASE}/series_squad", params={"apikey": k, "id": series_id}
+        )
+        return normalise_squad_payload(raw, source="cricapi", team=team)
 
     async def healthcheck(self) -> bool:
         return bool(settings.cricapi_key)

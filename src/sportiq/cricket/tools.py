@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError
 from sportiq.core.tool_response import error_envelope, tool_response
-
 from sportiq.cricket.chains import (
     fixtures_chain,
     live_score_chain,
@@ -137,8 +136,11 @@ async def cricket_get_squad(team: str, series_id: str | None = None) -> dict:
 
 def register_cricket_tools(mcp) -> None:
     """Register every cricket tool on the supplied FastMCP instance."""
+    from sportiq.cricket.intel_tools import register_cricket_intel_tools
+
     mcp.tool()(cricket_get_live_matches)
     mcp.tool()(cricket_get_scorecard)
     mcp.tool()(cricket_get_points_table)
     mcp.tool()(cricket_get_schedule)
     mcp.tool()(cricket_get_squad)
+    register_cricket_intel_tools(mcp)

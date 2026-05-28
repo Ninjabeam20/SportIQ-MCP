@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
-import pytest
-
 from sportiq.core.errors import AllSourcesFailedError
 from sportiq.core.fallback import FallbackResult
 

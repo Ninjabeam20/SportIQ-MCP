@@ -1,0 +1,45 @@
+{
+  "values": [
+    {
+      "name": "Test",
+      "matches": "113",
+      "runs": "8848",
+      "highest": "254",
+      "average": "49.15",
+      "strikeRate": "57.50",
+      "fifties": "30",
+      "hundreds": "29"
+    },
+    {
+      "name": "ODI",
+      "matches": "292",
+      "runs": "13848",
+      "highest": "183",
+      "average": "57.88",
+      "strikeRate": "93.62",
+      "fifties": "72",
+      "hundreds": "50"
+    },
+    {
+      "name": "T20I",
+      "matches": "117",
+      "runs": "4008",
+      "highest": "122",
+      "average": "51.39",
+      "strikeRate": "137.96",
+      "fifties": "37",
+      "hundreds": "1"
+    },
+    {
+      "name": "IPL",
+      "matches": "237",
+      "runs": "7569",
+      "highest": "113",
+      "average": "37.84",
+      "strikeRate": "131.46",
+      "fifties": "55",
+      "hundreds": "8"
+    }
+  ],
+  "appIndex": {"seoTitle": "Virat Kohli Career", "webURL": "https://www.cricbuzz.com/profiles/1413/virat-kohli"}
+}

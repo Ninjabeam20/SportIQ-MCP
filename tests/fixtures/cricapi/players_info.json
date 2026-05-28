@@ -1,0 +1,24 @@
+{
+  "apikey": "test_key",
+  "data": {
+    "id": "p_kohli_001",
+    "name": "Virat Kohli",
+    "country": "India",
+    "playingRole": "Batter",
+    "battingStyle": "Right Hand Bat",
+    "bowlingStyle": "Right-arm medium",
+    "placeOfBirth": "Delhi, India",
+    "dateOfBirth": "1988-11-05",
+    "stats": [
+      {"fn": "batting", "matchtype": "test", "stat": "Matches", "value": "113"},
+      {"fn": "batting", "matchtype": "test", "stat": "Runs", "value": "8848"},
+      {"fn": "batting", "matchtype": "test", "stat": "Average", "value": "49.15"},
+      {"fn": "batting", "matchtype": "t20i", "stat": "Matches", "value": "117"},
+      {"fn": "batting", "matchtype": "t20i", "stat": "Runs", "value": "4008"},
+      {"fn": "batting", "matchtype": "t20i", "stat": "Average", "value": "51.39"},
+      {"fn": "batting", "matchtype": "t20i", "stat": "Strike Rate", "value": "137.96"},
+      {"fn": "bowling", "matchtype": "t20i", "stat": "Wickets", "value": "4"}
+    ]
+  },
+  "status": "success"
+}

@@ -9,11 +9,12 @@ import pytest
 import respx
 from httpx import Response
 
+from sportiq.core.errors import MissingCredentialsError
 from sportiq.cricket.adapters.rapidapi_cricbuzz import (
     RapidAPICricbuzzLiveAdapter,
+    RapidAPICricbuzzPlayerStatsAdapter,
     RapidAPICricbuzzScorecardAdapter,
 )
-from sportiq.core.errors import MissingCredentialsError
 
 _FIXTURES = Path(__file__).parent.parent / "fixtures" / "rapidapi"
 
@@ -71,3 +72,24 @@ async def test_scorecard_raises_when_key_missing(monkeypatch):
     adapter = RapidAPICricbuzzScorecardAdapter()
     with pytest.raises(MissingCredentialsError):
         await adapter.fetch(match_id="12345")
+
+
+@respx.mock
+async def test_player_stats_adapter_fetches_career(monkeypatch):
+    monkeypatch.setattr("sportiq.config.settings.rapidapi_key", "test_rapidapi_key")
+    fixture = _load("player_career.json")
+    respx.get(
+        "https://cricbuzz-cricket.p.rapidapi.com/stats/v1/player/1413/career"
+    ).mock(return_value=Response(200, json=fixture))
+    adapter = RapidAPICricbuzzPlayerStatsAdapter()
+    result = await adapter.fetch(player_id="1413")
+    assert "values" in result
+    t20i = next(v for v in result["values"] if v["name"] == "T20I")
+    assert t20i["runs"] == "4008"
+
+
+async def test_player_stats_raises_when_key_missing(monkeypatch):
+    monkeypatch.setattr("sportiq.config.settings.rapidapi_key", None)
+    adapter = RapidAPICricbuzzPlayerStatsAdapter()
+    with pytest.raises(MissingCredentialsError):
+        await adapter.fetch(player_id="1413")

@@ -1,0 +1,114 @@
+{
+  "wankhede": {
+    "name": "Wankhede Stadium",
+    "city": "Mumbai",
+    "pitch_type": "batting",
+    "avg_first_innings": 178,
+    "avg_chasing": 165,
+    "boundary_size_m": 64
+  },
+  "chinnaswamy": {
+    "name": "M. Chinnaswamy Stadium",
+    "city": "Bengaluru",
+    "pitch_type": "batting",
+    "avg_first_innings": 185,
+    "avg_chasing": 172,
+    "boundary_size_m": 60
+  },
+  "eden_gardens": {
+    "name": "Eden Gardens",
+    "city": "Kolkata",
+    "pitch_type": "balanced",
+    "avg_first_innings": 168,
+    "avg_chasing": 158,
+    "boundary_size_m": 68
+  },
+  "chepauk": {
+    "name": "M. A. Chidambaram Stadium",
+    "city": "Chennai",
+    "pitch_type": "bowling",
+    "avg_first_innings": 160,
+    "avg_chasing": 152,
+    "boundary_size_m": 67
+  },
+  "kotla": {
+    "name": "Arun Jaitley Stadium",
+    "city": "Delhi",
+    "pitch_type": "balanced",
+    "avg_first_innings": 172,
+    "avg_chasing": 162,
+    "boundary_size_m": 65
+  },
+  "narendra_modi": {
+    "name": "Narendra Modi Stadium",
+    "city": "Ahmedabad",
+    "pitch_type": "balanced",
+    "avg_first_innings": 170,
+    "avg_chasing": 161,
+    "boundary_size_m": 72
+  },
+  "punjab_cricket": {
+    "name": "Punjab Cricket Association Stadium",
+    "city": "Mohali",
+    "pitch_type": "batting",
+    "avg_first_innings": 175,
+    "avg_chasing": 168,
+    "boundary_size_m": 66
+  },
+  "rajiv_gandhi": {
+    "name": "Rajiv Gandhi International Stadium",
+    "city": "Hyderabad",
+    "pitch_type": "balanced",
+    "avg_first_innings": 167,
+    "avg_chasing": 158,
+    "boundary_size_m": 68
+  },
+  "sawai_mansingh": {
+    "name": "Sawai Mansingh Stadium",
+    "city": "Jaipur",
+    "pitch_type": "balanced",
+    "avg_first_innings": 169,
+    "avg_chasing": 159,
+    "boundary_size_m": 65
+  },
+  "ekana": {
+    "name": "Ekana Cricket Stadium",
+    "city": "Lucknow",
+    "pitch_type": "bowling",
+    "avg_first_innings": 158,
+    "avg_chasing": 150,
+    "boundary_size_m": 70
+  },
+  "dharamshala": {
+    "name": "HPCA Stadium",
+    "city": "Dharamshala",
+    "pitch_type": "batting",
+    "avg_first_innings": 176,
+    "avg_chasing": 166,
+    "boundary_size_m": 62
+  },
+  "visakhapatnam": {
+    "name": "ACA-VDCA Stadium",
+    "city": "Visakhapatnam",
+    "pitch_type": "balanced",
+    "avg_first_innings": 171,
+    "avg_chasing": 161,
+    "boundary_size_m": 66
+  },
+  "guwahati": {
+    "name": "Barsapara Cricket Stadium",
+    "city": "Guwahati",
+    "pitch_type": "balanced",
+    "avg_first_innings": 169,
+    "avg_chasing": 160,
+    "boundary_size_m": 65
+  },
+  "indore": {
+    "name": "Holkar Stadium",
+    "city": "Indore",
+    "pitch_type": "batting",
+    "avg_first_innings": 180,
+    "avg_chasing": 170,
+    "boundary_size_m": 63
+  }
+}
