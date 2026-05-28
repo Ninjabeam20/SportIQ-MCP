@@ -23,7 +23,7 @@ async def cricket_player_form_index(player_id: str) -> dict
 
 [[cricket-player-stats-chain]] returns either the CricAPI `/v1/players_info` payload or the RapidAPI Cricbuzz `/stats/v1/player/{id}/career` payload. The tool extracts T20I career average + strike rate from whichever served — see `_t20_career_numbers()` in `intel_tools.py`.
 
-Phase 2 has no per-innings recent stream; the form model falls back to the career baseline. Recent-innings ingestion is a follow-up.
+Phase 2 has no per-innings recent stream; the form model falls back to the career baseline. Recent-innings ingestion is a follow-up. `samples=0` is therefore expected and normal in Phase 2 — it does not indicate a data error.
 
 ## Returns
 

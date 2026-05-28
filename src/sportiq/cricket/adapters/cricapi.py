@@ -102,6 +102,7 @@ class CricAPIPlayerInfoAdapter:
         return bool(settings.cricapi_key)
 
 
+# Reserved for cricket_search_player (Phase 3+); not yet chain-wired.
 class CricAPIPlayerSearchAdapter:
     """`/v1/players?search=<name>` — directory search by player name."""
 

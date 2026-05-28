@@ -83,6 +83,34 @@ async def test_build_dream11_team_empty_args_returns_invalid_input():
     assert r["error"]["code"] == "INVALID_INPUT"
 
 
+async def test_build_dream11_team_no_args_returns_invalid_input():
+    from sportiq.cricket import intel_tools
+
+    # Neither match_id nor team_a/team_b/venue supplied.
+    r = await intel_tools.cricket_build_dream11_team()
+    assert r["error"]["code"] == "INVALID_INPUT"
+
+
+async def test_build_dream11_team_match_id_resolves_and_builds():
+    from sportiq.cricket import intel_tools
+
+    squad_a, squad_b = _two_team_squads()
+    with (
+        patch("sportiq.cricket.intel_tools.resolve_match") as mock_resolve,
+        patch("sportiq.cricket.intel_tools.pitch_data_chain") as mock_pitch,
+        patch("sportiq.cricket.intel_tools.squad_chain") as mock_squad,
+    ):
+        mock_resolve.return_value = {"team_a": "Team A", "team_b": "Team B", "venue": "wankhede"}
+        mock_pitch.fetch = AsyncMock(return_value=_fr(_venue_record()))
+        mock_squad.fetch = AsyncMock(side_effect=[squad_a, squad_b])
+        response = await intel_tools.cricket_build_dream11_team(match_id="m123")
+
+    mock_resolve.assert_called_once_with("m123")
+    assert "data" in response
+    assert len(response["data"]["players"]) == 11
+    assert response["meta"]["estimated"] is True
+
+
 async def test_build_dream11_team_chain_failure_returns_error_envelope():
     from sportiq.cricket import intel_tools
 

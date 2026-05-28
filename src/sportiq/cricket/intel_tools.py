@@ -4,9 +4,10 @@ Five tools that compose the per-source chains into actionable answers:
 build_dream11_team, captain_recommendation, differential_picks,
 player_form_index, get_pitch_report.
 
-Tools take ``team_a``, ``team_b``, ``venue`` directly rather than a single
-``match_id`` — the upstream match-id → teams/venue resolution path is a
-follow-up (see phase2.md Step 0 / Open questions).
+Tools accept either a ``match_id`` (resolved to teams + venue via
+``match_resolver.resolve_match``) or the raw ``team_a``/``team_b``/``venue``
+triple directly. ``cricket_get_pitch_report`` and ``cricket_player_form_index``
+are unaffected (venue-only and player-id-only respectively).
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ from sportiq.cricket.chains import (
     player_stats_chain,
     squad_chain,
 )
+from sportiq.cricket.match_resolver import resolve_match
 from sportiq.cricket.models.captain_score import expected_points
 from sportiq.cricket.models.dream11_solver import solve as _solve_dream11
 from sportiq.cricket.models.form_index import compute_form_index
@@ -55,17 +57,19 @@ async def _candidate_pool(team_a: str, team_b: str, venue_record: dict) -> list[
 
 
 async def cricket_build_dream11_team(
-    team_a: str,
-    team_b: str,
-    venue: str,
+    match_id: str | None = None,
+    team_a: str | None = None,
+    team_b: str | None = None,
+    venue: str | None = None,
     strategy: str = "balanced",
 ) -> dict:
     """Recommend an optimal Dream11 XI + captain + vice-captain for one fixture.
 
     Args:
-        team_a: First team code/name (e.g. ``MI``).
-        team_b: Second team code/name (e.g. ``CSK``).
-        venue: Venue key/name (e.g. ``wankhede`` or ``Wankhede Stadium``).
+        match_id: CricAPI match identifier; resolves team_a/team_b/venue automatically.
+        team_a: First team code/name (e.g. ``MI``). Required if match_id is absent.
+        team_b: Second team code/name (e.g. ``CSK``). Required if match_id is absent.
+        venue: Venue key/name (e.g. ``wankhede``). Required if match_id is absent.
         strategy: ``"balanced"`` only in Phase 2; future variants reserved.
 
     Returns:
@@ -76,9 +80,18 @@ async def cricket_build_dream11_team(
         data.total_projected_points: fantasy points including C x2 and VC x1.5 boosts.
         meta.estimated: true — projections are model output, not Dream11 oracle.
     """
-    if not team_a.strip() or not team_b.strip():
+    if match_id:
+        try:
+            resolved = await resolve_match(match_id)
+        except NotFoundError as e:
+            return error_envelope(code="NOT_FOUND", message=str(e))
+        team_a = resolved["team_a"]
+        team_b = resolved["team_b"]
+        venue = venue or resolved["venue"]
+
+    if not team_a or not team_a.strip() or not team_b or not team_b.strip():
         return error_envelope(code="INVALID_INPUT", message="team_a and team_b must be non-empty.")
-    if not venue.strip():
+    if not venue or not venue.strip():
         return error_envelope(code="INVALID_INPUT", message="venue must be non-empty.")
 
     try:
@@ -107,20 +120,35 @@ async def cricket_build_dream11_team(
     }
 
 
-async def cricket_captain_recommendation(team_a: str, team_b: str, venue: str) -> dict:
+async def cricket_captain_recommendation(
+    match_id: str | None = None,
+    team_a: str | None = None,
+    team_b: str | None = None,
+    venue: str | None = None,
+) -> dict:
     """Return the top-3 captain candidates ranked by projected points.
 
     Args:
-        team_a: First team code/name.
-        team_b: Second team code/name.
-        venue: Venue key/name.
+        match_id: CricAPI match identifier; resolves team_a/team_b/venue automatically.
+        team_a: First team code/name. Required if match_id is absent.
+        team_b: Second team code/name. Required if match_id is absent.
+        venue: Venue key/name. Required if match_id is absent.
 
     Returns:
         data.candidates: list of 3 dicts with name/role/team/projected_points.
         meta.source: model:captain_score.
         meta.estimated: true.
     """
-    if not team_a.strip() or not team_b.strip() or not venue.strip():
+    if match_id:
+        try:
+            resolved = await resolve_match(match_id)
+        except NotFoundError as e:
+            return error_envelope(code="NOT_FOUND", message=str(e))
+        team_a = resolved["team_a"]
+        team_b = resolved["team_b"]
+        venue = venue or resolved["venue"]
+
+    if not team_a or not team_a.strip() or not team_b or not team_b.strip() or not venue or not venue.strip():
         return error_envelope(code="INVALID_INPUT", message="team_a, team_b, venue must all be non-empty.")
 
     try:
@@ -143,9 +171,10 @@ async def cricket_captain_recommendation(team_a: str, team_b: str, venue: str) -
 
 
 async def cricket_differential_picks(
-    team_a: str,
-    team_b: str,
-    venue: str,
+    match_id: str | None = None,
+    team_a: str | None = None,
+    team_b: str | None = None,
+    venue: str | None = None,
     ownership_threshold: int = 20,
 ) -> dict:
     """Suggest low-ownership picks with positive projected upside.
@@ -155,9 +184,10 @@ async def cricket_differential_picks(
     Live Sports Odds RapidAPI server is wired in a later phase.
 
     Args:
-        team_a: First team code/name.
-        team_b: Second team code/name.
-        venue: Venue key/name.
+        match_id: CricAPI match identifier; resolves team_a/team_b/venue automatically.
+        team_a: First team code/name. Required if match_id is absent.
+        team_b: Second team code/name. Required if match_id is absent.
+        venue: Venue key/name. Required if match_id is absent.
         ownership_threshold: percent ownership cap; affects estimated label.
 
     Returns:
@@ -166,7 +196,16 @@ async def cricket_differential_picks(
         meta.source: model:captain_score (filtered).
         meta.estimated: true.
     """
-    if not team_a.strip() or not team_b.strip() or not venue.strip():
+    if match_id:
+        try:
+            resolved = await resolve_match(match_id)
+        except NotFoundError as e:
+            return error_envelope(code="NOT_FOUND", message=str(e))
+        team_a = resolved["team_a"]
+        team_b = resolved["team_b"]
+        venue = venue or resolved["venue"]
+
+    if not team_a or not team_a.strip() or not team_b or not team_b.strip() or not venue or not venue.strip():
         return error_envelope(code="INVALID_INPUT", message="team_a, team_b, venue must all be non-empty.")
 
     try:

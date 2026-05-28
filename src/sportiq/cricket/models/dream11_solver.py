@@ -6,6 +6,8 @@ the solver returns the optimal squad under Dream11 T20 constraints.
 
 from __future__ import annotations
 
+import warnings
+
 from pulp import (
     COIN_CMD,
     LpBinary,
@@ -75,9 +77,11 @@ def solve(candidates: list[dict], strategy: str = "balanced") -> dict:
     role_bounds = _STRATEGY_ROLE_BOUNDS[strategy]
 
     prob = LpProblem("dream11_xi", LpMaximize)
-    x = [LpVariable(f"x_{i}", cat=LpBinary) for i in range(n)]
-    cap = [LpVariable(f"c_{i}", cat=LpBinary) for i in range(n)]
-    vc = [LpVariable(f"v_{i}", cat=LpBinary) for i in range(n)]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        x = [LpVariable(f"x_{i}", cat=LpBinary) for i in range(n)]
+        cap = [LpVariable(f"c_{i}", cat=LpBinary) for i in range(n)]
+        vc = [LpVariable(f"v_{i}", cat=LpBinary) for i in range(n)]
 
     # Exactly 11 in the XI.
     prob += lpSum(x) == 11, "squad_size"

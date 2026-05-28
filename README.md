@@ -26,6 +26,8 @@ Phase 2 complete — 5 cricket RAW + 5 cricket INTEL tools live, including the `
 
 ### INTEL (Phase 2)
 
+<!-- TODO: Dream11 demo GIF -->
+
 | Tool | What it does |
 | :--- | :--- |
 | `cricket_build_dream11_team` | Optimal Dream11 XI + C/VC under T20 fantasy constraints |
