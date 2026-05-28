@@ -17,13 +17,35 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[cricket-player-form-index]] — 0-100 form score derived from player stats chain.
 - [[cricket-get-pitch-report]] — Pitch-friendliness summary + recommendation for a venue.
 
+### F1
+
+- [[f1-get-sessions]] — Returns F1 sessions for a given year, optionally filtered by country.
+- [[f1-get-drivers]] — Returns the driver list for a given F1 session.
+- [[f1-get-lap-times]] — Returns per-driver lap times with tyre compound data for a session.
+- [[f1-get-standings]] — Returns driver and constructor championship standings for a given F1 season.
+- [[f1-get-race-results]] — Returns race results (finishing positions, points, fastest lap) for a given session.
+- [[f1-get-weather]] — Returns track weather data (temperature, rainfall, wind speed) for a session.
+- [[f1-tyre-degradation]] — Fits a linear tyre-degradation model per compound for a driver in a session.
+- [[f1-undercut-window]] — Determines if an undercut is viable for the attacker vs a target driver.
+- [[f1-head-to-head-pace]] — Compares median lap-time pace between two drivers in the same session.
+- [[f1-weather-strategy-impact]] — Analyzes session weather and returns a compound recommendation.
+- [[f1-predict-pit-strategy]] — **Phase 3 flagship**: predict optimal pit stops + compound sequence using tyre-degradation fits.
+
 ## Models
+
+### Cricket
 
 - [[dream11-scoring]] — T20 fantasy scoring constants + per-component helpers.
 - [[dream11-solver]] — Binary ILP picking the optimal 11 + captain + vice-captain.
 - [[captain-score]] — `expected_points(player, venue, opp, form)` projection used as solver objective.
 - [[form-index]] — 0-100 score blending recent innings with career baseline.
 - [[pitch-report]] — Friendliness profile + recommendation derived from a venue record.
+
+### F1
+
+- [[tyre-degradation-model]] — Linear fit (lap_time = intercept + slope × tyre_age) per compound with outlier filtering.
+- [[undercut-model]] — Pure-arithmetic undercut viability calculator.
+- [[pit-strategy-model]] — Predicts optimal stop laps and compound sequence for the remainder of a race.
 
 ## Chains
 
@@ -37,6 +59,15 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[cricket-player-stats-chain]] — cricapi_player_info → rapidapi_player_stats; 24h TTL.
 - [[cricket-pitch-data-chain]] — static_venue terminator only; 1y TTL (v1 offline-only).
 
+### F1
+
+- [[f1-sessions-chain]] — openf1 → jolpica; 6h TTL.
+- [[f1-laps-chain]] — openf1 → fastf1_local; 1h TTL.
+- [[f1-stints-chain]] — openf1; 1h TTL.
+- [[f1-weather-chain]] — openf1; 10min TTL.
+- [[f1-standings-chain]] — jolpica → fastf1_local; 24h TTL.
+- [[f1-drivers-chain]] — openf1; 24h TTL.
+
 ## Data sources
 
 ### Cricket
@@ -46,6 +77,12 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[cricbuzz-scraper]] — Opt-in scraper (SPORTIQ_ENABLE_CRICBUZZ=1); live scores.
 - [[rapidapi-cricbuzz]] — Paid licensed Cricbuzz mirror; escape hatch; requires RAPIDAPI_KEY; serves player career stats.
 - [[static-seed]] — Local JSON reader; always-on; ships IPL + 4 internationals squads + 14 IPL venues.
+
+### F1
+
+- [[openf1]] — Free public F1 telemetry API; no credentials; endpoints: sessions, drivers, laps, stints, weather.
+- [[jolpica]] — Free public Ergast successor; no credentials; historical standings and race results.
+- [[fastf1]] — Optional Python library for offline F1 data; lazy-imported; install with `pip install sportiq-mcp[f1]`.
 
 ## Findings
 

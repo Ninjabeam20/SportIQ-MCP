@@ -4,6 +4,9 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete`.
 
+## [2026-05-28] phase-complete | Phase 3 — F1 RAW + INTEL flagship #2
+6 F1 RAW + 5 F1 INTEL tools (including f1_predict_pit_strategy flagship). 3 models (tyre_deg, undercut, pit_strategy). 6 chains (sessions, laps, stints, weather, standings, drivers). 3 adapter sources (openf1, jolpica, fastf1_local lazy-imported). 22 total tools. Tyre constants in data/tyres.py; points in data/points.py. Phase 2.1 cleanup also landed (match_id resolver, Dream11 skill, PuLP migration, doc polish).
+
 ## [2026-05-28] phase-complete | Phase 2 — Cricket INTEL flagship #1
 5 INTEL tools (cricket_build_dream11_team, cricket_captain_recommendation, cricket_differential_picks, cricket_player_form_index, cricket_get_pitch_report). 5 new models (T20Scoring data + dream11_solver PuLP ILP via COIN_CMD/system cbc, captain_score projection, form_index 0-100, pitch_report). 2 new chains (player_stats: cricapi→rapidapi; pitch_data: static_venue terminator). 2 new adapter classes (CricAPIPlayerInfoAdapter, RapidAPICricbuzzPlayerStatsAdapter, plus CricAPIPlayerSearchAdapter reserved). Squad chain shape normaliser unified cricapi vs static_seed output. squads.json expanded with 4 internationals (IND, AUS, ENG, NZ). venues.json seeded with 14 IPL venues. 118 tests (58 new). Ruff clean. macOS arm64: requires `brew install cbc`.
 

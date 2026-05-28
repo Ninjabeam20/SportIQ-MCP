@@ -10,7 +10,7 @@ Three flagship intelligence tools sit on top of raw-data primitives:
 
 ## Status
 
-Phase 2 complete — 5 cricket RAW + 5 cricket INTEL tools live, including the `cricket_build_dream11_team` PuLP ILP flagship. See `plan.md` for the full build plan and `phase2.md` for the Phase 2 implementation log.
+Phase 3 complete — 5 cricket RAW + 5 cricket INTEL + 6 F1 RAW + 5 F1 INTEL tools live (22 total). Flagships: `cricket_build_dream11_team` (PuLP ILP) and `f1_predict_pit_strategy` (tyre-degradation model). See `plan.md` for the full build plan.
 
 ## Cricket tools
 
@@ -37,6 +37,31 @@ Phase 2 complete — 5 cricket RAW + 5 cricket INTEL tools live, including the `
 | `cricket_get_pitch_report` | Pitch friendliness + recommendation for a venue |
 
 The Dream11 solver uses CBC via PuLP. On macOS arm64 install with `brew install cbc`; the binary bundled with PuLP is x86-only and won't run on Apple Silicon.
+
+## F1 Tools
+
+### RAW (Phase 3)
+
+| Tool | Description |
+|------|-------------|
+| `f1_get_sessions` | List F1 race/qualifying/practice sessions by year |
+| `f1_get_drivers` | Driver list for a session |
+| `f1_get_lap_times` | Per-driver lap times with compound data |
+| `f1_get_standings` | Driver + constructor championship standings |
+| `f1_get_race_results` | Race results for a session |
+| `f1_get_weather` | Track weather data (temp, rainfall, wind) |
+
+### INTEL (Phase 3)
+
+| Tool | Type | Description |
+|------|------|-------------|
+| `f1_tyre_degradation` | INTEL | Fit linear tyre-degradation model per compound |
+| `f1_undercut_window` | INTEL | Is an undercut viable vs a target driver? |
+| `f1_head_to_head_pace` | INTEL | Lap-time pace comparison between two drivers |
+| `f1_weather_strategy_impact` | INTEL | Weather-based compound recommendation |
+| `f1_predict_pit_strategy` | **FLAGSHIP** | Predict optimal pit stops + compound sequence |
+
+Data sources: [OpenF1](https://openf1.org) (free, keyless) → [Jolpica](https://jolpi.ca) → `fastf1` (optional, offline, `pip install sportiq-mcp[f1]`).
 
 ### Cricket adapter defaults
 

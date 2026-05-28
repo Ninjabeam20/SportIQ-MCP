@@ -1,0 +1,13 @@
+{
+  "MRData": {
+    "StandingsTable": {
+      "StandingsLists": [
+        {
+          "DriverStandings": [
+            {"position": "1", "points": "136", "Driver": {"driverId": "verstappen", "givenName": "Max", "familyName": "Verstappen"}}
+          ]
+        }
+      ]
+    }
+  }
+}
