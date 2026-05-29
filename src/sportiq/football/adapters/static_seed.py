@@ -28,6 +28,10 @@ def load_elo_seed() -> dict:
     return _load("elo_seed.json")
 
 
+def load_football_squads() -> dict:
+    return _load("football_squads.json")
+
+
 class StaticSeedGroupsAdapter:
     """Terminator for the groups chain — the canonical 2026 draw + Elo ratings."""
 
@@ -80,8 +84,9 @@ class StaticSeedFixturesAdapter:
 
 
 class StaticSeedSquadAdapter:
-    """Squad terminator. No rosters are bundled (a documented follow-up), so it
-    returns an empty-but-valid squad with team metadata rather than failing."""
+    """Squad terminator. Bundles marquee WC rosters in ``football_squads.json``;
+    teams without a seeded roster return an empty-but-valid squad with team
+    metadata rather than failing (preserves the NOT_FOUND terminator invariant)."""
 
     name = "static_seed"
     budget = None
@@ -90,8 +95,9 @@ class StaticSeedSquadAdapter:
         wc = load_wc2026()
         code = team.upper()
         meta = wc.get("teams", {}).get(code, {})
+        squads = load_football_squads()
         return {
-            "squad": [],
+            "squad": squads.get(code, []),
             "team": code,
             "team_name": meta.get("name", team),
             "source": "static_seed",

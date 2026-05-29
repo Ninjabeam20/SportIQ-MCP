@@ -4,6 +4,15 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete`.
 
+## [2026-05-30] decision | step8 Part 3 — squad gap-fills (cricket + football seeds)
+**3.1** `cricket/data/squads.json`: added 5 international squads (SA, PAK, SL, WI, BAN), 15 players each, matching
+the existing `{name, role, credits}` shape — `cricket_get_squad` + Dream11 now work offline for them (the new
+`series_id` guard from Part 1 makes the chain fall to the seed cleanly). **3.2** football squad terminator was
+empty-but-valid for everyone; added `football/data/football_squads.json` with 8 marquee WC rosters (ARG, BRA,
+FRA, ENG, ESP, GER, POR, NED), 15 players each `{name, position}`, wired via `load_football_squads()`.
+Unseeded teams still return the empty-but-valid shape (NOT_FOUND invariant intact). **3.3** (match_id→Odds-API
+event resolver) deferred — explicit "only if time" stretch. 2 new tests (287 total), ruff clean.
+
 ## [2026-05-30] tool-added | football_find_value_bets (step8 Part 2)
 New INTEL flagship: de-vigs live bookmaker 1X2 odds and compares to the server's own match-outcome
 probabilities (the same Elo→Poisson path `football_match_predictor` uses) to surface +EV "value" bets with
