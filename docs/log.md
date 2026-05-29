@@ -4,6 +4,21 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete`.
 
+## [2026-05-30] finding-filed | step8 Part 1 — live testing pass against real upstreams
+Built `scripts/live_check.py` (standalone, never in CI) and ran it with live keys. **35/35 tools enumerate**
+in the MCP schema (Pass C), all typed + described. **F1 (keyless):** 11/11 healthy; `f1_predict_pit_strategy`
+inferred Bahrain `total_laps=57` (validates step7 inference + step8 `lap_number>0` guard); undercut/h2h hit a
+benign transient OpenF1 cold-burst that self-recovers. **Football:** off-season empties for
+fixtures/standings/scorers (WC 2026 not started — expected), squad empty-but-valid, all 5 sim flagships OK,
+odds returns 72 live events. **Cricket — two real bugs found + fixed:** 🔴 `CricAPIScorecard/PointsTable/PlayerInfo`
+adapters returned the raw CricAPI envelope, **leaking the request `apikey`** into tool output and treating
+`status:"failure"` bodies as empty successes; 🟠 `CricAPISquadAdapter` with `series_id=None` "succeeded" empty
+and cached it, **shadowing the 11-player static seed**. Fix: `_unwrap()` strips the envelope + raises
+`NotFoundError` on non-success; squad raises without a `series_id` so the chain falls to `static_seed`;
+scorecard/points-table tools now emit `NOT_FOUND`. Filed [[cricapi-envelope-leak]] +
+`docs/raw/2026-05-30-step8-live-findings.md`. 4 new tests (273 total), ruff clean. scorecard/points-table now
+return honest `ALL_SOURCES_FAILED` (CricAPI free tier excludes those endpoints) — not a bug.
+
 ## [2026-05-30] decision | step8 Part 0 — derisk before live testing
 **0.1** `core/http.get_json` no longer retries 4xx: a custom `_should_retry` predicate retries only `httpx.TransportError` and `HTTPStatusError` with `status_code >= 500`. A bad-auth/quota (401/403/404/429) response now costs **one** upstream call, not three — aligns code to the docstring contract before the quota-spending live pass. **0.2a** `f1_predict_pit_strategy` `total_laps` inference filters `lap_number > 0` (guards a stray 0/None lap from collapsing the race length). **0.2b** two squad-terminator tests (`cricket`/`football_get_squad` with key unset) lock the NOT_FOUND invariant: unknown team → no raise, `meta.source == static_seed`. **Config blocker found + fixed:** the committed `.env.example` shipped inline `# comments` trailing each `VAR=value`; the built-in pydantic-settings dotenv parser (no python-dotenv dep) reads the comment as the value, and a blank `SPORTIQ_ENABLE_NDTV=` is an empty string that fails `bool` parsing → server/tests wouldn't boot. Fixed: comments moved to own lines in `.env.example`, plus a `field_validator` coercing blank scraper toggles → `False`. 7 new tests (269 total), ruff clean.
 

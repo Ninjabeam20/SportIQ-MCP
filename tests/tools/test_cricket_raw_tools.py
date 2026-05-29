@@ -173,3 +173,23 @@ async def test_cricket_get_squad_unknown_team_returns_envelope(monkeypatch):
     response = await tools.cricket_get_squad("Nowhere United XI")
     assert "error" not in response
     assert response["meta"]["source"] == "static_seed"
+
+
+async def test_get_scorecard_not_found_returns_envelope():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.cricket import tools
+
+    with patch("sportiq.cricket.tools.scorecard_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(side_effect=NotFoundError("scorecard not found"))
+        response = await tools.cricket_get_scorecard("missing-id")
+    assert response["error"]["code"] == "NOT_FOUND"
+
+
+async def test_get_points_table_not_found_returns_envelope():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.cricket import tools
+
+    with patch("sportiq.cricket.tools.standings_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(side_effect=NotFoundError("series not found"))
+        response = await tools.cricket_get_points_table("missing-series")
+    assert response["error"]["code"] == "NOT_FOUND"

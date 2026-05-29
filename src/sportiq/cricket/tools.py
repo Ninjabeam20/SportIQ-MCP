@@ -10,7 +10,7 @@ from ``server.py``; we avoid importing ``mcp`` at module load.
 
 from __future__ import annotations
 
-from sportiq.core.errors import AllSourcesFailedError
+from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.tool_response import error_envelope, tool_response
 from sportiq.cricket.chains import (
     fixtures_chain,
@@ -66,6 +66,11 @@ async def cricket_get_scorecard(match_id: str) -> dict:
         return error_envelope(code="INVALID_INPUT", message="match_id must not be empty.")
     try:
         result = await scorecard_chain.fetch(match_id=match_id.strip())
+    except NotFoundError:
+        return error_envelope(
+            code="NOT_FOUND",
+            message=f"No scorecard available for match {match_id!r}.",
+        )
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
@@ -89,6 +94,11 @@ async def cricket_get_points_table(series_id: str) -> dict:
         return error_envelope(code="INVALID_INPUT", message="series_id must not be empty.")
     try:
         result = await standings_chain.fetch(series_id=series_id.strip())
+    except NotFoundError:
+        return error_envelope(
+            code="NOT_FOUND",
+            message=f"No points table available for series {series_id!r}.",
+        )
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",

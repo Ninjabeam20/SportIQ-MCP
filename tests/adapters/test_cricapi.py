@@ -9,7 +9,7 @@ import pytest
 import respx
 from httpx import Response
 
-from sportiq.core.errors import MissingCredentialsError
+from sportiq.core.errors import MissingCredentialsError, NotFoundError
 from sportiq.cricket.adapters.cricapi import (
     CricAPILiveMatchesAdapter,
     CricAPIPlayerInfoAdapter,
@@ -95,6 +95,15 @@ async def test_squad_adapter_filters_by_team():
     assert all(p["team"] == "Mumbai Indians" for p in result["players"])
 
 
+async def test_squad_adapter_raises_without_series_id():
+    """No series_id → raise NotFoundError so the chain falls through to the
+    static_seed terminator, rather than querying CricAPI with id=None and
+    caching the empty failure result (which shadowed the seed roster)."""
+    adapter = CricAPISquadAdapter()
+    with pytest.raises(NotFoundError):
+        await adapter.fetch(series_id=None, team="MI")
+
+
 @respx.mock
 async def test_scorecard_adapter_fetches_by_id():
     fixture = _load("match_scorecard.json")
@@ -103,8 +112,22 @@ async def test_scorecard_adapter_fetches_by_id():
     )
     adapter = CricAPIScorecardAdapter()
     result = await adapter.fetch(match_id="abc123")
-    assert result["data"]["id"] == "abc123"
-    assert result["status"] == "success"
+    # Unwrapped to inner data; the request apikey never reaches tool output.
+    assert result["id"] == "abc123"
+    assert "apikey" not in result
+
+
+@respx.mock
+async def test_scorecard_adapter_raises_not_found_on_failure_envelope():
+    """A CricAPI failure envelope (status != success) must raise NotFoundError —
+    never return the raw body, which echoes the request apikey."""
+    fixture = _load("match_scorecard_failure.json")
+    respx.get("https://api.cricapi.com/v1/match_scorecard").mock(
+        return_value=Response(200, json=fixture)
+    )
+    adapter = CricAPIScorecardAdapter()
+    with pytest.raises(NotFoundError):
+        await adapter.fetch(match_id="missing-id")
 
 
 @respx.mock
@@ -115,7 +138,8 @@ async def test_points_table_adapter_parses_standings():
     )
     adapter = CricAPIPointsTableAdapter()
     result = await adapter.fetch(series_id="ipl2026")
-    assert result["data"]["pointsTable"][0]["team"] == "CSK"
+    assert result["pointsTable"][0]["team"] == "CSK"
+    assert "apikey" not in result
 
 
 async def test_live_matches_adapter_raises_when_key_missing(monkeypatch):
@@ -139,10 +163,11 @@ async def test_player_info_adapter_returns_profile_and_stats():
     )
     adapter = CricAPIPlayerInfoAdapter()
     result = await adapter.fetch(player_id="p_kohli_001")
-    assert result["data"]["id"] == "p_kohli_001"
-    assert result["data"]["name"] == "Virat Kohli"
+    assert result["id"] == "p_kohli_001"
+    assert result["name"] == "Virat Kohli"
+    assert "apikey" not in result
     t20i_runs = next(
-        s for s in result["data"]["stats"]
+        s for s in result["stats"]
         if s["matchtype"] == "t20i" and s["stat"] == "Runs"
     )
     assert t20i_runs["value"] == "4008"

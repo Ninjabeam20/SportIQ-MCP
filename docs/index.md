@@ -130,7 +130,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 ## Findings
 
-_(none yet — file via `/project:file-finding` when a chat answer is worth keeping.)_
+- [[cricapi-envelope-leak]] — CricAPI adapters leaked the request apikey and treated failure responses as empty successes (step8 live pass); fixed via `_unwrap` + `NotFoundError`.
 
 ## Decisions (ADRs)
 

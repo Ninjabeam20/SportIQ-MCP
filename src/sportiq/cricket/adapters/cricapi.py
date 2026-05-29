@@ -7,7 +7,7 @@ is absent so the chain walks past this adapter silently.
 from __future__ import annotations
 
 from sportiq.config import settings
-from sportiq.core.errors import MissingCredentialsError
+from sportiq.core.errors import MissingCredentialsError, NotFoundError
 from sportiq.core.http import get_json
 from sportiq.core.logging import get_logger
 from sportiq.core.ratelimit import Budget
@@ -25,6 +25,21 @@ def _key() -> str:
     if not settings.cricapi_key:
         raise MissingCredentialsError("CRICAPI_KEY is not set")
     return settings.cricapi_key
+
+
+def _unwrap(resp: dict) -> dict:
+    """Return CricAPI's inner ``data``, raising on a non-success envelope.
+
+    CricAPI wraps every response as ``{apikey, status, data?, reason?}``. On
+    failure (``status != "success"``) it omits ``data`` and echoes the request
+    ``apikey`` — so returning the raw response both leaks the key and lets a
+    "not found" / error response masquerade as a successful empty result. This
+    strips the envelope (apikey never reaches tool output) and raises
+    ``NotFoundError`` on failure so the chain falls through to the next adapter.
+    """
+    if resp.get("status") != "success":
+        raise NotFoundError(resp.get("reason") or "CricAPI request failed")
+    return resp.get("data", {})
 
 
 class CricAPILiveMatchesAdapter:
@@ -52,7 +67,8 @@ class CricAPIScorecardAdapter:
 
     async def fetch(self, match_id: str, **kwargs) -> dict:
         k = _key()
-        return await get_json(f"{_BASE}/match_scorecard", params={"apikey": k, "id": match_id})
+        raw = await get_json(f"{_BASE}/match_scorecard", params={"apikey": k, "id": match_id})
+        return _unwrap(raw)
 
     async def healthcheck(self) -> bool:
         return bool(settings.cricapi_key)
@@ -64,7 +80,8 @@ class CricAPIPointsTableAdapter:
 
     async def fetch(self, series_id: str, **kwargs) -> dict:
         k = _key()
-        return await get_json(f"{_BASE}/series_points_table", params={"apikey": k, "id": series_id})
+        raw = await get_json(f"{_BASE}/series_points_table", params={"apikey": k, "id": series_id})
+        return _unwrap(raw)
 
     async def healthcheck(self) -> bool:
         return bool(settings.cricapi_key)
@@ -94,9 +111,10 @@ class CricAPIPlayerInfoAdapter:
 
     async def fetch(self, player_id: str, **kwargs) -> dict:
         k = _key()
-        return await get_json(
+        raw = await get_json(
             f"{_BASE}/players_info", params={"apikey": k, "id": player_id}
         )
+        return _unwrap(raw)
 
     async def healthcheck(self) -> bool:
         return bool(settings.cricapi_key)
@@ -123,13 +141,22 @@ class CricAPISquadAdapter:
     name = "cricapi"
     budget = _CRICAPI_BUDGET
 
-    async def fetch(self, series_id: str, team: str | None = None, **kwargs) -> dict:
+    async def fetch(self, series_id: str | None = None, team: str | None = None, **kwargs) -> dict:
         from sportiq.cricket.adapters._normalize import normalise_squad_payload
+
+        # CricAPI squad is series-scoped. Without a series_id there's nothing to
+        # query — raise so the chain falls through to the static_seed terminator
+        # (which serves the team roster offline) rather than burning a call and
+        # caching an empty result that shadows the seed.
+        if not series_id:
+            raise NotFoundError("CricAPI squad requires a series_id")
 
         k = _key()
         raw = await get_json(
             f"{_BASE}/series_squad", params={"apikey": k, "id": series_id}
         )
+        if raw.get("status") != "success":
+            raise NotFoundError(raw.get("reason") or "CricAPI squad lookup failed")
         return normalise_squad_payload(raw, source="cricapi", team=team)
 
     async def healthcheck(self) -> bool:

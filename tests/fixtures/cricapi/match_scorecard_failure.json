@@ -1,0 +1,5 @@
+{
+  "apikey": "REDACTED-TEST-KEY",
+  "status": "failure",
+  "reason": "ERR: Scorecard 3cd4df43-ad64-42e2-9cf4-a1d8477176e2 not found"
+}
