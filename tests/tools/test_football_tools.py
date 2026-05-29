@@ -174,6 +174,78 @@ async def test_knockout_path_returns_team_row():
     assert 0.0 <= result["data"]["win"] <= 1.0
 
 
+def _odds_event(home_name, away_name, *, home, draw, away, book="TestBook"):
+    return {
+        "event_id": "evt1",
+        "home": home_name,
+        "away": away_name,
+        "commence_time": "2026-06-12T00:00:00Z",
+        "bookmakers": [{"name": book, "home": home, "draw": draw, "away": away}],
+    }
+
+
+async def test_find_value_bets_surfaces_positive_edge():
+    from sportiq.football import intel_tools
+
+    # Generous home price (10.0 -> implied 0.1) vs a favoured home side -> value.
+    event = _odds_event("Argentina", "Brazil", home=10.0, draw=4.0, away=1.4)
+    with (
+        patch("sportiq.football.intel_tools.football_odds_chain") as mock_odds,
+        patch("sportiq.football.intel_tools.football_groups_chain") as mock_groups,
+    ):
+        mock_odds.fetch = AsyncMock(return_value=_fr({"events": [event]}, source="theodds"))
+        mock_groups.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        result = await intel_tools.football_find_value_bets(min_edge=0.05)
+
+    data = result["data"]
+    assert data["events_analysed"] == 1
+    assert any(p["outcome"] == "home" for p in data["value_bets"])
+    home = next(p for p in data["value_bets"] if p["outcome"] == "home")
+    assert home["edge"] >= 0.05
+    assert home["market_odds"] == 10.0
+    assert home["bookmaker"] == "TestBook"
+    assert result["meta"]["estimated"] is True
+
+
+async def test_find_value_bets_empty_when_edge_below_threshold():
+    from sportiq.football import intel_tools
+
+    # An unreachable edge threshold -> the aggregation surfaces no picks.
+    event = _odds_event("Argentina", "Brazil", home=10.0, draw=4.0, away=1.4)
+    with (
+        patch("sportiq.football.intel_tools.football_odds_chain") as mock_odds,
+        patch("sportiq.football.intel_tools.football_groups_chain") as mock_groups,
+    ):
+        mock_odds.fetch = AsyncMock(return_value=_fr({"events": [event]}, source="theodds"))
+        mock_groups.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        result = await intel_tools.football_find_value_bets(min_edge=0.99)
+    assert result["data"]["value_bets"] == []
+    assert result["data"]["events_analysed"] == 1
+
+
+async def test_find_value_bets_propagates_odds_staleness():
+    from sportiq.football import intel_tools
+
+    event = _odds_event("Argentina", "Brazil", home=10.0, draw=4.0, away=1.4)
+    with (
+        patch("sportiq.football.intel_tools.football_odds_chain") as mock_odds,
+        patch("sportiq.football.intel_tools.football_groups_chain") as mock_groups,
+    ):
+        mock_odds.fetch = AsyncMock(
+            return_value=_fr({"events": [event]}, source="cache:stale", is_stale=True)
+        )
+        mock_groups.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        result = await intel_tools.football_find_value_bets(min_edge=0.05)
+    assert result["meta"]["is_stale"] is True
+
+
+async def test_find_value_bets_invalid_min_edge():
+    from sportiq.football import intel_tools
+
+    result = await intel_tools.football_find_value_bets(min_edge=1.5)
+    assert result["error"]["code"] == "INVALID_INPUT"
+
+
 async def test_football_get_squad_unknown_team_returns_envelope(monkeypatch):
     """Unknown team must NOT raise: with no key the api_football adapter is
     skipped and the static_seed terminator serves an empty-but-valid squad.

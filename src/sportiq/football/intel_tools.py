@@ -8,10 +8,11 @@ from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError
 from sportiq.core.tool_response import error_envelope, staleness_meta
-from sportiq.football.chains import football_groups_chain
+from sportiq.football.chains import football_groups_chain, football_odds_chain
 from sportiq.football.models import poisson_xg
 from sportiq.football.models.bracket_sim import simulate_tournament
 from sportiq.football.models.group_sim import simulate_group as _simulate_group
+from sportiq.football.models.value_bet import find_value
 
 _MAX_ITERATIONS = 20000
 _MIN_ITERATIONS = 100
@@ -200,10 +201,101 @@ async def football_knockout_path(team: str, iterations: int = 10000, seed: int |
     }
 
 
+async def football_find_value_bets(team: str | None = None, min_edge: float = 0.05) -> dict:
+    """Find +EV ("value") bets: where the model's win probability beats the market.
+
+    De-vigs each bookmaker's 1X2 decimal odds (removes the margin so implied
+    probabilities sum to 1) and compares them to this server's own match-outcome
+    probabilities — the same Elo/Poisson path ``football_match_predictor`` uses.
+    Where the model probability exceeds the de-vigged market probability by at
+    least ``min_edge``, the outcome is flagged as value, with its edge and the
+    model's fair odds.
+
+    Args:
+        team: Optional team name to filter events (case-insensitive substring,
+            matched against both sides). Omit to scan every WC 2026 odds event.
+        min_edge: Minimum edge (model_prob - devigged_market_prob), 0..1.
+            Default 0.05 (5 percentage points).
+
+    Returns:
+        data.value_bets: list of {event_id, home, away, outcome, model_prob,
+            fair_odds, market_odds, edge, bookmaker}, sorted by edge descending.
+        data.events_analysed: events with both teams rated (model-comparable).
+        meta.estimated: true. meta.is_stale reflects the odds freshness.
+    """
+    if not 0.0 <= min_edge <= 1.0:
+        return error_envelope(code="INVALID_INPUT", message="min_edge must be in [0, 1].")
+
+    try:
+        odds_result = await football_odds_chain.fetch()
+    except AllSourcesFailedError as e:
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message="No football odds source is available right now.",
+            sources_tried=e.attempts,
+            suggestion="Set THEODDS_KEY to enable live odds.",
+        )
+
+    try:
+        groups_result = await _groups_payload()
+    except AllSourcesFailedError as e:
+        return error_envelope(code="ALL_SOURCES_FAILED", message="Could not load ratings.", sources_tried=e.attempts)
+
+    ratings = groups_result.value.get("ratings", {})
+    # Odds carry full team names; ratings are keyed by code. Map name -> code from
+    # the same draw payload (reusing the seed, not re-deriving any ratings/xG).
+    name_to_code = {
+        meta.get("name", "").lower(): code
+        for code, meta in groups_result.value.get("teams", {}).items()
+    }
+
+    events = odds_result.value.get("events", [])
+    if team and team.strip():
+        q = team.strip().lower()
+        events = [e for e in events if q in e.get("home", "").lower() or q in e.get("away", "").lower()]
+
+    value_bets: list[dict] = []
+    analysed = 0
+    for ev in events:
+        home_code = name_to_code.get(ev.get("home", "").lower())
+        away_code = name_to_code.get(ev.get("away", "").lower())
+        if not home_code or not away_code or home_code not in ratings or away_code not in ratings:
+            continue
+        analysed += 1
+        # Neutral venue — World Cup default, matching football_match_predictor.
+        lam_h, lam_a = poisson_xg.lambdas_from_elo(ratings[home_code], ratings[away_code], 0.0)
+        model_probs = poisson_xg.outcome_probabilities(lam_h, lam_a)
+        for bookmaker in ev.get("bookmakers", []):
+            for pick in find_value(model_probs, bookmaker, min_edge):
+                value_bets.append(
+                    {
+                        "event_id": ev.get("event_id"),
+                        "home": ev.get("home"),
+                        "away": ev.get("away"),
+                        **pick,
+                    }
+                )
+
+    value_bets.sort(key=lambda p: p["edge"], reverse=True)
+    return {
+        "data": {
+            "value_bets": value_bets,
+            "min_edge": min_edge,
+            "events_analysed": analysed,
+        },
+        "meta": {
+            "source": odds_result.source,
+            "estimated": True,
+            **staleness_meta(odds_result),
+        },
+    }
+
+
 def register_football_intel_tools(mcp) -> None:
-    """Register the five football INTEL tools on the supplied FastMCP instance."""
+    """Register the football INTEL tools on the supplied FastMCP instance."""
     mcp.tool()(football_xg_model)
     mcp.tool()(football_match_predictor)
     mcp.tool()(football_simulate_group)
     mcp.tool()(football_simulate_bracket)
     mcp.tool()(football_knockout_path)
+    mcp.tool()(football_find_value_bets)

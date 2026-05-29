@@ -46,6 +46,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[football-simulate-bracket]] — **Phase 4 flagship**: Monte Carlo the full 48-team WC into per-team round + title probabilities.
 - [[football-knockout-path]] — Round-by-round survival probabilities for one team.
 - [[football-get-odds]] — Live bookmaker h2h odds for WC 2026 matches; optional team-name filter.
+- [[football-find-value-bets]] — +EV "value" bets: de-vigged bookmaker odds vs the match model's probabilities (edge %).
 
 ## Models
 
@@ -69,6 +70,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[elo]] — Elo win-expectation + rating update; seeds the Poisson engine and the knockout shootout.
 - [[group-sim]] — 4-team round-robin Monte Carlo with FIFA tiebreakers; p_advance sums to 2.
 - [[bracket-sim]] — Full 48-team tournament Monte Carlo (groups + best-thirds + 32-team knockout).
+- [[value-bet]] — De-vig bookmaker odds (multiplicative) and flag outcomes where model_prob beats market by an edge.
 
 ## Chains
 

@@ -4,6 +4,17 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete`.
 
+## [2026-05-30] tool-added | football_find_value_bets (step8 Part 2)
+New INTEL flagship: de-vigs live bookmaker 1X2 odds and compares to the server's own match-outcome
+probabilities (the same Elo→Poisson path `football_match_predictor` uses) to surface +EV "value" bets with
+edge %. Pure reuse — no new data source. New model `football/models/value_bet.py` (`implied_prob`, `devig`
+multiplicative, `find_value`); tool `football_find_value_bets(team=None, min_edge=0.05)` reuses
+`football_odds_chain` + `football_groups_chain`, maps odds team-names→rating codes via the draw's `teams`
+block (events with an unrated side are skipped), runs `find_value` per bookmaker, sorts by edge desc, and
+propagates **odds** staleness to `meta`. Validates `min_edge ∈ [0,1]` → INVALID_INPUT. **36 tools.** Live
+smoke: 38/72 events analysed, 367 picks. 12 new tests (285 total: 8 value-bet unit + 4 tool), ruff clean.
+Wiki: [[value-bet]] + [[football-find-value-bets]].
+
 ## [2026-05-30] finding-filed | step8 Part 1 — live testing pass against real upstreams
 Built `scripts/live_check.py` (standalone, never in CI) and ran it with live keys. **35/35 tools enumerate**
 in the MCP schema (Pass C), all typed + described. **F1 (keyless):** 11/11 healthy; `f1_predict_pit_strategy`
