@@ -100,6 +100,10 @@ RAPIDAPI_KEY=your_key         # Licensed Cricbuzz mirror via RapidAPI
 
 Copy `.env.example` to `.env` and fill in keys.
 
+### RapidAPI Hub MCP servers
+
+`.mcp.json` also wires three external [RapidAPI Hub](https://rapidapi.com) MCP servers (Sportspage Feeds, Football Prediction, Live Sports Odds) via `mcp-remote`. Because `.mcp.json` is committed, the API key is a placeholder — replace each `<RAPIDAPI_KEY>` in `.mcp.json` with your real RapidAPI key locally to enable them. They run as separate MCP servers and do not affect the in-process `sportiq` tools.
+
 ## Install
 
 ```bash
