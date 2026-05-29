@@ -33,7 +33,9 @@ class FallbackChain(Generic[T]):
 1. Try fresh cache. Hit → return.
 2. Walk adapters in declared order. First success → cache write + return.
 3. All adapters fail. Try stale cache (within `stale_ttl`). Hit → return with `is_stale=True`.
-4. No stale cache available → raise `AllSourcesFailedError`. The tool wraps this into the error envelope.
+4. No stale cache available → raise. If **every** adapter that ran raised `NotFoundError` (none skipped for budget, none failed another way), the entity genuinely doesn't exist → raise `NotFoundError` so the tool's `except NotFoundError` yields a `NOT_FOUND` envelope. Otherwise raise `AllSourcesFailedError`.
+
+Budget tokens are **consumed only after a successful fetch** (peek before, consume after) — a failed or missing-key call burns no quota.
 
 ## Tool integration
 

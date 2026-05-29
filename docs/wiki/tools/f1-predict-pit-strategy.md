@@ -17,16 +17,16 @@ related: [[f1-laps-chain]], [[f1-stints-chain]], [[f1-weather-chain]], [[pit-str
 async def f1_predict_pit_strategy(
     session_key: int,
     driver_number: int,
-    current_lap: int,
-    total_laps: int,
+    current_lap: int = 1,
+    total_laps: int | None = None,
 ) -> dict
 ```
 
 ## Args
 - `session_key` — OpenF1 session key (obtain from `f1_get_sessions`). Must point to a Race session.
 - `driver_number` — Driver number (e.g. 1 for Verstappen).
-- `current_lap` — Current race lap at prediction time.
-- `total_laps` — Total race laps (available from session metadata).
+- `current_lap` — Current race lap at prediction time (default 1).
+- `total_laps` — Total race laps. If omitted, inferred from the highest observed `lap_number` in the fetched laps (correct for Monaco 78 / Spa 44), falling back to 57 when no laps are available. An explicit value always wins. The resolved value is echoed in `meta.total_laps`.
 
 ## Success response
 

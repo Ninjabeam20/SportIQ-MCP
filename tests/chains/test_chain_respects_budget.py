@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from sportiq.core.fallback import FallbackChain
-from sportiq.core.ratelimit import Budget
+from sportiq.core.ratelimit import Budget, remaining
 
 
 class _BudgetedOK:
@@ -23,6 +23,17 @@ class _FreeFallback:
 
     async def fetch(self, **kwargs) -> dict:
         return {"served_by": "fallback"}
+
+    async def healthcheck(self) -> bool:
+        return True
+
+
+class _BudgetedBoom:
+    name = "budgeted_boom"
+    budget = Budget(source="chain_consume_test", per_day=5)
+
+    async def fetch(self, **kwargs) -> dict:
+        raise RuntimeError("boom")
 
     async def healthcheck(self) -> bool:
         return True
@@ -50,3 +61,19 @@ async def test_chain_skips_budgeted_adapter_when_quota_exhausted():
     assert len(skipped) == 1
     assert skipped[0]["reason"] == "rate_limited"
     assert skipped[0]["name"] == "budgeted"
+
+
+async def test_chain_does_not_consume_budget_on_failed_fetch():
+    chain = FallbackChain(
+        name="cricket:consume_test",
+        adapters=[_BudgetedBoom(), _FreeFallback()],
+        cache_key_fn=_key,
+        fresh_ttl=0,
+        stale_ttl=0,
+    )
+
+    result = await chain.fetch(q="x")
+    assert result.source == "fallback"  # budgeted adapter raised; fell through
+
+    rem = await remaining(Budget(source="chain_consume_test", per_day=5))
+    assert rem["per_day"] == 5  # failed fetch burned no token

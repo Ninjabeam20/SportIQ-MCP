@@ -198,6 +198,29 @@ async def test_f1_predict_pit_strategy_returns_stop_laps():
     assert isinstance(result["data"]["stop_laps"], list)
 
 
+async def test_f1_predict_pit_strategy_infers_total_laps_from_lap_numbers():
+    from sportiq.f1 import intel_tools
+
+    # 78 laps observed (Monaco length). Caller omits total_laps, so it should be
+    # inferred as 78 rather than the old hard-coded 57.
+    laps_p = {
+        "laps": [
+            {"lap_number": i, "lap_duration": 80.0 + 0.05 * i, "compound": "SOFT", "tyre_life": i}
+            for i in range(1, 79)
+        ]
+    }
+    with (
+        patch("sportiq.f1.intel_tools.f1_laps_chain") as mock_laps,
+        patch("sportiq.f1.intel_tools.f1_stints_chain") as mock_stints,
+        patch("sportiq.f1.intel_tools.f1_weather_chain") as mock_weather,
+    ):
+        mock_laps.fetch = AsyncMock(return_value=_fr(laps_p))
+        mock_stints.fetch = AsyncMock(return_value=_fr({"stints": []}))
+        mock_weather.fetch = AsyncMock(return_value=_fr({"weather": []}))
+        result = await intel_tools.f1_predict_pit_strategy(session_key=9877, driver_number=1)
+    assert result["meta"]["total_laps"] == 78
+
+
 async def test_f1_predict_pit_strategy_all_sources_failed():
     from sportiq.f1 import intel_tools
 

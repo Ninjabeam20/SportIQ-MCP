@@ -245,7 +245,7 @@ async def f1_predict_pit_strategy(
     session_key: int,
     driver_number: int,
     current_lap: int = 1,
-    total_laps: int = 57,
+    total_laps: int | None = None,
 ) -> dict:
     """Predict the optimal pit-stop strategy for a driver in an F1 race session.
 
@@ -253,13 +253,17 @@ async def f1_predict_pit_strategy(
         session_key: OpenF1 session identifier for a recorded race.
         driver_number: Driver's race number (e.g. 1 for Verstappen).
         current_lap: Current lap to project from (default 1 = full race ahead).
-        total_laps: Total race laps (default 57; pulled from session metadata if available).
+        total_laps: Total race laps. If omitted, inferred from the highest
+            observed lap_number in the fetched laps (correct for Monaco 78 /
+            Spa 44), falling back to 57 when no laps are available. An explicit
+            value always wins.
 
     Returns:
         data.stop_laps: recommended pit laps.
         data.compound_sequence: tyre compounds for each stint.
         data.expected_finish_position: None (modelled in Phase 4).
         data.confidence: 0.0-1.0 model confidence.
+        meta.total_laps: race length used (explicit arg, else inferred from laps).
         meta.estimated: true.
     """
     if session_key <= 0 or driver_number <= 0:
@@ -267,7 +271,7 @@ async def f1_predict_pit_strategy(
             code="INVALID_INPUT",
             message="session_key and driver_number must be positive.",
         )
-    if current_lap < 1 or total_laps < current_lap:
+    if current_lap < 1 or (total_laps is not None and total_laps < current_lap):
         return error_envelope(
             code="INVALID_INPUT",
             message="current_lap must be >= 1 and <= total_laps.",
@@ -301,9 +305,16 @@ async def f1_predict_pit_strategy(
     except AllSourcesFailedError:
         pass
 
+    laps = laps_result.value.get("laps", [])
+    # Caller left total_laps unset → infer from the highest observed lap_number
+    # (the flagship already fetched the laps); fall back to 57 if none carry one.
+    if total_laps is None:
+        observed = [lap["lap_number"] for lap in laps if lap.get("lap_number") is not None]
+        total_laps = max(observed) if observed else 57
+
     # Annotate laps with compound/tyre_life from /stints so the degradation fit
     # uses telemetry instead of silently falling back to TyreSpec constants.
-    annotated = annotate_laps_with_stints(laps_result.value.get("laps", []), stints)
+    annotated = annotate_laps_with_stints(laps, stints)
     strategy = _predict_strategy(
         laps=annotated,
         stints=stints,
@@ -318,6 +329,7 @@ async def f1_predict_pit_strategy(
             "source": laps_result.source,
             "session_key": session_key,
             "driver_number": driver_number,
+            "total_laps": total_laps,
             "estimated": True,
             "stint_enrichment": stints_result is not None,
             "weather_enrichment": weather_result is not None,

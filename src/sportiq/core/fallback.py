@@ -13,9 +13,9 @@ from dataclasses import dataclass, field
 from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
 
 from sportiq.core.cache import get_cache
-from sportiq.core.errors import AllSourcesFailedError
+from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.logging import get_logger
-from sportiq.core.ratelimit import Budget, check_and_consume
+from sportiq.core.ratelimit import Budget, consume, has_budget
 
 log = get_logger(__name__)
 
@@ -82,9 +82,13 @@ class FallbackChain(Generic[T]):
             )
 
         attempts: list[dict] = []
+        # Track failure shape so we can distinguish "entity genuinely missing"
+        # (every adapter raised NotFoundError) from "sources unavailable".
+        saw_not_found = False
+        saw_other_failure = False
         for index, adapter in enumerate(self.adapters):
             budget: Budget | None = getattr(adapter, "budget", None)
-            if budget is not None and not await check_and_consume(budget):
+            if budget is not None and not await has_budget(budget):
                 attempts.append(
                     {
                         "name": adapter.name,
@@ -99,12 +103,19 @@ class FallbackChain(Generic[T]):
                     adapter=adapter.name,
                     source=budget.source,
                 )
+                # A skipped adapter might have served the entity — can't claim
+                # NOT_FOUND when a source never got to answer.
+                saw_other_failure = True
                 continue
 
             adapter_started = time.monotonic()
             try:
                 value = await adapter.fetch(**kwargs)
             except Exception as e:
+                if isinstance(e, NotFoundError):
+                    saw_not_found = True
+                else:
+                    saw_other_failure = True
                 attempts.append(
                     {
                         "name": adapter.name,
@@ -130,6 +141,10 @@ class FallbackChain(Generic[T]):
                     "duration_ms": int((time.monotonic() - adapter_started) * 1000),
                 }
             )
+            # Consume a budget token only after a successful fetch, so failed /
+            # missing-key calls don't burn quota.
+            if budget is not None:
+                await consume(budget)
             await cache.set(key, value, ttl_seconds=max(self.fresh_ttl, self.stale_ttl))
             return FallbackResult(
                 value=value,
@@ -152,6 +167,15 @@ class FallbackChain(Generic[T]):
                 data_age_seconds=cached.age_seconds,
                 fallback_used=True,
                 duration_ms=int((time.monotonic() - started) * 1000),
+                attempts=attempts,
+            )
+
+        # Every adapter that ran raised NotFoundError (and none was skipped or
+        # failed for another reason): the entity genuinely does not exist, so
+        # surface NOT_FOUND rather than a generic all-sources-failed.
+        if saw_not_found and not saw_other_failure:
+            raise NotFoundError(
+                f"Requested entity not found in chain {self.name!r}",
                 attempts=attempts,
             )
 

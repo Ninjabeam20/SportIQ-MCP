@@ -15,11 +15,36 @@ class Budget:
     per_day: int | None = None
 
 
-async def check_and_consume(budget: Budget) -> bool:
-    """Return True if the request is within budget AND consume one token.
+async def has_budget(budget: Budget) -> bool:
+    """Peek: return True if a request is within budget. Does NOT consume.
 
-    Returns False if budget is exhausted — the chain skips this adapter.
+    The chain calls this before an adapter's fetch() and only :func:`consume`s a
+    token after the fetch succeeds, so a failing/missing-key call leaves the
+    counter untouched. (The peek-then-consume gap allows concurrent double-spend;
+    accepted as a documented local-dev limitation.)
     """
+    cache = get_cache()
+    now = int(time.time())
+
+    if budget.per_minute is not None:
+        minute_bucket = now // 60
+        entry = await cache.get(f"ratelimit:{budget.source}:minute:{minute_bucket}")
+        used = entry.value if entry else 0
+        if used >= budget.per_minute:
+            return False
+
+    if budget.per_day is not None:
+        day_bucket = now // 86400
+        entry = await cache.get(f"ratelimit:{budget.source}:day:{day_bucket}")
+        used = entry.value if entry else 0
+        if used >= budget.per_day:
+            return False
+
+    return True
+
+
+async def consume(budget: Budget) -> None:
+    """Consume one token in each configured window (minute and/or day)."""
     cache = get_cache()
     now = int(time.time())
 
@@ -28,8 +53,6 @@ async def check_and_consume(budget: Budget) -> bool:
         key = f"ratelimit:{budget.source}:minute:{minute_bucket}"
         entry = await cache.get(key)
         used = entry.value if entry else 0
-        if used >= budget.per_minute:
-            return False
         await cache.set(key, used + 1, ttl_seconds=120)
 
     if budget.per_day is not None:
@@ -37,11 +60,7 @@ async def check_and_consume(budget: Budget) -> bool:
         key = f"ratelimit:{budget.source}:day:{day_bucket}"
         entry = await cache.get(key)
         used = entry.value if entry else 0
-        if used >= budget.per_day:
-            return False
         await cache.set(key, used + 1, ttl_seconds=172800)
-
-    return True
 
 
 async def remaining(budget: Budget) -> dict[str, int | None]:
