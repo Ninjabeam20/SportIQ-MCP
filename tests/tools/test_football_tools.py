@@ -172,3 +172,17 @@ async def test_knockout_path_returns_team_row():
         result = await intel_tools.football_knockout_path(team="FRA", iterations=1200, seed=1)
     assert result["data"]["team"] == "FRA"
     assert 0.0 <= result["data"]["win"] <= 1.0
+
+
+async def test_football_get_squad_unknown_team_returns_envelope(monkeypatch):
+    """Unknown team must NOT raise: with no key the api_football adapter is
+    skipped and the static_seed terminator serves an empty-but-valid squad.
+    Locks the NOT_FOUND terminator invariant against future regressions."""
+    from sportiq.config import settings
+    from sportiq.football import tools
+
+    monkeypatch.setattr(settings, "apifootball_key", None)
+
+    response = await tools.football_get_squad("Nowhereland")
+    assert "error" not in response
+    assert response["meta"]["source"] == "static_seed"

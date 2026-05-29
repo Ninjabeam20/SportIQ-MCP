@@ -9,12 +9,25 @@ from __future__ import annotations
 import httpx
 from tenacity import (
     retry,
-    retry_if_exception_type,
+    retry_if_exception,
     stop_after_attempt,
     wait_exponential,
 )
 
 _client: httpx.AsyncClient | None = None
+
+
+def _should_retry(exc: BaseException) -> bool:
+    """Retry transport errors and 5xx only. 4xx (401/403/404/429) fail fast.
+
+    Retrying a bad-auth or quota (429) response would burn 3x the upstream
+    quota for a guaranteed-failure call; only server-side faults are transient.
+    """
+    if isinstance(exc, httpx.TransportError):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code >= 500
+    return False
 
 
 def get_client() -> httpx.AsyncClient:
@@ -36,7 +49,7 @@ async def close_client() -> None:
 
 
 @retry(
-    retry=retry_if_exception_type((httpx.TransportError, httpx.HTTPStatusError)),
+    retry=retry_if_exception(_should_retry),
     wait=wait_exponential(multiplier=0.5, min=0.5, max=4.0),
     stop=stop_after_attempt(3),
     reraise=True,

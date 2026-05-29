@@ -159,3 +159,17 @@ async def test_get_squad_empty_team_returns_invalid_input():
 
     response = await tools.cricket_get_squad("")
     assert response["error"]["code"] == "INVALID_INPUT"
+
+
+async def test_cricket_get_squad_unknown_team_returns_envelope(monkeypatch):
+    """Unknown team must NOT raise: with no key the cricapi adapter is skipped
+    and the static_seed terminator serves an empty-but-valid squad. Locks the
+    NOT_FOUND terminator invariant against future regressions."""
+    from sportiq.config import settings
+    from sportiq.cricket import tools
+
+    monkeypatch.setattr(settings, "cricapi_key", None)
+
+    response = await tools.cricket_get_squad("Nowhere United XI")
+    assert "error" not in response
+    assert response["meta"]["source"] == "static_seed"

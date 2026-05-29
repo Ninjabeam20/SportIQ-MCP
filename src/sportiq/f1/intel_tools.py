@@ -309,7 +309,7 @@ async def f1_predict_pit_strategy(
     # Caller left total_laps unset → infer from the highest observed lap_number
     # (the flagship already fetched the laps); fall back to 57 if none carry one.
     if total_laps is None:
-        observed = [lap["lap_number"] for lap in laps if lap.get("lap_number") is not None]
+        observed = [n for lap in laps if (n := lap.get("lap_number")) and n > 0]
         total_laps = max(observed) if observed else 57
 
     # Annotate laps with compound/tyre_life from /stints so the degradation fit

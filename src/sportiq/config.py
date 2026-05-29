@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,6 +33,20 @@ class Settings(BaseSettings):
     sportiq_log_format: Literal["pretty", "json"] = "pretty"
 
     diskcache_dir: Path = Path.home() / ".cache" / "sportiq"
+
+    @field_validator("enable_cricbuzz_scraper", "enable_ndtv_scraper", mode="before")
+    @classmethod
+    def _blank_toggle_is_off(cls, v: object) -> object:
+        """Treat a present-but-blank env toggle (`SPORTIQ_ENABLE_NDTV=`) as off.
+
+        The built-in pydantic-settings dotenv parser passes empty strings through
+        rather than falling back to the default, and an empty string is not a
+        valid bool — so without this the scrapers being left blank in .env would
+        crash startup. Blank/whitespace → False; everything else parses normally.
+        """
+        if isinstance(v, str) and v.strip() == "":
+            return False
+        return v
 
 
 settings = Settings()
