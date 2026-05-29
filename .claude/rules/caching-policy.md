@@ -12,6 +12,7 @@
 | Standings / points table | 10min | 1h |
 | Player career stats | 24h | 7d |
 | Squad rosters | 12h | 3d |
+| Bookmaker odds (h2h) | 5min | 24h (flagged) |
 | Static seeds | ∞ | ∞ |
 | Fallback attempt log | 7d | n/a |
 

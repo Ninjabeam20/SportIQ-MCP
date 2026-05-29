@@ -9,11 +9,22 @@ from sportiq.core.tool_response import error_envelope, tool_response
 from sportiq.football.chains import (
     football_fixtures_chain,
     football_groups_chain,
+    football_odds_chain,
     football_scorers_chain,
     football_squad_chain,
     football_standings_chain,
     football_team_stats_chain,
 )
+
+
+def _filter_events_by_team(events: list[dict], team: str) -> list[dict]:
+    """Case-insensitive substring match against both sides of each event."""
+    q = team.strip().lower()
+    return [
+        e
+        for e in events
+        if q in (e.get("home") or "").lower() or q in (e.get("away") or "").lower()
+    ]
 
 
 async def football_get_groups() -> dict:
@@ -141,6 +152,35 @@ async def football_get_top_scorers() -> dict:
     return tool_response(result)
 
 
+async def football_get_odds(team: str | None = None) -> dict:
+    """Return live bookmaker head-to-head odds for upcoming World Cup 2026 matches.
+
+    Sourced from The Odds API (requires THEODDS_KEY). Without a key the call
+    returns a clean ALL_SOURCES_FAILED envelope rather than crashing.
+
+    Args:
+        team: Optional team name to filter events (case-insensitive substring,
+            matched against both sides). Omit to return every WC event.
+
+    Returns:
+        data.events: list of {event_id, home, away, commence_time, bookmakers:
+            [{name, home, away}]} with decimal h2h prices per bookmaker.
+        meta.source: adapter that served the data (theodds / cache:stale).
+    """
+    try:
+        result = await football_odds_chain.fetch()
+    except AllSourcesFailedError as e:
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message="No football odds source is available right now.",
+            sources_tried=e.attempts,
+            suggestion="Set THEODDS_KEY to enable live odds.",
+        )
+    if team and team.strip():
+        result.value = {"events": _filter_events_by_team(result.value["events"], team)}
+    return tool_response(result)
+
+
 def register_football_tools(mcp) -> None:
     """Register all football tools on the supplied FastMCP instance."""
     from sportiq.football.intel_tools import register_football_intel_tools
@@ -151,4 +191,5 @@ def register_football_tools(mcp) -> None:
     mcp.tool()(football_get_squad)
     mcp.tool()(football_get_match_stats)
     mcp.tool()(football_get_top_scorers)
+    mcp.tool()(football_get_odds)
     register_football_intel_tools(mcp)

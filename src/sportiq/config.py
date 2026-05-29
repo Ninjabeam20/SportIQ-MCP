@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     apifootball_key: str | None = None
     footballdata_key: str | None = None  # optional higher tier for football-data.org
     rapidapi_key: str | None = None
+    theodds_key: str | None = None  # the-odds-api.com — 500 req/month free; cricket + football odds
 
     enable_cricbuzz_scraper: bool = Field(
         default=False,

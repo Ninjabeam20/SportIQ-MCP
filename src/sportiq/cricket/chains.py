@@ -35,6 +35,7 @@ from sportiq.cricket.adapters.static_seed import (
     StaticSeedSquadAdapter,
     StaticSeedVenueAdapter,
 )
+from sportiq.cricket.adapters.theodds import TheOddsCricketAdapter
 
 # -- Adapter singletons -------------------------------------------------------
 
@@ -54,6 +55,7 @@ _rapidapi_standings = RapidAPICricbuzzStandingsAdapter()
 _rapidapi_player_stats = RapidAPICricbuzzPlayerStatsAdapter()
 _static_squad = StaticSeedSquadAdapter()
 _static_venue = StaticSeedVenueAdapter()
+_theodds_cricket = TheOddsCricketAdapter()
 
 # Register all adapters so sportiq_health() can report on them.
 # register_adapter_for_health() dedupes by name, so listing multiple instances
@@ -66,6 +68,7 @@ for _a in [
     _rapidapi_live, _rapidapi_scorecard, _rapidapi_schedule, _rapidapi_standings,
     _rapidapi_player_stats,
     _static_squad, _static_venue,
+    _theodds_cricket,
 ]:
     register_adapter_for_health(_a)
 
@@ -127,4 +130,14 @@ pitch_data_chain: FallbackChain[dict] = FallbackChain(
     cache_key_fn=lambda venue, **_: f"sportiq:cricket:pitch:{venue.lower().replace(' ', '_')}",
     fresh_ttl=31_536_000,
     stale_ttl=0,
+)
+
+# Odds are fetched sport-wide (one IPL list); the tool applies any team filter,
+# so the cache key carries no args. fresh=5min (live ceiling), stale=24h.
+odds_chain: FallbackChain[dict] = FallbackChain(
+    name="cricket:odds",
+    adapters=[_theodds_cricket],
+    cache_key_fn=lambda **_: "sportiq:cricket:odds:ipl",
+    fresh_ttl=300,
+    stale_ttl=86400,
 )

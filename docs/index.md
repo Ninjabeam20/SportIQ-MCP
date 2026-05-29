@@ -16,6 +16,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[cricket-differential-picks]] — Low-ownership picks with positive projected upside (ownership estimated).
 - [[cricket-player-form-index]] — 0-100 form score derived from player stats chain.
 - [[cricket-get-pitch-report]] — Pitch-friendliness summary + recommendation for a venue.
+- [[cricket-get-live-odds]] — Live bookmaker h2h odds for IPL matches; optional team-name filter.
 
 ### F1
 
@@ -44,6 +45,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[football-simulate-group]] — Monte Carlo one group into per-team qualification probabilities.
 - [[football-simulate-bracket]] — **Phase 4 flagship**: Monte Carlo the full 48-team WC into per-team round + title probabilities.
 - [[football-knockout-path]] — Round-by-round survival probabilities for one team.
+- [[football-get-odds]] — Live bookmaker h2h odds for WC 2026 matches; optional team-name filter.
 
 ## Models
 
@@ -79,6 +81,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[cricket-squad-chain]] — cricapi → static_seed; 12h TTL; always terminates.
 - [[cricket-player-stats-chain]] — cricapi_player_info → rapidapi_player_stats; 24h TTL.
 - [[cricket-pitch-data-chain]] — static_venue terminator only; 1y TTL (v1 offline-only).
+- [[cricket-odds-chain]] — the-odds-api (only source) → stale; 5min fresh / 24h stale TTL.
 
 ### F1
 
@@ -98,6 +101,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[football-team-stats-chain]] — api_football → football_data_org; 24h TTL.
 - [[football-squad-chain]] — api_football → static seed; 12h TTL.
 - [[football-scorers-chain]] — api_football → football_data_org; 24h TTL.
+- [[football-odds-chain]] — the-odds-api (only source) → stale; 5min fresh / 24h stale TTL.
 
 ## Data sources
 
@@ -119,6 +123,10 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 - [[api-football]] — Primary football source; requires APIFOOTBALL_KEY; fixtures, standings, team stats, squads, scorers; 100 req/day.
 - [[football-data-org]] — Free fallback (token optional); fixtures, standings, scorers; 10 req/min, 100/day.
+
+### Odds
+
+- [[the-odds-api]] — Live bookmaker h2h odds for IPL + WC 2026; requires THEODDS_KEY; 500 req/month shared.
 
 ## Findings
 

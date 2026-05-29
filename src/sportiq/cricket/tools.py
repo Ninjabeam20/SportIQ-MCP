@@ -15,10 +15,21 @@ from sportiq.core.tool_response import error_envelope, tool_response
 from sportiq.cricket.chains import (
     fixtures_chain,
     live_score_chain,
+    odds_chain,
     scorecard_chain,
     squad_chain,
     standings_chain,
 )
+
+
+def _filter_events_by_team(events: list[dict], team: str) -> list[dict]:
+    """Case-insensitive substring match against both sides of each event."""
+    q = team.strip().lower()
+    return [
+        e
+        for e in events
+        if q in (e.get("home") or "").lower() or q in (e.get("away") or "").lower()
+    ]
 
 
 async def cricket_get_live_matches() -> dict:
@@ -134,6 +145,37 @@ async def cricket_get_squad(team: str, series_id: str | None = None) -> dict:
     return tool_response(result)
 
 
+async def cricket_get_live_odds(team: str | None = None) -> dict:
+    """Return live bookmaker head-to-head odds for upcoming/live IPL matches.
+
+    Sourced from The Odds API (requires THEODDS_KEY). Without a key the call
+    returns a clean ALL_SOURCES_FAILED envelope rather than crashing.
+
+    Args:
+        team: Optional team name to filter events (case-insensitive substring,
+            matched against both sides). Omit to return every IPL event. The
+            Odds API uses its own opaque event ids, so a CricAPI match_id
+            cannot be resolved to an event yet — filtering is by team name.
+
+    Returns:
+        data.events: list of {event_id, home, away, commence_time, bookmakers:
+            [{name, home, away}]} with decimal h2h prices per bookmaker.
+        meta.source: adapter that served the data (theodds / cache:stale).
+    """
+    try:
+        result = await odds_chain.fetch()
+    except AllSourcesFailedError as e:
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message="No cricket odds source is available right now.",
+            sources_tried=e.attempts,
+            suggestion="Set THEODDS_KEY to enable live odds.",
+        )
+    if team and team.strip():
+        result.value = {"events": _filter_events_by_team(result.value["events"], team)}
+    return tool_response(result)
+
+
 def register_cricket_tools(mcp) -> None:
     """Register every cricket tool on the supplied FastMCP instance."""
     from sportiq.cricket.intel_tools import register_cricket_intel_tools
@@ -143,4 +185,5 @@ def register_cricket_tools(mcp) -> None:
     mcp.tool()(cricket_get_points_table)
     mcp.tool()(cricket_get_schedule)
     mcp.tool()(cricket_get_squad)
+    mcp.tool()(cricket_get_live_odds)
     register_cricket_intel_tools(mcp)

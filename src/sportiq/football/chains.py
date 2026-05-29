@@ -33,6 +33,7 @@ from sportiq.football.adapters.static_seed import (
     StaticSeedGroupsAdapter,
     StaticSeedSquadAdapter,
 )
+from sportiq.football.adapters.theodds import TheOddsFootballAdapter
 
 # -- Adapter singletons -------------------------------------------------------
 
@@ -50,9 +51,10 @@ _fd_scorers = FootballDataOrgScorersAdapter()
 _seed_groups = StaticSeedGroupsAdapter()
 _seed_fixtures = StaticSeedFixturesAdapter()
 _seed_squad = StaticSeedSquadAdapter()
+_theodds_football = TheOddsFootballAdapter()
 
 # Register one healthcheck per upstream identity (deduped by name).
-for _a in [_af_fixtures, _fd_fixtures, _seed_groups]:
+for _a in [_af_fixtures, _fd_fixtures, _seed_groups, _theodds_football]:
     register_adapter_for_health(_a)
 
 # -- Chain singletons ---------------------------------------------------------
@@ -103,4 +105,14 @@ football_scorers_chain: FallbackChain[dict] = FallbackChain(
     cache_key_fn=lambda **_: "sportiq:football:scorers:wc2026",
     fresh_ttl=86400,
     stale_ttl=604800,
+)
+
+# Odds are fetched sport-wide (one WC list); the tool applies any team filter,
+# so the cache key carries no args. fresh=5min (live ceiling), stale=24h.
+football_odds_chain: FallbackChain[dict] = FallbackChain(
+    name="football:odds",
+    adapters=[_theodds_football],
+    cache_key_fn=lambda **_: "sportiq:football:odds:wc2026",
+    fresh_ttl=300,
+    stale_ttl=86400,
 )

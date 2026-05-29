@@ -1,0 +1,67 @@
+[
+  {
+    "id": "0d8d8c4f4b6f3a2e1c9b7a6d5e4f3a2b",
+    "sport_key": "cricket_ipl",
+    "sport_title": "IPL",
+    "commence_time": "2026-04-12T14:00:00Z",
+    "home_team": "Mumbai Indians",
+    "away_team": "Chennai Super Kings",
+    "bookmakers": [
+      {
+        "key": "betfair",
+        "title": "Betfair",
+        "last_update": "2026-04-12T13:30:00Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-04-12T13:30:00Z",
+            "outcomes": [
+              {"name": "Mumbai Indians", "price": 1.85},
+              {"name": "Chennai Super Kings", "price": 2.05}
+            ]
+          }
+        ]
+      },
+      {
+        "key": "williamhill",
+        "title": "William Hill",
+        "last_update": "2026-04-12T13:28:00Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-04-12T13:28:00Z",
+            "outcomes": [
+              {"name": "Mumbai Indians", "price": 1.83},
+              {"name": "Chennai Super Kings", "price": 2.10}
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+    "sport_key": "cricket_ipl",
+    "sport_title": "IPL",
+    "commence_time": "2026-04-13T10:00:00Z",
+    "home_team": "Royal Challengers Bengaluru",
+    "away_team": "Kolkata Knight Riders",
+    "bookmakers": [
+      {
+        "key": "betfair",
+        "title": "Betfair",
+        "last_update": "2026-04-13T09:30:00Z",
+        "markets": [
+          {
+            "key": "h2h",
+            "last_update": "2026-04-13T09:30:00Z",
+            "outcomes": [
+              {"name": "Royal Challengers Bengaluru", "price": 2.20},
+              {"name": "Kolkata Knight Riders", "price": 1.70}
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

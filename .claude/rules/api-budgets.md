@@ -12,6 +12,7 @@ Free-tier limits per source. NEVER bypass cache to "make sure data is fresh." Bu
 | Jolpica (Ergast successor) | None published | Free + public. Snapshot per session. |
 | API-Football | 100 req/day (free tier) | Token via `APIFOOTBALL_KEY`. Premium = $19/mo for 7.5k/day. |
 | football-data.org | 10 req/min, 100/day (free tier) | Token-less for free, but watch the per-minute cap. |
+| The Odds API | 500 req/month (free tier) | Token via `THEODDS_KEY`. Shared across cricket + football (one `theodds` source). No per-month unit in `Budget`, so gated at a ~16/day slice; on exhaustion the chain serves stale odds (24h ceiling). Paid plans from $30/mo. |
 
 ## Enforcement
 
