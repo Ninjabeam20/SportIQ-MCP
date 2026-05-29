@@ -10,7 +10,7 @@ Three flagship intelligence tools sit on top of raw-data primitives:
 
 ## Status
 
-Phase 3 complete — 5 cricket RAW + 5 cricket INTEL + 6 F1 RAW + 5 F1 INTEL tools live (22 total). Flagships: `cricket_build_dream11_team` (PuLP ILP) and `f1_predict_pit_strategy` (tyre-degradation model). See `plan.md` for the full build plan.
+Phase 4 complete — 5 cricket RAW + 5 cricket INTEL + 6 F1 RAW + 5 F1 INTEL + 6 football RAW + 5 football INTEL tools live (33 total). All three flagships shipped: `cricket_build_dream11_team` (PuLP ILP), `f1_predict_pit_strategy` (tyre-degradation on OpenF1 telemetry), and `football_simulate_bracket` (Monte Carlo + Poisson xG over the 48-team WC 2026 format). See `plan.md` for the full build plan.
 
 ## Cricket tools
 
@@ -46,9 +46,9 @@ The Dream11 solver uses CBC via PuLP. On macOS arm64 install with `brew install 
 |------|-------------|
 | `f1_get_sessions` | List F1 race/qualifying/practice sessions by year |
 | `f1_get_drivers` | Driver list for a session |
-| `f1_get_lap_times` | Per-driver lap times with compound data |
+| `f1_get_lap_times` | Per-driver lap times (compound lives on stints, not laps) |
 | `f1_get_standings` | Driver + constructor championship standings |
-| `f1_get_race_results` | Race results for a session |
+| `f1_get_race_results` | Final race classification by year + round (Jolpica) |
 | `f1_get_weather` | Track weather data (temp, rainfall, wind) |
 
 ### INTEL (Phase 3)
@@ -62,6 +62,31 @@ The Dream11 solver uses CBC via PuLP. On macOS arm64 install with `brew install 
 | `f1_predict_pit_strategy` | **FLAGSHIP** | Predict optimal pit stops + compound sequence |
 
 Data sources: [OpenF1](https://openf1.org) (free, keyless) → [Jolpica](https://jolpi.ca) → `fastf1` (optional, offline, `pip install sportiq-mcp[f1]`).
+
+## Football tools (FIFA World Cup 2026)
+
+### RAW (Phase 4)
+
+| Tool | Description |
+|------|-------------|
+| `football_get_groups` | WC 2026 group draw (12 groups of 4) + advancement format |
+| `football_get_fixtures` | Fixtures (live providers, else the group schedule) |
+| `football_get_standings` | Current group standings |
+| `football_get_squad` | National-team squad |
+| `football_get_match_stats` | Team aggregate tournament statistics |
+| `football_get_top_scorers` | Tournament top scorers |
+
+### INTEL (Phase 4)
+
+| Tool | Type | Description |
+|------|------|-------------|
+| `football_xg_model` | INTEL | Expected goals + win/draw/loss probabilities (Elo-driven Poisson) |
+| `football_match_predictor` | INTEL | Most likely scoreline + outcome for one match |
+| `football_simulate_group` | INTEL | Monte Carlo a group into qualification probabilities |
+| `football_simulate_bracket` | **FLAGSHIP** | Monte Carlo the full 48-team WC into per-team round + title probabilities |
+| `football_knockout_path` | INTEL | Round-by-round survival probabilities for one team |
+
+The 2026 format (48 teams, 12 groups, top 2 + 8 best thirds → 32-team knockout) is encoded in `wc2026.json`. Data sources: [API-Football](https://www.api-football.com) (`APIFOOTBALL_KEY`) → [football-data.org](https://football-data.org) (free, token optional) → bundled `wc2026.json` seed.
 
 ### Cricket adapter defaults
 

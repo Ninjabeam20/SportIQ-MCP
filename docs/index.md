@@ -31,6 +31,20 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[f1-weather-strategy-impact]] — Analyzes session weather and returns a compound recommendation.
 - [[f1-predict-pit-strategy]] — **Phase 3 flagship**: predict optimal pit stops + compound sequence using tyre-degradation fits.
 
+### Football
+
+- [[football-get-groups]] — Returns the World Cup 2026 group draw (12 groups of 4) and advancement format.
+- [[football-get-fixtures]] — Returns WC 2026 fixtures (live providers, else the group schedule).
+- [[football-get-standings]] — Returns current WC 2026 group standings.
+- [[football-get-squad]] — Returns a national team's WC squad (empty-but-valid via static seed without a key).
+- [[football-get-match-stats]] — Returns a team's aggregate WC tournament statistics.
+- [[football-get-top-scorers]] — Returns the WC 2026 top scorers.
+- [[football-xg-model]] — Expected goals + win/draw/loss probabilities for a matchup (Elo-driven Poisson).
+- [[football-match-predictor]] — Most likely scoreline + outcome for a single match.
+- [[football-simulate-group]] — Monte Carlo one group into per-team qualification probabilities.
+- [[football-simulate-bracket]] — **Phase 4 flagship**: Monte Carlo the full 48-team WC into per-team round + title probabilities.
+- [[football-knockout-path]] — Round-by-round survival probabilities for one team.
+
 ## Models
 
 ### Cricket
@@ -46,6 +60,13 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[tyre-degradation-model]] — Linear fit (lap_time = intercept + slope × tyre_age) per compound with outlier filtering.
 - [[undercut-model]] — Pure-arithmetic undercut viability calculator.
 - [[pit-strategy-model]] — Predicts optimal stop laps and compound sequence for the remainder of a race.
+
+### Football
+
+- [[poisson-xg]] — Expected goals -> Poisson scoreline matrix -> P(home/draw/away); shared match engine.
+- [[elo]] — Elo win-expectation + rating update; seeds the Poisson engine and the knockout shootout.
+- [[group-sim]] — 4-team round-robin Monte Carlo with FIFA tiebreakers; p_advance sums to 2.
+- [[bracket-sim]] — Full 48-team tournament Monte Carlo (groups + best-thirds + 32-team knockout).
 
 ## Chains
 
@@ -69,6 +90,15 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[f1-standings-chain]] — jolpica → fastf1_local; 24h TTL.
 - [[f1-drivers-chain]] — openf1; 24h TTL.
 
+### Football
+
+- [[football-fixtures-chain]] — api_football → football_data_org → static wc2026; 6h TTL.
+- [[football-standings-chain]] — api_football → football_data_org; 10min TTL.
+- [[football-groups-chain]] — static wc2026 terminator (draw + Elo ratings); ~1y TTL.
+- [[football-team-stats-chain]] — api_football → football_data_org; 24h TTL.
+- [[football-squad-chain]] — api_football → static seed; 12h TTL.
+- [[football-scorers-chain]] — api_football → football_data_org; 24h TTL.
+
 ## Data sources
 
 ### Cricket
@@ -85,6 +115,11 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[jolpica]] — Free public Ergast successor; no credentials; historical standings and race results.
 - [[fastf1]] — Optional Python library for offline F1 data; lazy-imported; install with `pip install sportiq-mcp[f1]`.
 
+### Football
+
+- [[api-football]] — Primary football source; requires APIFOOTBALL_KEY; fixtures, standings, team stats, squads, scorers; 100 req/day.
+- [[football-data-org]] — Free fallback (token optional); fixtures, standings, scorers; 10 req/min, 100/day.
+
 ## Findings
 
 _(none yet — file via `/project:file-finding` when a chat answer is worth keeping.)_
@@ -98,3 +133,4 @@ _(none yet — file via `/project:file-finding` when a chat answer is worth keep
 - [[0005-fallback-chain-pattern]] — Every tool routes through a `FallbackChain[T]`; adapters are pluggable.
 - [[0006-respx-for-test-mocking]] — `respx` cassettes only; no live HTTP in CI.
 - [[0007-cricket-fallback-strategy]] — Opt-in scrapers + paid escape hatch; CricSheet dropped in Phase 1 cleanup.
+- [[0008-football-fallback-strategy]] — Football source ladder + the WC 2026 48-team / 12-group / best-thirds format encoding.

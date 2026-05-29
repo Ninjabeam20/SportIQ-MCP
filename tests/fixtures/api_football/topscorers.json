@@ -1,0 +1,20 @@
+{
+  "response": [
+    {
+      "player": {
+        "name": "K. Mbappe"
+      },
+      "statistics": [
+        {
+          "team": {
+            "name": "France"
+          },
+          "goals": {
+            "total": 6,
+            "assists": 2
+          }
+        }
+      ]
+    }
+  ]
+}

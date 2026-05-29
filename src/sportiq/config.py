@@ -14,6 +14,7 @@ class Settings(BaseSettings):
 
     cricapi_key: str | None = None
     apifootball_key: str | None = None
+    footballdata_key: str | None = None  # optional higher tier for football-data.org
     rapidapi_key: str | None = None
 
     enable_cricbuzz_scraper: bool = Field(

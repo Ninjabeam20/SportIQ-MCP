@@ -1,0 +1,14 @@
+{
+  "scorers": [
+    {
+      "player": {
+        "name": "K. Mbappe"
+      },
+      "team": {
+        "name": "France"
+      },
+      "goals": 6,
+      "assists": 2
+    }
+  ]
+}

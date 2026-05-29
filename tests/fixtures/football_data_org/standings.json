@@ -1,0 +1,18 @@
+{
+  "standings": [
+    {
+      "group": "GROUP_A",
+      "table": [
+        {
+          "position": 1,
+          "team": {
+            "name": "Argentina"
+          },
+          "points": 9,
+          "playedGames": 3,
+          "goalDifference": 6
+        }
+      ]
+    }
+  ]
+}

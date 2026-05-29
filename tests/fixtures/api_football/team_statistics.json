@@ -1,0 +1,27 @@
+{
+  "response": {
+    "team": {
+      "name": "Argentina"
+    },
+    "fixtures": {
+      "played": {
+        "total": 3
+      },
+      "wins": {
+        "total": 3
+      }
+    },
+    "goals": {
+      "for": {
+        "total": {
+          "total": 7
+        }
+      },
+      "against": {
+        "total": {
+          "total": 1
+        }
+      }
+    }
+  }
+}

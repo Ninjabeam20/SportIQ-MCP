@@ -1,0 +1,24 @@
+{
+  "response": [
+    {
+      "fixture": {
+        "date": "2026-06-11T20:00:00+00:00",
+        "status": {
+          "short": "NS"
+        }
+      },
+      "teams": {
+        "home": {
+          "name": "Mexico"
+        },
+        "away": {
+          "name": "Poland"
+        }
+      },
+      "goals": {
+        "home": null,
+        "away": null
+      }
+    }
+  ]
+}

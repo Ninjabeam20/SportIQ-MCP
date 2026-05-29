@@ -1,0 +1,24 @@
+{
+  "response": [
+    {
+      "league": {
+        "standings": [
+          [
+            {
+              "rank": 1,
+              "team": {
+                "name": "Argentina"
+              },
+              "group": "Group A",
+              "points": 9,
+              "all": {
+                "played": 3
+              },
+              "goalsDiff": 6
+            }
+          ]
+        ]
+      }
+    }
+  ]
+}
