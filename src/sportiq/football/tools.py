@@ -164,7 +164,7 @@ async def football_get_odds(team: str | None = None) -> dict:
 
     Returns:
         data.events: list of {event_id, home, away, commence_time, bookmakers:
-            [{name, home, away}]} with decimal h2h prices per bookmaker.
+            [{name, home, draw, away}]} with decimal 1X2 prices per bookmaker.
         meta.source: adapter that served the data (theodds / cache:stale).
     """
     try:

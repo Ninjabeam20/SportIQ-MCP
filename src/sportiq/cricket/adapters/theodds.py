@@ -29,7 +29,11 @@ _THEODDS_BASE = "https://api.the-odds-api.com/v4"
 _THEODDS_BUDGET = Budget(source="theodds", per_day=16)
 
 _SPORT_KEY = "cricket_ipl"
-_REGIONS = "uk,eu"  # better IPL + international bookmaker coverage than us
+# The Odds API bills markets x regions per request. A single region = 1 credit;
+# per_day=16 ≈ 480/month, under the 500/month free-tier cap. "uk,eu" would be
+# 2 credits/request (~960/month, over cap). Single region trades some EU
+# bookmaker coverage for an honest budget.
+_REGIONS = "uk"
 
 
 def _key() -> str:

@@ -24,7 +24,9 @@ _THEODDS_BASE = "https://api.the-odds-api.com/v4"
 _THEODDS_BUDGET = Budget(source="theodds", per_day=16)
 
 _SPORT_KEY = "soccer_fifa_world_cup"
-_REGIONS = "uk,eu"
+# Single region = 1 credit/request (per_day=16 ≈ 480/month, under the 500/month
+# free-tier cap). "uk,eu" billed 2 credits/request (~960/month, over cap).
+_REGIONS = "uk"
 
 
 def _key() -> str:
@@ -36,7 +38,7 @@ def _key() -> str:
 def _normalise_events(events: list[dict]) -> list[dict]:
     """Flatten The Odds API events into {event_id, home, away, commence_time, bookmakers}.
 
-    Each bookmaker is reduced to its h2h home/away decimal price.
+    Soccer h2h is 1X2, so each bookmaker keeps the home/draw/away decimal prices.
     """
     out = []
     for ev in events:
@@ -48,7 +50,12 @@ def _normalise_events(events: list[dict]) -> list[dict]:
                 continue
             prices = {o.get("name"): o.get("price") for o in h2h.get("outcomes", [])}
             bookmakers.append(
-                {"name": bk.get("title"), "home": prices.get(home), "away": prices.get(away)}
+                {
+                    "name": bk.get("title"),
+                    "home": prices.get(home),
+                    "draw": prices.get("Draw"),
+                    "away": prices.get(away),
+                }
             )
         out.append(
             {

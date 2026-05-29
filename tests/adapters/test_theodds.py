@@ -38,7 +38,7 @@ async def test_cricket_adapter_normalises_events():
 
 
 @respx.mock
-async def test_football_adapter_normalises_events_ignores_draw():
+async def test_football_adapter_normalises_events_captures_draw():
     from sportiq.football.adapters.theodds import TheOddsFootballAdapter
 
     respx.get(f"{_BASE}/sports/soccer_fifa_world_cup/odds").mock(
@@ -47,8 +47,13 @@ async def test_football_adapter_normalises_events_ignores_draw():
     result = await TheOddsFootballAdapter().fetch()
     events = result["events"]
     assert events[0]["home"] == "Argentina"
-    # h2h reduced to home/away decimal prices; the Draw outcome is dropped.
-    assert events[0]["bookmakers"][0] == {"name": "Pinnacle", "home": 1.65, "away": 5.20}
+    # Soccer h2h is 1X2 — the Draw price is captured alongside home/away.
+    assert events[0]["bookmakers"][0] == {
+        "name": "Pinnacle",
+        "home": 1.65,
+        "draw": 3.80,
+        "away": 5.20,
+    }
 
 
 @respx.mock

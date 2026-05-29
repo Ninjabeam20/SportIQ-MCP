@@ -26,10 +26,12 @@ Live bookmaker head-to-head odds for IPL cricket and the FIFA World Cup 2026.
 | `/sports/{key}/odds` | `cricket_ipl` | `cricket_get_live_odds` | [[cricket-odds-chain]] |
 | `/sports/{key}/odds` | `soccer_fifa_world_cup` | `football_get_odds` | [[football-odds-chain]] |
 
-Params: `regions=uk,eu`, `markets=h2h`, `oddsFormat=decimal`.
+Params: `regions=uk`, `markets=h2h`, `oddsFormat=decimal`.
+
+The API bills **markets × regions** per request. A single region (`uk`) costs 1 credit/request, so `per_day=16` ≈ 480/month — under the 500/month cap. `uk,eu` would be 2 credits/request (~960/month, over cap). Single region trades some EU-bookmaker coverage for an honest budget.
 
 ## Shape & normalisation
-The API returns a JSON **array** of events, each with an opaque event id, the two team names and per-bookmaker markets. Each adapter flattens this to `{event_id, home, away, commence_time, bookmakers: [{name, home, away}]}`, reducing every bookmaker to its h2h home/away decimal price (a Draw outcome, present for football, is dropped). The normaliser is intentionally duplicated per sport-specific adapter rather than shared cross-package; the shared piece is the HTTP client.
+The API returns a JSON **array** of events, each with an opaque event id, the two team names and per-bookmaker markets. Each adapter flattens this to `{event_id, home, away, commence_time, bookmakers: [...]}`. Cricket (T20, no draw) reduces every bookmaker to `{name, home, away}`; football (1X2) keeps the Draw price as `{name, home, draw, away}`. The normaliser is intentionally duplicated per sport-specific adapter rather than shared cross-package; the shared piece is the HTTP client.
 
 ## Known limitations
 The Odds API uses its own event ids, with no concept of a CricAPI `match_id`. The whole sport list is fetched and the tool layer applies an optional team-name filter; resolving a `match_id` → event id is a deferred follow-up.

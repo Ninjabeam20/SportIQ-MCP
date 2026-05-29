@@ -20,7 +20,7 @@ async def football_get_odds(team: str | None = None) -> dict
 - `team` — optional team name to filter events (case-insensitive substring, matched against both sides). Omit to return every WC event.
 
 ## Returns
-`data.events`: list of `{event_id, home, away, commence_time, bookmakers: [{name, home, away}]}` with decimal h2h prices, via [[football-odds-chain]].
+`data.events`: list of `{event_id, home, away, commence_time, bookmakers: [{name, home, draw, away}]}` with decimal 1X2 prices, via [[football-odds-chain]].
 
 ## Notes
-Requires `THEODDS_KEY`; without it the call returns a clean `ALL_SOURCES_FAILED` envelope. The Draw outcome present in WC markets is dropped — only home/away prices are surfaced. See [[the-odds-api]].
+Requires `THEODDS_KEY`; without it the call returns a clean `ALL_SOURCES_FAILED` envelope. WC markets are 1X2 — the Draw price is captured alongside home/away. See [[the-odds-api]].
