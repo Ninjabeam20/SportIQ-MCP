@@ -8,6 +8,44 @@ from __future__ import annotations
 import numpy as np
 
 
+def annotate_laps_with_stints(laps: list[dict], stints: list[dict]) -> list[dict]:
+    """Merge OpenF1 ``/stints`` data onto ``/laps`` so each lap carries its tyre.
+
+    OpenF1's ``/laps`` endpoint returns **neither** ``compound`` **nor**
+    ``tyre_life`` — those live on ``/stints`` (``lap_start``, ``lap_end``,
+    ``compound``, ``tyre_age_at_start``). The degradation fit needs both, so we
+    annotate each lap from the stint that covers its ``lap_number``::
+
+        tyre_life = tyre_age_at_start + (lap_number - lap_start)
+
+    Args:
+        laps: Lap dicts from ``/laps``. Each should carry ``lap_number``.
+        stints: Stint dicts from ``/stints``.
+
+    Returns:
+        A new list of lap dicts. Laps covered by a stint gain ``compound`` and
+        ``tyre_life``; laps without a covering stint (or lacking ``lap_number``)
+        are returned unchanged, preserving any fields the adapter already set.
+    """
+    annotated: list[dict] = []
+    for lap in laps:
+        merged = dict(lap)
+        lap_number = lap.get("lap_number")
+        if lap_number is not None:
+            for stint in stints:
+                start = stint.get("lap_start")
+                end = stint.get("lap_end")
+                if start is None or end is None:
+                    continue
+                if start <= lap_number <= end:
+                    merged["compound"] = stint.get("compound")
+                    base_age = stint.get("tyre_age_at_start", 0) or 0
+                    merged["tyre_life"] = base_age + (lap_number - start)
+                    break
+        annotated.append(merged)
+    return annotated
+
+
 def fit_degradation(laps: list[dict], compound: str) -> dict:
     """Fit a linear tyre degradation model for one compound.
 

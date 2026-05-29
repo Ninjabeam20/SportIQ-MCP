@@ -167,6 +167,35 @@ async def test_differential_picks_flags_estimated_meta():
     assert r["data"]["ownership_threshold"] == 80
 
 
+async def test_differential_picks_returns_cheap_players_at_default_threshold():
+    # Regression for audit finding #4: the old `credits * 7` proxy put even a
+    # 7.0-credit player at 49% ownership, so the default 20% threshold always
+    # returned []. The recalibrated curve maps 7.0 credits to ~5% ownership.
+    from sportiq.cricket import intel_tools
+
+    cheap = _fr(
+        {
+            "players": [{"name": "Cheap Punt", "role": "BAT", "credits": 7.0, "team": "Team A"}],
+            "team": "Team A",
+            "source": "static_seed",
+        }
+    )
+    empty = _fr({"players": [], "team": "Team B", "source": "static_seed"})
+    with (
+        patch("sportiq.cricket.intel_tools.pitch_data_chain") as mock_pitch,
+        patch("sportiq.cricket.intel_tools.squad_chain") as mock_squad,
+    ):
+        mock_pitch.fetch = AsyncMock(return_value=_fr(_venue_record()))
+        mock_squad.fetch = AsyncMock(side_effect=[cheap, empty])
+        r = await intel_tools.cricket_differential_picks(
+            team_a="Team A", team_b="Team B", venue="wankhede"
+        )
+
+    assert len(r["data"]["picks"]) == 1
+    assert r["data"]["picks"][0]["name"] == "Cheap Punt"
+    assert r["data"]["picks"][0]["estimated_ownership_pct"] <= 20
+
+
 # -- cricket_player_form_index ------------------------------------------------
 
 async def test_player_form_index_returns_score_and_trend():

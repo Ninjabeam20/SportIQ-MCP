@@ -1,18 +1,162 @@
 [
   {
     "lap_number": 1,
-    "lap_duration": 75.234,
+    "lap_duration": 75.0,
     "driver_number": 1,
     "session_key": 9877,
-    "compound": "SOFT",
-    "tyre_age_at_start": 0
+    "is_pit_out_lap": true,
+    "st_speed": 290
   },
   {
     "lap_number": 2,
-    "lap_duration": 74.891,
+    "lap_duration": 75.09,
     "driver_number": 1,
     "session_key": 9877,
-    "compound": "SOFT",
-    "tyre_age_at_start": 1
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 3,
+    "lap_duration": 75.18,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 4,
+    "lap_duration": 75.27,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 5,
+    "lap_duration": 75.36,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 6,
+    "lap_duration": 75.45,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 7,
+    "lap_duration": 75.54,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 8,
+    "lap_duration": 75.63,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 9,
+    "lap_duration": 75.72,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 10,
+    "lap_duration": 75.81,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 11,
+    "lap_duration": 75.9,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 12,
+    "lap_duration": 75.99,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 13,
+    "lap_duration": 76.08,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 14,
+    "lap_duration": 76.17,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 15,
+    "lap_duration": 76.26,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 16,
+    "lap_duration": 76.35,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 17,
+    "lap_duration": 76.44,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 18,
+    "lap_duration": 76.53,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 19,
+    "lap_duration": 76.62,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
+  },
+  {
+    "lap_number": 20,
+    "lap_duration": 76.71,
+    "driver_number": 1,
+    "session_key": 9877,
+    "is_pit_out_lap": false,
+    "st_speed": 290
   }
 ]

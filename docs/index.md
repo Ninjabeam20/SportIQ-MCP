@@ -21,9 +21,9 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 - [[f1-get-sessions]] — Returns F1 sessions for a given year, optionally filtered by country.
 - [[f1-get-drivers]] — Returns the driver list for a given F1 session.
-- [[f1-get-lap-times]] — Returns per-driver lap times with tyre compound data for a session.
+- [[f1-get-lap-times]] — Returns per-driver lap times for a session (compound lives on stints, not laps).
 - [[f1-get-standings]] — Returns driver and constructor championship standings for a given F1 season.
-- [[f1-get-race-results]] — Returns race results (finishing positions, points, fastest lap) for a given session.
+- [[f1-get-race-results]] — Returns the final classification (finishing order, times, points) for one race, keyed by year + round.
 - [[f1-get-weather]] — Returns track weather data (temperature, rainfall, wind speed) for a session.
 - [[f1-tyre-degradation]] — Fits a linear tyre-degradation model per compound for a driver in a session.
 - [[f1-undercut-window]] — Determines if an undercut is viable for the attacker vs a target driver.
@@ -61,7 +61,8 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 ### F1
 
-- [[f1-sessions-chain]] — openf1 → jolpica; 6h TTL.
+- [[f1-sessions-chain]] — openf1 (only source); 6h TTL.
+- [[f1-results-chain]] — jolpica (only source); keyed by year + round; 24h TTL.
 - [[f1-laps-chain]] — openf1 → fastf1_local; 1h TTL.
 - [[f1-stints-chain]] — openf1; 1h TTL.
 - [[f1-weather-chain]] — openf1; 10min TTL.

@@ -1,10 +1,11 @@
 """Module-level FallbackChain singletons for all F1 tools.
 
 Resolution order:
-  sessions  : openf1 → jolpica (round-level coverage)
+  sessions  : openf1 (only source)
   laps      : openf1 → fastf1
   stints    : openf1 (only source)
   weather   : openf1 (only source)
+  results   : jolpica (only source; keyed by year + round)
   standings : jolpica → fastf1
   drivers   : openf1 (only source)
 """
@@ -44,12 +45,23 @@ for _a in [
 
 # -- Chain singletons ---------------------------------------------------------
 
+# sessions is OpenF1-only: Jolpica's results endpoint has a different signature
+# (requires `round`) and a different output shape (`results`, not `sessions`),
+# so it was never a viable sessions fallback — it raised on every attempt.
 f1_sessions_chain: FallbackChain[dict] = FallbackChain(
     name="f1:sessions",
-    adapters=[_openf1_sessions, _jolpica_results],
+    adapters=[_openf1_sessions],
     cache_key_fn=lambda year, country=None, **_: f"sportiq:f1:sessions:{year}:{country or 'all'}",
     fresh_ttl=21600,
     stale_ttl=86400,
+)
+
+f1_results_chain: FallbackChain[dict] = FallbackChain(
+    name="f1:results",
+    adapters=[_jolpica_results],
+    cache_key_fn=lambda year, round, **_: f"sportiq:f1:results:{year}:{round}",
+    fresh_ttl=86400,
+    stale_ttl=604800,
 )
 
 f1_laps_chain: FallbackChain[dict] = FallbackChain(

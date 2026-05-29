@@ -33,13 +33,18 @@ def _laps_payload(n: int = 10, slope: float = 0.08) -> dict:
 async def test_f1_tyre_degradation_returns_model():
     from sportiq.f1 import intel_tools
 
-    with patch("sportiq.f1.intel_tools.f1_laps_chain") as mock:
-        mock.fetch = AsyncMock(return_value=_fr(_laps_payload()))
+    with (
+        patch("sportiq.f1.intel_tools.f1_laps_chain") as mock_laps,
+        patch("sportiq.f1.intel_tools.f1_stints_chain") as mock_stints,
+    ):
+        mock_laps.fetch = AsyncMock(return_value=_fr(_laps_payload()))
+        mock_stints.fetch = AsyncMock(return_value=_fr({"stints": []}))
         result = await intel_tools.f1_tyre_degradation(
             session_key=9877, driver_number=1, compound="SOFT"
         )
     assert "data" in result
     assert result["meta"]["estimated"] is True
+    assert result["meta"]["is_stale"] is False
     assert "slope" in result["data"]
 
 
@@ -55,12 +60,35 @@ async def test_f1_tyre_degradation_invalid_compound():
 async def test_f1_tyre_degradation_all_sources_failed():
     from sportiq.f1 import intel_tools
 
-    with patch("sportiq.f1.intel_tools.f1_laps_chain") as mock:
-        mock.fetch = AsyncMock(side_effect=AllSourcesFailedError("failed", attempts=[]))
+    with (
+        patch("sportiq.f1.intel_tools.f1_laps_chain") as mock_laps,
+        patch("sportiq.f1.intel_tools.f1_stints_chain") as mock_stints,
+    ):
+        mock_laps.fetch = AsyncMock(side_effect=AllSourcesFailedError("failed", attempts=[]))
+        mock_stints.fetch = AsyncMock(return_value=_fr({"stints": []}))
         result = await intel_tools.f1_tyre_degradation(
             session_key=9877, driver_number=1, compound="SOFT"
         )
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+async def test_f1_tyre_degradation_degrades_gracefully_when_stints_down():
+    # Stints source down but laps available (carrying compound, e.g. fastf1):
+    # the tool fits on the laps rather than failing the whole request.
+    from sportiq.f1 import intel_tools
+
+    with (
+        patch("sportiq.f1.intel_tools.f1_laps_chain") as mock_laps,
+        patch("sportiq.f1.intel_tools.f1_stints_chain") as mock_stints,
+    ):
+        mock_laps.fetch = AsyncMock(return_value=_fr(_laps_payload()))
+        mock_stints.fetch = AsyncMock(side_effect=AllSourcesFailedError("failed", attempts=[]))
+        result = await intel_tools.f1_tyre_degradation(
+            session_key=9877, driver_number=1, compound="SOFT"
+        )
+    assert "data" in result
+    assert result["meta"]["stint_enrichment"] is False
+    assert result["data"]["slope"] > 0
 
 
 # -- f1_undercut_window --------------------------------------------------------

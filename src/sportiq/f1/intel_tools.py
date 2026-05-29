@@ -6,10 +6,10 @@ Flagship: f1_predict_pit_strategy.
 from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError
-from sportiq.core.tool_response import error_envelope
+from sportiq.core.tool_response import error_envelope, staleness_meta
 from sportiq.f1.chains import f1_laps_chain, f1_stints_chain, f1_weather_chain
 from sportiq.f1.models.pit_strategy import predict as _predict_strategy
-from sportiq.f1.models.tyre_deg import fit_degradation
+from sportiq.f1.models.tyre_deg import annotate_laps_with_stints, fit_degradation
 from sportiq.f1.models.undercut import undercut_window
 
 
@@ -46,7 +46,21 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
             sources_tried=e.attempts,
         )
 
-    model = fit_degradation(laps_result.value.get("laps", []), compound_upper)
+    # OpenF1 /laps carries no compound/tyre_life — those live on /stints, which we
+    # merge in to enrich the fit. But stint enrichment is *best-effort*: if the
+    # stints source is down we still fit on whatever the laps already carry (e.g.
+    # fastf1 laps), so a stints outage degrades quality rather than failing the call.
+    stints: list[dict] = []
+    stints_result = None
+    try:
+        stints_result = await f1_stints_chain.fetch(session_key=session_key, driver_number=driver_number)
+        stints = stints_result.value.get("stints", [])
+    except AllSourcesFailedError:
+        pass
+
+    annotated = annotate_laps_with_stints(laps_result.value.get("laps", []), stints)
+    model = fit_degradation(annotated, compound_upper)
+    sources = [laps_result] + ([stints_result] if stints_result is not None else [])
     return {
         "data": model,
         "meta": {
@@ -55,6 +69,8 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
             "driver_number": driver_number,
             "compound": compound_upper,
             "estimated": True,
+            "stint_enrichment": stints_result is not None,
+            **staleness_meta(*sources),
         },
     }
 
@@ -116,6 +132,7 @@ async def f1_undercut_window(
             "estimated": True,
             "attacker": attacker_number,
             "target": target_number,
+            **staleness_meta(attacker_laps, target_laps),
         },
     }
 
@@ -161,7 +178,11 @@ async def f1_head_to_head_pace(session_key: int, driver_a: int, driver_b: int) -
             "delta_s": delta,
             "faster_driver": faster,
         },
-        "meta": {"source": laps_a.source, "estimated": True},
+        "meta": {
+            "source": laps_a.source,
+            "estimated": True,
+            **staleness_meta(laps_a, laps_b),
+        },
     }
 
 
@@ -212,7 +233,11 @@ async def f1_weather_strategy_impact(session_key: int) -> dict:
             "compound_recommendation": compound_rec,
             "recommendation": recommendation,
         },
-        "meta": {"source": weather_result.source, "estimated": True},
+        "meta": {
+            "source": weather_result.source,
+            "estimated": True,
+            **staleness_meta(weather_result),
+        },
     }
 
 
@@ -250,22 +275,43 @@ async def f1_predict_pit_strategy(
 
     try:
         laps_result = await f1_laps_chain.fetch(session_key=session_key, driver_number=driver_number)
-        stints_result = await f1_stints_chain.fetch(session_key=session_key, driver_number=driver_number)
-        weather_result = await f1_weather_chain.fetch(session_key=session_key)
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
-            message="Could not fetch required data for pit strategy prediction.",
+            message="Could not fetch lap data for pit strategy prediction.",
             sources_tried=e.attempts,
         )
 
+    # Stints + weather are best-effort enrichment. If either source is down the
+    # model still runs (the pit_strategy model falls back to TyreSpec constants
+    # and dry-weather assumptions), so we degrade quality rather than 500-ing.
+    stints: list[dict] = []
+    stints_result = None
+    try:
+        stints_result = await f1_stints_chain.fetch(session_key=session_key, driver_number=driver_number)
+        stints = stints_result.value.get("stints", [])
+    except AllSourcesFailedError:
+        pass
+
+    weather: list[dict] = []
+    weather_result = None
+    try:
+        weather_result = await f1_weather_chain.fetch(session_key=session_key)
+        weather = weather_result.value.get("weather", [])
+    except AllSourcesFailedError:
+        pass
+
+    # Annotate laps with compound/tyre_life from /stints so the degradation fit
+    # uses telemetry instead of silently falling back to TyreSpec constants.
+    annotated = annotate_laps_with_stints(laps_result.value.get("laps", []), stints)
     strategy = _predict_strategy(
-        laps=laps_result.value.get("laps", []),
-        stints=stints_result.value.get("stints", []),
-        weather=weather_result.value.get("weather", []),
+        laps=annotated,
+        stints=stints,
+        weather=weather,
         current_lap=current_lap,
         total_laps=total_laps,
     )
+    sources = [r for r in (laps_result, stints_result, weather_result) if r is not None]
     return {
         "data": strategy,
         "meta": {
@@ -273,6 +319,9 @@ async def f1_predict_pit_strategy(
             "session_key": session_key,
             "driver_number": driver_number,
             "estimated": True,
+            "stint_enrichment": stints_result is not None,
+            "weather_enrichment": weather_result is not None,
+            **staleness_meta(*sources),
         },
     }
 

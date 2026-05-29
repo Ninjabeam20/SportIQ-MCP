@@ -50,9 +50,11 @@ async def test_openf1_laps_adapter_returns_laps():
     )
     result = await OpenF1LapsAdapter().fetch(session_key=9877, driver_number=1)
     assert "laps" in result
-    assert len(result["laps"]) == 2
+    assert len(result["laps"]) == 20
     assert result["laps"][0]["lap_number"] == 1
-    assert result["laps"][1]["lap_duration"] == 74.891
+    # Real OpenF1 /laps carries no compound/tyre_life — those live on /stints.
+    assert "compound" not in result["laps"][0]
+    assert "tyre_life" not in result["laps"][0]
 
 
 @respx.mock

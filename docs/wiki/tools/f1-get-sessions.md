@@ -3,7 +3,7 @@ title: f1_get_sessions
 type: tool
 tags: [f1, sessions]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-05-29
 related: [[f1-sessions-chain]], [[openf1]]
 ---
 
@@ -34,4 +34,4 @@ Off-season or no results: `data.sessions` is an empty list — not an error.
 
 ## Chain
 
-[[f1-sessions-chain]]
+[[f1-sessions-chain]] — **OpenF1-only.** Jolpica was wired as a fallback but its results endpoint has a different signature (requires `round`) and output shape (`results`, not `sessions`), so it raised on every attempt (audit finding #2). Removed in Phase 3.1.

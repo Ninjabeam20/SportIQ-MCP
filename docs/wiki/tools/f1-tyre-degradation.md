@@ -3,8 +3,8 @@ title: f1_tyre_degradation
 type: tool
 tags: [f1, tyre, degradation, intel]
 sources: []
-last_updated: 2026-05-28
-related: [[f1-laps-chain]], [[tyre-degradation-model]]
+last_updated: 2026-05-29
+related: [[f1-laps-chain]], [[f1-stints-chain]], [[tyre-degradation-model]]
 ---
 
 # f1_tyre_degradation
@@ -39,6 +39,12 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
 
 `slope` is in seconds per lap — positive means the tyre is degrading.
 
+## Telemetry merge (Phase 3.1, audit finding #1)
+
+OpenF1's `/laps` endpoint carries **no `compound` and no `tyre_life`** — those live on `/stints`. The tool fetches both [[f1-laps-chain]] and [[f1-stints-chain]] and merges them (`tyre_life = tyre_age_at_start + (lap_number - lap_start)`) before fitting, so the model runs on real telemetry instead of silently falling back to `TyreSpec` constants.
+
+Stint enrichment is **best-effort**: laps are required, but if the stints source is down the tool fits on whatever the laps already carry rather than failing. `meta.stint_enrichment` reports whether the merge ran.
+
 ## Chain
 
-[[f1-laps-chain]]
+[[f1-laps-chain]] + [[f1-stints-chain]]

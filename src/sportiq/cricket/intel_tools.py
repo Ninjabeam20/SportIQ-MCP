@@ -13,7 +13,7 @@ are unaffected (venue-only and player-id-only respectively).
 from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError, InvalidInputError, NotFoundError
-from sportiq.core.tool_response import error_envelope, tool_response
+from sportiq.core.tool_response import error_envelope, staleness_meta, tool_response
 from sportiq.cricket.chains import (
     pitch_data_chain,
     player_stats_chain,
@@ -28,9 +28,31 @@ from sportiq.cricket.models.pitch_report import pitch_report as _pitch_report
 _DEFAULT_OPPOSITION_STRENGTH = 0.5
 _DEFAULT_FORM_SCORE = 55.0  # neutral form when we have no per-player history
 
+# Estimated-ownership proxy. squads.json credits span 7.0-11.0; we map that
+# linearly onto a 5%->90% ownership curve (cheap fringe players are rarely owned;
+# premiums are near-universal). The old `credits * 7` proxy put even the cheapest
+# 7.0-credit player at 49% -- above the default 20% threshold -- so the tool always
+# returned []. Still flagged estimated:true; real ownership lands with the odds feed.
+_OWN_MIN_CREDITS, _OWN_MAX_CREDITS = 7.0, 11.0
+_OWN_MIN_PCT, _OWN_MAX_PCT = 5.0, 90.0
 
-async def _candidate_pool(team_a: str, team_b: str, venue_record: dict) -> list[dict]:
-    """Compose the candidate list the solver/captain ranker consumes."""
+
+def _estimated_ownership_pct(credits: float) -> float:
+    """Map a player's credit cost onto an estimated ownership percentage (1-99)."""
+    span = _OWN_MAX_CREDITS - _OWN_MIN_CREDITS
+    frac = (credits - _OWN_MIN_CREDITS) / span if span else 0.0
+    pct = _OWN_MIN_PCT + frac * (_OWN_MAX_PCT - _OWN_MIN_PCT)
+    return max(1.0, min(99.0, pct))
+
+
+async def _candidate_pool(
+    team_a: str, team_b: str, venue_record: dict
+) -> tuple[list[dict], list]:
+    """Compose the candidate list the solver/captain ranker consumes.
+
+    Returns the candidate dicts plus the two squad ``FallbackResult``s so callers
+    can aggregate freshness into ``meta`` (per fallback-contract.md).
+    """
     a = await squad_chain.fetch(team=team_a)
     b = await squad_chain.fetch(team=team_b)
     candidates: list[dict] = []
@@ -53,7 +75,7 @@ async def _candidate_pool(team_a: str, team_b: str, venue_record: dict) -> list[
                     "projected_points": round(pp, 2),
                 }
             )
-    return candidates
+    return candidates, [a, b]
 
 
 async def cricket_build_dream11_team(
@@ -96,7 +118,7 @@ async def cricket_build_dream11_team(
 
     try:
         venue_result = await pitch_data_chain.fetch(venue=venue)
-        candidates = await _candidate_pool(team_a, team_b, venue_result.value)
+        candidates, squad_results = await _candidate_pool(team_a, team_b, venue_result.value)
         squad_result = _solve_dream11(candidates, strategy=strategy)
     except AllSourcesFailedError as e:
         return error_envelope(
@@ -116,6 +138,7 @@ async def cricket_build_dream11_team(
             "venue": venue_result.value.get("name"),
             "strategy": strategy,
             "estimated": True,
+            **staleness_meta(venue_result, *squad_results),
         },
     }
 
@@ -153,7 +176,7 @@ async def cricket_captain_recommendation(
 
     try:
         venue_result = await pitch_data_chain.fetch(venue=venue)
-        candidates = await _candidate_pool(team_a, team_b, venue_result.value)
+        candidates, squad_results = await _candidate_pool(team_a, team_b, venue_result.value)
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
@@ -166,7 +189,11 @@ async def cricket_captain_recommendation(
     top3 = sorted(candidates, key=lambda c: c["projected_points"], reverse=True)[:3]
     return {
         "data": {"candidates": top3},
-        "meta": {"source": "model:captain_score", "estimated": True},
+        "meta": {
+            "source": "model:captain_score",
+            "estimated": True,
+            **staleness_meta(venue_result, *squad_results),
+        },
     }
 
 
@@ -210,7 +237,7 @@ async def cricket_differential_picks(
 
     try:
         venue_result = await pitch_data_chain.fetch(venue=venue)
-        candidates = await _candidate_pool(team_a, team_b, venue_result.value)
+        candidates, squad_results = await _candidate_pool(team_a, team_b, venue_result.value)
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
@@ -222,14 +249,17 @@ async def cricket_differential_picks(
 
     picks: list[dict] = []
     for c in candidates:
-        # Crude proxy: ownership ~ credits * 7; cap at 95.
-        est_own = min(95.0, c["credits"] * 7.0)
+        est_own = _estimated_ownership_pct(c["credits"])
         if est_own <= ownership_threshold and c["projected_points"] >= 40:
             picks.append({**c, "estimated_ownership_pct": round(est_own, 1)})
     picks.sort(key=lambda c: c["projected_points"], reverse=True)
     return {
         "data": {"picks": picks[:5], "ownership_threshold": ownership_threshold},
-        "meta": {"source": "model:captain_score", "estimated": True},
+        "meta": {
+            "source": "model:captain_score",
+            "estimated": True,
+            **staleness_meta(venue_result, *squad_results),
+        },
     }
 
 

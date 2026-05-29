@@ -9,6 +9,7 @@ from sportiq.core.tool_response import error_envelope, tool_response
 from sportiq.f1.chains import (
     f1_drivers_chain,
     f1_laps_chain,
+    f1_results_chain,
     f1_sessions_chain,
     f1_standings_chain,
     f1_weather_chain,
@@ -70,7 +71,8 @@ async def f1_get_lap_times(session_key: int, driver_number: int) -> dict:
         driver_number: Driver's race number (e.g. 1 for Verstappen).
 
     Returns:
-        data.laps: list of lap objects with lap_number, lap_duration, compound.
+        data.laps: list of lap objects with lap_number and lap_duration. OpenF1
+            does not put compound/tyre_life here — those live on the stints endpoint.
         meta.source: adapter that served the data.
     """
     if session_key <= 0:
@@ -112,24 +114,28 @@ async def f1_get_standings(year: int) -> dict:
     return tool_response(result)
 
 
-async def f1_get_race_results(session_key: int) -> dict:
-    """Return race results for a specific F1 session (lap times + final order proxy).
+async def f1_get_race_results(year: int, round: int) -> dict:
+    """Return the final classification for one F1 race, keyed by year and round.
 
     Args:
-        session_key: OpenF1 session identifier.
+        year: Championship year (e.g. 2025).
+        round: Round number within the season (1-based; e.g. 1 for the opener).
 
     Returns:
-        data.laps: lap data for all available drivers (proxy for race results).
+        data.results: Ergast/Jolpica RaceTable payload — finishing order, times,
+            grid positions, points, and fastest laps for the race.
         meta.source: adapter that served the data.
     """
-    if session_key <= 0:
-        return error_envelope(code="INVALID_INPUT", message="session_key must be positive.")
+    if year < 2018 or year > 2030:
+        return error_envelope(code="INVALID_INPUT", message="year must be between 2018 and 2030.")
+    if round < 1 or round > 30:
+        return error_envelope(code="INVALID_INPUT", message="round must be between 1 and 30.")
     try:
-        result = await f1_drivers_chain.fetch(session_key=session_key)
+        result = await f1_results_chain.fetch(year=year, round=round)
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
-            message=f"Could not fetch race results for session {session_key}.",
+            message=f"Could not fetch race results for {year} round {round}.",
             sources_tried=e.attempts,
         )
     return tool_response(result)

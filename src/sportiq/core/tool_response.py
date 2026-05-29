@@ -23,6 +23,29 @@ def tool_response(result: Any) -> dict:
     return {"data": result, "meta": {"source": "inline", "is_stale": False}}
 
 
+def staleness_meta(*results: Any) -> dict:
+    """Aggregate freshness signals across the chains a tool read.
+
+    INTEL tools compose several chains; any one of them can serve stale data.
+    Per .claude/rules/fallback-contract.md the worst-case staleness MUST be
+    surfaced in ``meta`` rather than swallowed. Returns the fields to splat into
+    a hand-built ``meta`` dict::
+
+        {"is_stale": any(...), "data_age_seconds": max(...), "fallback_used": any(...)}
+
+    Args:
+        *results: FallbackResult instances (any object exposing is_stale /
+            data_age_seconds / fallback_used).
+    """
+    return {
+        "is_stale": any(getattr(r, "is_stale", False) for r in results),
+        "data_age_seconds": max(
+            (getattr(r, "data_age_seconds", 0) for r in results), default=0
+        ),
+        "fallback_used": any(getattr(r, "fallback_used", False) for r in results),
+    }
+
+
 def error_envelope(
     code: ErrorCode,
     message: str,

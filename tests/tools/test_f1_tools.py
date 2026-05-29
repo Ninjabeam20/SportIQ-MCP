@@ -66,3 +66,23 @@ async def test_f1_get_weather_returns_envelope():
         )
         result = await tools.f1_get_weather(session_key=9877)
     assert "data" in result
+
+
+async def test_f1_get_race_results_returns_envelope():
+    from sportiq.f1 import tools
+
+    with patch("sportiq.f1.tools.f1_results_chain") as mock:
+        mock.fetch = AsyncMock(
+            return_value=_fr({"results": {"MRData": {"RaceTable": {"round": "1"}}}}, source="jolpica")
+        )
+        result = await tools.f1_get_race_results(year=2025, round=1)
+    assert "data" in result
+    assert result["data"]["results"]["MRData"]["RaceTable"]["round"] == "1"
+    assert result["meta"]["source"] == "jolpica"
+
+
+async def test_f1_get_race_results_invalid_round():
+    from sportiq.f1 import tools
+
+    result = await tools.f1_get_race_results(year=2025, round=0)
+    assert result["error"]["code"] == "INVALID_INPUT"
