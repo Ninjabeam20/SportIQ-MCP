@@ -13,7 +13,7 @@ from sportiq.football.models import poisson_xg
 from sportiq.football.models.bracket_sim import simulate_tournament
 from sportiq.football.models.group_sim import simulate_group as _simulate_group
 
-_MAX_ITERATIONS = 50000
+_MAX_ITERATIONS = 20000
 _MIN_ITERATIONS = 100
 
 
@@ -112,7 +112,7 @@ async def football_simulate_group(group: str, iterations: int = 5000) -> dict:
 
     Args:
         group: Group letter A-L.
-        iterations: Number of simulations (clamped to 100..50000).
+        iterations: Number of simulations (clamped to 100..20000).
 
     Returns:
         data.teams: {code: {p_first, p_second, p_third, p_fourth, p_advance, avg_points}}.
@@ -144,7 +144,7 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
     32-team knockout, and plays it to a champion, ``iterations`` times.
 
     Args:
-        iterations: Number of tournament simulations (clamped to 100..50000;
+        iterations: Number of tournament simulations (clamped to 100..20000;
             ~10000 gives stable ±2% probabilities).
         seed: Optional RNG seed for reproducible output.
 
@@ -174,7 +174,7 @@ async def football_knockout_path(team: str, iterations: int = 10000, seed: int |
 
     Args:
         team: Team code (e.g. "FRA").
-        iterations: Number of tournament simulations (clamped to 100..50000).
+        iterations: Number of tournament simulations (clamped to 100..20000).
         seed: Optional RNG seed.
 
     Returns:

@@ -99,8 +99,12 @@ async def football_get_squad(team: str) -> dict:
 async def football_get_match_stats(team: int) -> dict:
     """Return a team's aggregate World Cup tournament statistics.
 
+    Network-only enrichment: requires a configured API-Football (or
+    football-data.org) key. There is no offline static fallback, so without a
+    key the call returns a clean ALL_SOURCES_FAILED envelope.
+
     Args:
-        team: API-Football numeric team id.
+        team: API-Football numeric team id (not a country code).
 
     Returns:
         data.team_stats: {team, played, wins, goals_for, goals_against}.

@@ -8,7 +8,7 @@ common per-chain output shape (see base.py).
 from __future__ import annotations
 
 from sportiq.config import settings
-from sportiq.core.errors import MissingCredentialsError
+from sportiq.core.errors import MissingCredentialsError, NotFoundError
 from sportiq.core.http import get_json
 from sportiq.core.ratelimit import Budget
 from sportiq.football.adapters.base import _APIFOOTBALL_BASE, _WC_LEAGUE_ID, _WC_SEASON
@@ -130,16 +130,20 @@ class APIFootballSquadAdapter:
         )
         squad = []
         response = data.get("response", [])
-        if response:
-            for player in response[0].get("players", []):
-                squad.append(
-                    {
-                        "name": player.get("name"),
-                        "number": player.get("number"),
-                        "position": player.get("position"),
-                        "age": player.get("age"),
-                    }
-                )
+        # An empty response means no squad for this arg (e.g. a country code was
+        # passed where a numeric id is expected). Treat it as a miss so the chain
+        # walks past to the static seed instead of stopping on an empty success.
+        if not response:
+            raise NotFoundError(f"No api_football squad for team={team!r}")
+        for player in response[0].get("players", []):
+            squad.append(
+                {
+                    "name": player.get("name"),
+                    "number": player.get("number"),
+                    "position": player.get("position"),
+                    "age": player.get("age"),
+                }
+            )
         return {"squad": squad}
 
     async def healthcheck(self) -> bool:

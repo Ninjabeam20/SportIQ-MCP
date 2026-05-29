@@ -59,11 +59,34 @@ async def test_get_squad_empty_team_invalid_input():
     assert result["error"]["code"] == "INVALID_INPUT"
 
 
+async def test_get_squad_no_key_serves_static_seed(monkeypatch):
+    # A1: default offline path — api_football raises MissingCredentialsError, so
+    # the real chain serves the static seed (empty-but-valid squad).
+    from sportiq.config import settings
+    from sportiq.football import tools
+
+    monkeypatch.setattr(settings, "apifootball_key", None)
+    result = await tools.football_get_squad(team="ARG")
+    assert result["meta"]["source"] == "static_seed"
+    assert result["data"]["team"] == "ARG"
+
+
 async def test_get_match_stats_invalid_team_id():
     from sportiq.football import tools
 
     result = await tools.football_get_match_stats(team=0)
     assert result["error"]["code"] == "INVALID_INPUT"
+
+
+async def test_get_match_stats_all_sources_failed():
+    # A2: network-only tool, no static terminator. When the chain exhausts both
+    # network adapters the tool returns a clean error envelope, no crash.
+    from sportiq.football import tools
+
+    with patch("sportiq.football.tools.football_team_stats_chain") as mock:
+        mock.fetch = AsyncMock(side_effect=AllSourcesFailedError("failed", attempts=[]))
+        result = await tools.football_get_match_stats(team=26)
+    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
 
 
 async def test_get_standings_surfaces_is_stale():

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import pytest
+import respx
+from httpx import Response
 
 from sportiq.core.errors import AllSourcesFailedError
 from sportiq.core.fallback import FallbackChain
@@ -96,3 +98,19 @@ async def test_squad_chain_keys_by_team():
     key_b = chains.football_squad_chain.cache_key_fn(team="BRA")
     assert key_a != key_b
     assert "ARG" in key_a
+
+
+@respx.mock
+async def test_squad_chain_empty_api_football_falls_through_to_seed(monkeypatch):
+    # A1: with a key set but api_football returning an empty squad (country code
+    # vs numeric id), the chain must walk past to the static seed, not stop.
+    from sportiq.config import settings
+    from sportiq.football import chains
+
+    monkeypatch.setattr(settings, "apifootball_key", "test-key")
+    respx.get("https://v3.football.api-sports.io/players/squads").mock(
+        return_value=Response(200, json={"response": []})
+    )
+    result = await chains.football_squad_chain.fetch(team="ARG")
+    assert result.source == "static_seed"
+    assert result.value["team"] == "ARG"

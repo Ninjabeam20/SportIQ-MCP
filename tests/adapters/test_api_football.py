@@ -78,6 +78,18 @@ async def test_scorers_adapter_shape():
     assert result["scorers"][0]["goals"] == 6
 
 
+@respx.mock
+async def test_squad_adapter_empty_response_raises_not_found():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters.api_football import APIFootballSquadAdapter
+
+    # A country code (e.g. "ARG") where api_football expects a numeric id yields
+    # an empty `response`; the adapter must miss so the chain reaches the seed.
+    respx.get(f"{_BASE}/players/squads").mock(return_value=Response(200, json={"response": []}))
+    with pytest.raises(NotFoundError):
+        await APIFootballSquadAdapter().fetch(team="ARG")
+
+
 async def test_missing_key_raises_missing_credentials(monkeypatch):
     from sportiq.core.errors import MissingCredentialsError
     from sportiq.football.adapters.api_football import APIFootballFixturesAdapter
