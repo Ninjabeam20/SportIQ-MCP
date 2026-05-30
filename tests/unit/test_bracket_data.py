@@ -35,3 +35,43 @@ def test_no_r32_match_pairs_same_group_winner_and_runner():
         s1, s2 = m["slot1"], m["slot2"]
         if s1[0] in "12" and s2[0] in "12":
             assert s1[1:] != s2[1:]
+
+
+def test_build_r32_runtime_32_distinct_teams_no_intra_group_pair():
+    """_build_r32 must produce 32 distinct teams with no intra-group R32 match."""
+    from sportiq.football.models.bracket_sim import _build_r32
+
+    groups = list("ABCDEFGHIJKL")
+    # Give each group a unique winner and runner (no overlap)
+    winners = {g: f"W{g}" for g in groups}
+    runners = {g: f"R{g}" for g in groups}
+    # Pick first 8 groups as best-thirds; sorted letters = "ABCDEFGH" which is
+    # guaranteed to exist in third_allocation (it's a valid C(12,8) combo).
+    best_third_groups = list("ABCDEFGH")
+    best_thirds = {g: f"T{g}" for g in best_third_groups}
+
+    r32 = _build_r32(winners, runners, best_thirds)
+
+    # _build_r32 returns a flat list[str] of 32 team codes (16 matches x 2 slots)
+    assert len(r32) == 32
+    assert len(set(r32)) == 32
+
+    # Build team → group reverse map
+    team_group: dict[str, str] = {}
+    for g, t in winners.items():
+        team_group[t] = g
+    for g, t in runners.items():
+        team_group[t] = g
+    for g, t in best_thirds.items():
+        team_group[t] = g
+
+    # No adjacent pair (i, i+1 where i is even) may share a group
+    for i in range(0, 32, 2):
+        t1, t2 = r32[i], r32[i + 1]
+        g1 = team_group.get(t1)
+        g2 = team_group.get(t2)
+        if g1 is not None and g2 is not None:
+            assert g1 != g2, (
+                f"R32 match {i // 2}: {t1} (group {g1}) vs {t2} (group {g2}) "
+                "are from the same group"
+            )

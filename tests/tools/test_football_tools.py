@@ -258,3 +258,92 @@ async def test_football_get_squad_unknown_team_returns_envelope(monkeypatch):
     response = await tools.football_get_squad("Nowhereland")
     assert "error" not in response
     assert response["meta"]["source"] == "static_seed"
+
+
+# -- football_get_top_scorers -------------------------------------------------
+
+
+async def test_get_top_scorers_returns_envelope():
+    from sportiq.football import tools
+
+    with patch("sportiq.football.tools.football_scorers_chain") as mock:
+        mock.fetch = AsyncMock(
+            return_value=_fr({"scorers": [{"name": "Lionel Messi", "team": "ARG", "goals": 3, "assists": 1}]})
+        )
+        result = await tools.football_get_top_scorers()
+    assert "data" in result
+    assert result["data"]["scorers"][0]["name"] == "Lionel Messi"
+
+
+async def test_get_top_scorers_all_sources_failed():
+    from sportiq.football import tools
+
+    with patch("sportiq.football.tools.football_scorers_chain") as mock:
+        mock.fetch = AsyncMock(side_effect=AllSourcesFailedError("failed", attempts=[]))
+        result = await tools.football_get_top_scorers()
+    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+# -- football_get_fixtures -----------------------------------------------------
+
+
+async def test_get_fixtures_returns_envelope():
+    from sportiq.football import tools
+
+    with patch("sportiq.football.tools.football_fixtures_chain") as mock:
+        mock.fetch = AsyncMock(
+            return_value=_fr({"fixtures": [{"home": "ARG", "away": "CAN", "status": "scheduled"}]})
+        )
+        result = await tools.football_get_fixtures()
+    assert "data" in result and "meta" in result
+
+
+# -- football_get_standings ---------------------------------------------------
+
+
+async def test_get_standings_all_sources_failed():
+    from sportiq.football import tools
+
+    with patch("sportiq.football.tools.football_standings_chain") as mock:
+        mock.fetch = AsyncMock(side_effect=AllSourcesFailedError("failed", attempts=[]))
+        result = await tools.football_get_standings()
+    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+# -- football_get_groups ------------------------------------------------------
+
+
+async def test_get_groups_all_sources_failed():
+    from sportiq.football import tools
+
+    with patch("sportiq.football.tools.football_groups_chain") as mock:
+        mock.fetch = AsyncMock(side_effect=AllSourcesFailedError("failed", attempts=[]))
+        result = await tools.football_get_groups()
+    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+# -- football_get_match_stats -------------------------------------------------
+
+
+async def test_get_match_stats_returns_envelope():
+    from sportiq.football import tools
+
+    with patch("sportiq.football.tools.football_team_stats_chain") as mock:
+        mock.fetch = AsyncMock(
+            return_value=_fr({"team_stats": {"team": "ARG", "played": 3, "wins": 2, "goals_for": 5, "goals_against": 2}})
+        )
+        result = await tools.football_get_match_stats(team=26)
+    assert "data" in result
+
+
+# -- envelope meta fields -----------------------------------------------------
+
+
+async def test_football_meta_has_required_fields():
+    from sportiq.football import tools
+
+    with patch("sportiq.football.tools.football_groups_chain") as mock:
+        mock.fetch = AsyncMock(return_value=_fr(_draw_payload(), source="static_seed"))
+        result = await tools.football_get_groups()
+    for field in ["source", "is_stale", "data_age_seconds", "fallback_used", "duration_ms"]:
+        assert field in result["meta"]
