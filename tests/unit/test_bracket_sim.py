@@ -2,19 +2,10 @@
 from __future__ import annotations
 
 from sportiq.football.adapters.static_seed import load_elo_seed, load_wc2026
-from sportiq.football.models.bracket_sim import _seed_order, simulate_tournament
+from sportiq.football.models.bracket_sim import simulate_tournament
 
 _GROUPS = load_wc2026()["groups"]
 _RATINGS = load_elo_seed()
-
-
-def test_seed_order_keeps_top_seeds_apart():
-    # Standard bracket: seeds 1 and 2 land in opposite halves (meet only in final).
-    assert _seed_order(4) == [1, 4, 2, 3]
-    order8 = _seed_order(8)
-    assert sorted(order8) == list(range(1, 9))
-    half = len(order8) // 2
-    assert 1 in order8[:half] and 2 in order8[half:]
 
 
 def test_exactly_32_qualify_each_iteration():
@@ -51,3 +42,19 @@ def test_seeded_runs_reproducible():
     a = simulate_tournament(_GROUPS, _RATINGS, n_iter=800, seed=42)
     b = simulate_tournament(_GROUPS, _RATINGS, n_iter=800, seed=42)
     assert a == b
+
+
+def test_r32_uses_official_group_position_pairings():
+    # One deterministic tournament; collect the actual R32 matchups and confirm they are the
+    # official group-position pairings (e.g. 2A vs 2B exists), not a global strength ladder.
+    import numpy as np
+
+    from sportiq.football.models import bracket_sim
+
+    rng = np.random.default_rng(7)
+    winners, runners, thirds = bracket_sim._draw_qualifiers(rng, _GROUPS, _RATINGS)
+    current = bracket_sim._build_r32(winners, runners, thirds)
+    assert len(current) == 32
+    # Match 73 is "2A vs 2B": runners-up of A and B must be adjacent somewhere in the array.
+    pairs = {(current[i], current[i + 1]) for i in range(0, 32, 2)}
+    assert (runners["A"], runners["B"]) in pairs or (runners["B"], runners["A"]) in pairs
