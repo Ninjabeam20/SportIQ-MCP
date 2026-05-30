@@ -4,6 +4,9 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete`.
 
+## [2026-05-30] phase-complete | step9 — exhaustive test matrix + coverage gate
+**Scope:** Part 0 (step10 staleness banner) + Part 1 (matrix doc + C1 bracket regression + tool/chain gaps + coverage gate). No new tools. **291 → 316 tests, coverage 88%, ratchet floor 84%.** Key additions: (1) `docs/raw/2026-05-30-step9-test-matrix.md` — 36-tool coverage matrix + prioritized write-list. (2) `tests/unit/test_bracket_data.py` — C1 `_build_r32` runtime property test: 32 distinct teams, no intra-group R32 pairing. (3) `tests/tools/test_f1_tools.py` +16 — `f1_get_drivers` and `f1_get_standings` (0→covered), missing INVALID_INPUT/ALL_SOURCES_FAILED paths, meta-field assertions. (4) `tests/tools/test_football_tools.py` +10 — `football_get_top_scorers` (0→covered), missing success/error paths for fixtures/standings/groups/match_stats, meta-field assertions. (5) `tests/tools/test_health_tool.py` new — `sportiq_health` (0→covered): shape, data fields, meta version. (6) `pyproject.toml` + `test.yml` — `pytest-cov` in dev deps, `--cov-fail-under=84` ratchet wired into CI, `fastf1_local.py` + `server.py` excluded (optional/bootstrap). Live check (F1 keyless): OpenF1 + Jolpica healthy, 11/11 F1 tools pass live; keyed-source fixtures hand-crafted but validated in step8. Deferred: step10 rebaseline; remaining.md A1/A2/A3/A4 (tracked, unchanged).
+
 ## [2026-05-30] decision | step8 Part 3 — squad gap-fills (cricket + football seeds)
 **3.1** `cricket/data/squads.json`: added 5 international squads (SA, PAK, SL, WI, BAN), 15 players each, matching
 the existing `{name, role, credits}` shape — `cricket_get_squad` + Dream11 now work offline for them (the new
