@@ -28,4 +28,4 @@ jobs:
         run: uv run ruff check .
 
       - name: Test
-        run: uv run pytest
+        run: uv run pytest --cov=sportiq --cov-report=term-missing --cov-fail-under=84
