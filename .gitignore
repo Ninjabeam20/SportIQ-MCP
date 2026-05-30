@@ -30,6 +30,15 @@ htmlcov/
 .claude/settings.local.json
 CLAUDE.local.md
 
+# Secrets — never commit (local source-of-truth for keys/toggles)
+API-KEYS-AND-SETTINGS.md
+*KEYS*.md
+*.key
+*secret*
+
+# Git worktrees (embedded repos under .claude/)
+.claude/worktrees/
+
 # Generated artifacts
 docs/graphify/
 
