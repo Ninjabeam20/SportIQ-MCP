@@ -1,0 +1,48 @@
+{
+  "tournament": "FIFA World Cup 2026",
+  "points_system": {
+    "win": 3,
+    "draw": 1,
+    "loss": 0
+  },
+  "fair_play_deductions": {
+    "yellow_card": -1,
+    "indirect_red_card": -3,
+    "direct_red_card": -4,
+    "yellow_card_direct_red_card": -5
+  },
+  "suspensions": {
+    "yellow_card_limit_group_stage": 2,
+    "suspension_matches": 1
+  },
+  "extra_time": {
+    "group_stage": false,
+    "knockout_stage": true,
+    "extra_time_duration_minutes": 30,
+    "halves": 2,
+    "half_duration_minutes": 15
+  },
+  "penalty_shootout": {
+    "group_stage": false,
+    "knockout_stage": true,
+    "initial_rounds_count": 5
+  },
+  "best_third_ranking_rules": [
+    "points",
+    "goal_difference",
+    "goals_scored",
+    "wins",
+    "fair_play_points",
+    "drawing_of_lots"
+  ],
+  "group_tiebreaker_rules": [
+    "points",
+    "goal_difference",
+    "goals_scored",
+    "head_to_head_points",
+    "head_to_head_goal_difference",
+    "head_to_head_goals_scored",
+    "fair_play_points",
+    "drawing_of_lots"
+  ]
+}

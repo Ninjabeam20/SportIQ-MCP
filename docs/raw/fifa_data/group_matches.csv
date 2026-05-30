@@ -1,0 +1,73 @@
+match_id,group,home_team,away_team
+1,A,Argentina,Colombia
+2,A,Argentina,Ecuador
+3,A,Argentina,Ivory Coast
+4,A,Colombia,Ecuador
+5,A,Colombia,Ivory Coast
+6,A,Ecuador,Ivory Coast
+7,B,France,Morocco
+8,B,France,Canada
+9,B,France,Peru
+10,B,Morocco,Canada
+11,B,Morocco,Peru
+12,B,Canada,Peru
+13,C,Spain,United States
+14,C,Spain,Norway
+15,C,Spain,Cameroon
+16,C,United States,Norway
+17,C,United States,Cameroon
+18,C,Norway,Cameroon
+19,D,England,Switzerland
+20,D,England,Poland
+21,D,England,Paraguay
+22,D,Switzerland,Poland
+23,D,Switzerland,Paraguay
+24,D,Poland,Paraguay
+25,E,Brazil,Mexico
+26,E,Brazil,Iran
+27,E,Brazil,Costa Rica
+28,E,Mexico,Iran
+29,E,Mexico,Costa Rica
+30,E,Iran,Costa Rica
+31,F,Portugal,Denmark
+32,F,Portugal,Wales
+33,F,Portugal,Ghana
+34,F,Denmark,Wales
+35,F,Denmark,Ghana
+36,F,Wales,Ghana
+37,G,Netherlands,Japan
+38,G,Netherlands,Algeria
+39,G,Netherlands,Saudi Arabia
+40,G,Japan,Algeria
+41,G,Japan,Saudi Arabia
+42,G,Algeria,Saudi Arabia
+43,H,Belgium,Senegal
+44,H,Belgium,Australia
+45,H,Belgium,Qatar
+46,H,Senegal,Australia
+47,H,Senegal,Qatar
+48,H,Australia,Qatar
+49,I,Italy,Austria
+50,I,Italy,Nigeria
+51,I,Italy,Panama
+52,I,Austria,Nigeria
+53,I,Austria,Panama
+54,I,Nigeria,Panama
+55,J,Germany,South Korea
+56,J,Germany,Scotland
+57,J,Germany,Jamaica
+58,J,South Korea,Scotland
+59,J,South Korea,Jamaica
+60,J,Scotland,Jamaica
+61,K,Croatia,Serbia
+62,K,Croatia,Tunisia
+63,K,Croatia,Uzbekistan
+64,K,Serbia,Tunisia
+65,K,Serbia,Uzbekistan
+66,K,Tunisia,Uzbekistan
+67,L,Uruguay,Ukraine
+68,L,Uruguay,Egypt
+69,L,Uruguay,New Zealand
+70,L,Ukraine,Egypt
+71,L,Ukraine,New Zealand
+72,L,Egypt,New Zealand
