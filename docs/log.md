@@ -4,6 +4,8 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete`.
 
+## [2026-06-03] finding | S.4 untrusted-upstream posture — SECURITY.md, payload caps, scraper HTML assertion
+
 ## [2026-06-03] finding-filed | error-envelope-secret-leak (+ ADR-0009)
 S.1d closeout for the secret-redaction work. Filed `docs/wiki/findings/error-envelope-secret-leak.md` — the query-param API key (CricAPI, TheOdds ×2) leaked via the *error* envelope's `sources_tried` (httpx exception URL captured in `fallback.py` attempts/log); distinct from the success-body echo in [[cricapi-envelope-leak]] (cross-linked both ways). Added `docs/wiki/decisions/0009-secret-redaction.md` (ADR-0009) recording the choke-point decision and the rejected "scrub inside get_json" alternative (would break tenacity retry typing). Indexed both under Findings + Decisions in `docs/index.md`. Fix itself shipped earlier (`4ddd8f6`); remaining S.5/S.6 noted in step10 Phase S.
 

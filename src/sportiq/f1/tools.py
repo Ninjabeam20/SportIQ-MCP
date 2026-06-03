@@ -5,7 +5,7 @@ Thin wrappers: validate args → call chain.fetch() → return tool_response.
 from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError
-from sportiq.core.tool_response import error_envelope, tool_response
+from sportiq.core.tool_response import error_envelope, tool_response, truncate_payload
 from sportiq.f1.chains import (
     f1_drivers_chain,
     f1_laps_chain,
@@ -87,7 +87,10 @@ async def f1_get_lap_times(session_key: int, driver_number: int) -> dict:
             message=f"Could not fetch laps for driver {driver_number} in session {session_key}.",
             sources_tried=e.attempts,
         )
-    return tool_response(result)
+    result.value, was_truncated = truncate_payload(result.value, "laps")
+    resp = tool_response(result)
+    resp["meta"]["truncated"] = was_truncated
+    return resp
 
 
 async def f1_get_standings(year: int) -> dict:

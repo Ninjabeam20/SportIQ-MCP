@@ -46,6 +46,22 @@ def staleness_meta(*results: Any) -> dict:
     }
 
 
+_MAX_LIST_ITEMS = 200
+_MAX_STRING_LEN = 500
+
+
+def truncate_payload(data: dict, list_key: str, max_items: int = _MAX_LIST_ITEMS) -> tuple[dict, bool]:
+    """Truncate an oversized list in `data[list_key]` in-place.
+
+    Returns (data, was_truncated). Tools should set meta.truncated=True when was_truncated.
+    """
+    lst = data.get(list_key)
+    if isinstance(lst, list) and len(lst) > max_items:
+        data[list_key] = lst[:max_items]
+        return data, True
+    return data, False
+
+
 def error_envelope(
     code: ErrorCode,
     message: str,

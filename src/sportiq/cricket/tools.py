@@ -11,7 +11,7 @@ from ``server.py``; we avoid importing ``mcp`` at module load.
 from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
-from sportiq.core.tool_response import error_envelope, tool_response
+from sportiq.core.tool_response import error_envelope, tool_response, truncate_payload
 from sportiq.cricket.chains import (
     fixtures_chain,
     live_score_chain,
@@ -131,7 +131,10 @@ async def cricket_get_schedule(series_id: str | None = None) -> dict:
             message="No schedule source is available right now.",
             sources_tried=e.attempts,
         )
-    return tool_response(result)
+    result.value, was_truncated = truncate_payload(result.value, "matches")
+    resp = tool_response(result)
+    resp["meta"]["truncated"] = was_truncated
+    return resp
 
 
 async def cricket_get_squad(team: str, series_id: str | None = None) -> dict:
