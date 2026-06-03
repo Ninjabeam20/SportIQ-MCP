@@ -9,8 +9,9 @@ import asyncio
 
 from sportiq.core.errors import AllSourcesFailedError
 from sportiq.core.tool_response import error_envelope, staleness_meta
-from sportiq.f1.chains import f1_laps_chain, f1_stints_chain, f1_weather_chain
+from sportiq.f1.chains import f1_drivers_chain, f1_laps_chain, f1_stints_chain, f1_weather_chain
 from sportiq.f1.models.pit_strategy import predict as _predict_strategy
+from sportiq.f1.models.quali_analysis import best_lap_per_driver, gap_to_pole, grid_projection
 from sportiq.f1.models.tyre_deg import annotate_laps_with_stints, fit_degradation
 from sportiq.f1.models.undercut import undercut_window
 
@@ -351,10 +352,78 @@ async def f1_predict_pit_strategy(
     }
 
 
+async def f1_qualifying_analysis(session_key: int) -> dict:
+    """Analyse a qualifying session: best lap per driver, gap to pole, projected grid.
+
+    Args:
+        session_key: OpenF1 session identifier for a Qualifying session.
+
+    Returns:
+        data.grid: [{position, driver_number, full_name, team_name, best_lap_gap_s}].
+        data.pole_time_s: pole lap duration in seconds.
+        data.drivers_analysed: count of drivers with valid laps.
+        meta.estimated: true — grid derived from session laps, not official timing.
+    """
+    if session_key <= 0:
+        return error_envelope(code="INVALID_INPUT", message="session_key must be positive.")
+
+    try:
+        drivers_result = await f1_drivers_chain.fetch(session_key=session_key)
+    except AllSourcesFailedError as e:
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message=f"Could not fetch drivers for session {session_key}.",
+            sources_tried=e.attempts,
+        )
+
+    driver_list = drivers_result.value.get("drivers", [])
+    driver_info = {
+        str(d.get("driver_number", "")): d
+        for d in driver_list
+        if d.get("driver_number")
+    }
+
+    tasks = [
+        _fetch_driver_laps(session_key, int(dn))
+        for dn in driver_info
+        if dn.isdigit()
+    ]
+    raw_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    all_laps: list[dict] = []
+    for res in raw_results:
+        if isinstance(res, Exception):
+            continue
+        all_laps.extend(res.value.get("laps", []))
+
+    bests = best_lap_per_driver(all_laps)
+    gaps = gap_to_pole(bests)
+    grid = grid_projection(gaps, driver_info)
+    pole_time = min(bests.values()) if bests else None
+
+    return {
+        "data": {
+            "session_key": session_key,
+            "grid": grid,
+            "pole_time_s": round(pole_time, 3) if pole_time else None,
+            "drivers_analysed": len(bests),
+        },
+        "meta": {
+            "source": drivers_result.source,
+            "is_stale": drivers_result.is_stale,
+            "data_age_seconds": getattr(drivers_result, "data_age_seconds", 0),
+            "fallback_used": drivers_result.fallback_used,
+            "duration_ms": getattr(drivers_result, "duration_ms", 0),
+            "estimated": True,
+        },
+    }
+
+
 def register_f1_intel_tools(mcp) -> None:
-    """Register the five F1 INTEL tools on the supplied FastMCP instance."""
+    """Register all F1 INTEL tools on the supplied FastMCP instance."""
     mcp.tool()(f1_tyre_degradation)
     mcp.tool()(f1_undercut_window)
     mcp.tool()(f1_head_to_head_pace)
     mcp.tool()(f1_weather_strategy_impact)
     mcp.tool()(f1_predict_pit_strategy)
+    mcp.tool()(f1_qualifying_analysis)
