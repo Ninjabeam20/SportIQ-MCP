@@ -59,6 +59,18 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/sportiq"]
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+    ".env",
+    ".env.*",
+    "docs/raw/",
+    "docs/graphify/",
+    "tests/fixtures/",
+    "scripts/",
+    "*.local.md",
+    "step*.md",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

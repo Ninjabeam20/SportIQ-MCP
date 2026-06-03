@@ -2,7 +2,10 @@
 
 Append-only. Grep with `grep "^## \[" docs/log.md`.
 
-Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete`.
+Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete` · `ci` · `fix`.
+
+## [2026-06-03] decision | ADR-0010 PyPI Trusted Publishing (OIDC) — manual PyPI setup documented
+**S.9a closeout.** Supply-chain risk mitigation: long-lived PyPI API tokens replaced with short-lived OIDC identity proofs from GitHub Actions. **Code side ready** — the release workflow uses `pypa/gh-action-pypi-publish` (OIDC mode, no explicit token). **Manual one-time setup required:** operator adds a GitHub Actions publisher in PyPI's web UI (https://pypi.org/manage/project/sportiq-mcp/settings/publishing/) — proof recorded in `ADR-0010`. **Build artifact verification:** `pyproject.toml` gained `[tool.hatch.build.targets.sdist]` with excludes (`.env`, `.env.*`, `docs/raw/`, `docs/graphify/`, `tests/fixtures/`, `scripts/`, `*.local.md`, `step*.md`); new `scripts/check_release_build.py` validates both wheel + sdist against these patterns at build time (exit 0 = no leaks). **CI:** new `.github/workflows/security.yml` job `release-build-check` runs the script on push/PR. **Tests:** 382 pass, ruff clean, script verified locally (0 violations). **Wiki:** `docs/wiki/decisions/0010-trusted-publishing.md` + indexed in `docs/index.md`. Step10 Phase S.9a DONE.
 
 ## [2026-06-03] ci | S.7a — pip-audit + bandit + gitleaks gates added
 **Scope:** CI dependency scanning gates + hardcoded `/tmp` path hardening. **New:** `.github/workflows/security.yml` with three jobs: `pip-audit --strict` (CVE scanning), `bandit -r src -ll` (static security analysis), `gitleaks` (committed-secret detection). **Added to dev:** `pip-audit>=2.7.0`, `bandit>=1.8.0`. **Fixed:** `src/sportiq/f1/adapters/fastf1_local.py` — replaced hardcoded `/tmp/fastf1_cache` paths with `tempfile.gettempdir()` (B108 MEDIUM findings). **Audit result:** 1 transitive CVE flagged (`diskcache 5.6.3 CVE-2025-69872` pickle RCE); mitigated by local-only use (cache dir `~/.cache/sportiq/` owned by user). **All gates pass:** Bandit 0 MEDIUM+ on src, ruff clean, **377 tests**. Step10 Phase S.7a DONE.
