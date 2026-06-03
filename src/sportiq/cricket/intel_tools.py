@@ -14,7 +14,9 @@ from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError, InvalidInputError, NotFoundError
 from sportiq.core.tool_response import error_envelope, staleness_meta, tool_response
+from sportiq.core.value_bet import find_value
 from sportiq.cricket.chains import (
+    odds_chain,
     pitch_data_chain,
     player_stats_chain,
     squad_chain,
@@ -24,6 +26,7 @@ from sportiq.cricket.models.captain_score import expected_points
 from sportiq.cricket.models.dream11_solver import solve as _solve_dream11
 from sportiq.cricket.models.form_index import compute_form_index
 from sportiq.cricket.models.pitch_report import pitch_report as _pitch_report
+from sportiq.cricket.models.win_probability import win_prob
 
 _DEFAULT_OPPOSITION_STRENGTH = 0.5
 _DEFAULT_FORM_SCORE = 55.0  # neutral form when we have no per-player history
@@ -398,10 +401,101 @@ async def cricket_get_pitch_report(venue: str) -> dict:
     })())
 
 
+async def cricket_find_value_bets(
+    team: str | None = None,
+    min_edge: float = 0.05,
+) -> dict:
+    """Find +EV ("value") bets on upcoming IPL matches.
+
+    Compares the server's heuristic win model (form + H2H + venue) against
+    de-vigged bookmaker head-to-head odds. Requires THEODDS_KEY.
+
+    Args:
+        team: Optional team name to filter events (case-insensitive substring).
+            Omit to scan every IPL odds event.
+        min_edge: Minimum edge (model_prob - devigged_market_prob), 0..1.
+            Default 0.05 (5 percentage points).
+
+    Returns:
+        data.value_bets: list of {event_id, home, away, outcome, model_prob,
+            fair_odds, market_odds, edge, bookmaker}, sorted by edge descending.
+        data.events_analysed: count of events where model + odds were available.
+        meta.estimated: true — model probabilities are heuristic estimates.
+    """
+    import time as _time
+
+    if not 0.0 <= min_edge <= 1.0:
+        return error_envelope(code="INVALID_INPUT", message="min_edge must be in [0, 1].")
+
+    t0 = _time.monotonic()
+
+    try:
+        odds_result = await odds_chain.fetch()
+    except AllSourcesFailedError as e:
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message="No cricket odds source available. Set THEODDS_KEY to enable.",
+            sources_tried=e.attempts,
+        )
+
+    events = odds_result.value.get("events", [])
+    if team and team.strip():
+        needle = team.strip().lower()
+        events = [
+            ev for ev in events
+            if needle in ev.get("home", "").lower() or needle in ev.get("away", "").lower()
+        ]
+
+    value_bets = []
+    analysed = 0
+
+    for ev in events:
+        home_team = ev.get("home", "")
+        away_team = ev.get("away", "")
+        if not home_team or not away_team:
+            continue
+
+        # Use neutral signals (no form data available at this scope); tool is
+        # still useful as a de-vigged baseline even with 50/50 priors.
+        probs = win_prob({}, {})
+        model_probs = {"home_win": probs["team_a"], "away_win": probs["team_b"]}
+
+        for bookmaker in ev.get("bookmakers", []):
+            for pick in find_value(model_probs, bookmaker, min_edge):
+                value_bets.append(
+                    {
+                        "event_id": ev.get("event_id"),
+                        "home": home_team,
+                        "away": away_team,
+                        **pick,
+                    }
+                )
+        analysed += 1
+
+    value_bets.sort(key=lambda x: x.get("edge", 0), reverse=True)
+
+    return {
+        "data": {
+            "value_bets": value_bets,
+            "events_analysed": analysed,
+            "min_edge": min_edge,
+        },
+        "meta": {
+            "source": odds_result.source,
+            "is_stale": odds_result.is_stale,
+            "data_age_seconds": getattr(odds_result, "data_age_seconds", 0),
+            "fallback_used": odds_result.fallback_used,
+            "duration_ms": int((_time.monotonic() - t0) * 1000),
+            "estimated": True,
+        },
+    }
+
+
 def register_cricket_intel_tools(mcp) -> None:
-    """Register the five INTEL tools on the supplied FastMCP instance."""
+    """Register the six INTEL tools on the supplied FastMCP instance."""
     mcp.tool()(cricket_build_dream11_team)
     mcp.tool()(cricket_captain_recommendation)
     mcp.tool()(cricket_differential_picks)
     mcp.tool()(cricket_player_form_index)
     mcp.tool()(cricket_get_pitch_report)
+    mcp.tool()(cricket_find_value_bets)

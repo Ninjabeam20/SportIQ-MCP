@@ -17,6 +17,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[cricket-player-form-index]] — 0-100 form score derived from player stats chain.
 - [[cricket-get-pitch-report]] — Pitch-friendliness summary + recommendation for a venue.
 - [[cricket-get-live-odds]] — Live bookmaker h2h odds for IPL matches; optional team-name filter.
+- [[cricket-find-value-bets]] — +EV "value" bets: de-vigged bookmaker odds vs the heuristic win model (form + H2H + venue).
 
 ### F1
 
@@ -57,6 +58,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[captain-score]] — `expected_points(player, venue, opp, form)` projection used as solver objective.
 - [[form-index]] — 0-100 score blending recent innings with career baseline.
 - [[pitch-report]] — Friendliness profile + recommendation derived from a venue record.
+- [[cricket-win-probability-model]] — Heuristic pre-match T20 win probability using form (50%), H2H (30%), and venue tilt (20%).
 
 ### F1
 

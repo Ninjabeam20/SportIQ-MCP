@@ -4,6 +4,9 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete` · `ci` · `fix`.
 
+## [2026-06-03] tool-added | cricket_find_value_bets + win probability model
+Feature 1C complete. **1C.0:** `src/sportiq/core/value_bet.py` — canonical home for `implied_prob`, `devig`, `find_value`, `_OUTCOME_TO_MODEL`; `football/models/value_bet.py` now re-exports from core (no behaviour change). **1C.1:** `src/sportiq/cricket/models/win_probability.py` — heuristic T20 win probability (form 50%, H2H 30%, venue tilt 20%); pure function, no I/O, defaults to 50/50 on missing signals. **1C.2:** `cricket_find_value_bets` tool added to `intel_tools.py`; reuses `odds_chain`; `meta.estimated: true` always set. **Tests:** 10 new tests (7 unit + 3 tool → 404 total). **Wiki:** `docs/wiki/tools/cricket-find-value-bets.md` + `docs/wiki/models/cricket-win-probability.md`.
+
 ## [2026-06-03] perf | Phase O — concurrency caps, load harness, TTL verification, duration_ms in staleness_meta
 **O.1:** `_F1_LAP_SEMAPHORE = asyncio.Semaphore(5)` + `_fetch_driver_laps()` helper in `f1/intel_tools.py`; `f1_head_to_head_pace` and `f1_undercut_window` now route per-driver lap fetches through the semaphore. **O.2:** `_SERVER_SEMAPHORE = asyncio.Semaphore(20)` in `server.py` as infra guard against malformed client bursts. **O.3:** `tests/unit/test_o3_cache_ttls.py` — 12 TTL assertions across cricket/F1/football chains; discovered `f1_laps_chain` and `f1_stints_chain` had stale `fresh_ttl=3600/stale_ttl=86400` — corrected to `10/60` per caching-policy.md. **O.4:** `scripts/load_check.py` — 20-concurrent stubbed tool calls; wall time 12ms, PASS. **O.5:** `staleness_meta()` now includes `duration_ms: sum(...)` so all intel tools auto-surface chain timing. **Tests:** 394 pass (382 → 394). **Ruff:** clean.
 
