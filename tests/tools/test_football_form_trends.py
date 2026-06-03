@@ -19,7 +19,7 @@ def _fr(fixtures: list[dict], source: str = "static_seed", is_stale: bool = Fals
 
 
 def _completed_fixture(home: str, away: str, hs: int, as_: int, date: str = "2026-01-01") -> dict:
-    return {"home_team": home, "away_team": away, "home_score": hs, "away_score": as_, "date": date}
+    return {"home": home, "away": away, "home_goals": hs, "away_goals": as_, "date": date}
 
 
 # -- INVALID_INPUT -------------------------------------------------------------
@@ -73,7 +73,7 @@ async def test_valid_returns_envelope():
 async def test_off_season_no_error():
     """Chain returns empty (no completed) fixtures → matches_analysed==0, no error key."""
     fixtures = [
-        {"home_team": "Brazil", "away_team": "Germany", "home_score": None, "away_score": None, "date": "2026-12-01"}
+        {"home": "Brazil", "away": "Germany", "home_goals": None, "away_goals": None, "date": "2026-12-01"}
     ]
     with patch("sportiq.football.intel_tools.football_fixtures_chain") as mock:
         mock.fetch = AsyncMock(return_value=_fr(fixtures))

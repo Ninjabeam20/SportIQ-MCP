@@ -10,10 +10,10 @@ def compute_form_trends(fixtures: list[dict], team: str) -> dict:
 
     Args:
         fixtures: List of fixture dicts from ``football_fixtures_chain``.
-            Each dict has at minimum ``home_team``, ``away_team``,
-            ``home_score``, ``away_score`` (``None`` for future), ``date``.
+            Each dict has at minimum ``home``, ``away``,
+            ``home_goals``, ``away_goals`` (``None`` for future), ``date``.
         team: Team name to analyse (case-insensitive match against
-            ``home_team`` / ``away_team``).
+            ``home`` / ``away``).
 
     Returns:
         dict with keys: team, matches_analysed, form_string, wins, draws,
@@ -25,12 +25,12 @@ def compute_form_trends(fixtures: list[dict], team: str) -> dict:
     # Filter to this team's completed fixtures (both scores present).
     completed: list[dict] = []
     for fx in fixtures:
-        home = (fx.get("home_team") or "").lower()
-        away = (fx.get("away_team") or "").lower()
+        home = (fx.get("home") or "").lower()
+        away = (fx.get("away") or "").lower()
         if team_lower not in (home, away):
             continue
-        hs = fx.get("home_score")
-        as_ = fx.get("away_score")
+        hs = fx.get("home_goals")
+        as_ = fx.get("away_goals")
         if hs is None or as_ is None:
             continue
         completed.append(fx)
@@ -46,9 +46,9 @@ def compute_form_trends(fixtures: list[dict], team: str) -> dict:
     goal_list: list[int] = []  # goals scored per match (for trend)
 
     for fx in completed:
-        home = (fx.get("home_team") or "").lower()
-        hs = int(fx["home_score"])
-        as_ = int(fx["away_score"])
+        home = (fx.get("home") or "").lower()
+        hs = int(fx["home_goals"])
+        as_ = int(fx["away_goals"])
 
         is_home = team_lower == home
         gf = hs if is_home else as_
@@ -78,6 +78,9 @@ def compute_form_trends(fixtures: list[dict], team: str) -> dict:
             xg_against_total = (xg_against_total or 0.0) + xg_against_raw
 
     # recent_trend: compare avg goals in last 3 vs the 3 before that.
+    # NOTE: when len(goal_list) is 4 or 5, prior3 contains only 1 or 2 matches
+    # (not a full 3-match window). This asymmetry is intentional — we still
+    # surface a trend signal rather than returning "stable" for too-short history.
     if len(goal_list) >= 4:
         last3 = goal_list[-3:]
         prior3 = goal_list[-6:-3] if len(goal_list) >= 6 else goal_list[: len(goal_list) - 3]

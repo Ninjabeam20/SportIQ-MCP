@@ -5,11 +5,11 @@ from sportiq.football.models.form_trends import compute_form_trends
 
 
 def _fx(home: str, away: str, hs: int, as_: int, date: str = "2026-01-01", **extra) -> dict:
-    return {"home_team": home, "away_team": away, "home_score": hs, "away_score": as_, "date": date, **extra}
+    return {"home": home, "away": away, "home_goals": hs, "away_goals": as_, "date": date, **extra}
 
 
 def _future(home: str, away: str, date: str = "2026-12-01") -> dict:
-    return {"home_team": home, "away_team": away, "home_score": None, "away_score": None, "date": date}
+    return {"home": home, "away": away, "home_goals": None, "away_goals": None, "date": date}
 
 
 # -- form_string ---------------------------------------------------------------
@@ -86,6 +86,21 @@ def test_recent_trend_improving():
     ]
     result = compute_form_trends(fixtures, "Brazil")
     assert result["recent_trend"] == "improving"
+
+
+def test_recent_trend_declining():
+    """Last 3 avg goals < prior 3 avg → 'declining'."""
+    # prior 3: 3, 3, 3 goals; last 3: 0, 0, 0 goals
+    fixtures = [
+        _fx("Brazil", "A", 3, 1, "2026-01-01"),
+        _fx("Brazil", "B", 3, 0, "2026-01-02"),
+        _fx("Brazil", "C", 3, 0, "2026-01-03"),
+        _fx("Brazil", "D", 0, 2, "2026-01-04"),
+        _fx("Brazil", "E", 0, 1, "2026-01-05"),
+        _fx("Brazil", "F", 0, 3, "2026-01-06"),
+    ]
+    result = compute_form_trends(fixtures, "Brazil")
+    assert result["recent_trend"] == "declining"
 
 
 def test_recent_trend_stable_too_few():
