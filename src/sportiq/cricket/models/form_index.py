@@ -97,3 +97,49 @@ def compute_form_index(
             trend = "falling"
 
     return {"form_score": score, "trend": trend, "samples": samples}
+
+
+def player_form_index(raw_stats: dict) -> dict:
+    """Derive a form snapshot from a raw player-stats payload (no I/O).
+
+    Handles CricAPI ``data.stats`` and RapidAPI Cricbuzz ``values`` shapes.
+    Falls back to neutral (form_score=50, trend='stable') when the payload
+    carries no recognisable career numbers.
+
+    Args:
+        raw_stats: upstream stats dict as returned by ``player_stats_chain``.
+
+    Returns:
+        {"form_score": 0..100, "trend": "rising|stable|falling", "samples": N}
+    """
+    avg, sr = 0.0, 0.0
+
+    # CricAPI shape: raw_stats["data"]["stats"] list
+    cric_rows = (raw_stats or {}).get("data", {}).get("stats", [])
+    if cric_rows:
+        for row in cric_rows:
+            if row.get("matchtype") != "t20i" or row.get("fn") != "batting":
+                continue
+            try:
+                if row.get("stat") == "Average":
+                    avg = float(row.get("value", 0) or 0)
+                elif row.get("stat") == "Strike Rate":
+                    sr = float(row.get("value", 0) or 0)
+            except (TypeError, ValueError):
+                continue
+
+    # RapidAPI Cricbuzz shape: raw_stats["values"] list
+    if not avg and not sr:
+        for row in (raw_stats or {}).get("values", []):
+            if row.get("name") != "T20I":
+                continue
+            try:
+                avg = float(row.get("average", 0) or 0)
+                sr = float(row.get("strikeRate", 0) or 0)
+            except (TypeError, ValueError):
+                pass
+            break
+
+    # recent_innings not available from career-stats endpoints; fall back fully
+    # to the career baseline (compute_form_index handles samples=0 gracefully).
+    return compute_form_index([], career_avg=avg, career_sr=sr)

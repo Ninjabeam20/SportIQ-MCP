@@ -12,6 +12,8 @@ are unaffected (venue-only and player-id-only respectively).
 
 from __future__ import annotations
 
+import asyncio
+
 from sportiq.core.errors import AllSourcesFailedError, InvalidInputError, NotFoundError
 from sportiq.core.tool_response import error_envelope, staleness_meta, tool_response
 from sportiq.core.value_bet import find_value
@@ -25,8 +27,12 @@ from sportiq.cricket.match_resolver import resolve_match
 from sportiq.cricket.models.captain_score import expected_points
 from sportiq.cricket.models.dream11_solver import solve as _solve_dream11
 from sportiq.cricket.models.form_index import compute_form_index
+from sportiq.cricket.models.head_to_head import summarise_h2h
 from sportiq.cricket.models.pitch_report import pitch_report as _pitch_report
 from sportiq.cricket.models.win_probability import win_prob
+
+# Cap concurrent per-player stats fetches during H2H analysis.
+_PLAYER_STATS_SEMAPHORE = asyncio.Semaphore(5)
 
 _DEFAULT_OPPOSITION_STRENGTH = 0.5
 _DEFAULT_FORM_SCORE = 55.0  # neutral form when we have no per-player history
@@ -401,6 +407,109 @@ async def cricket_get_pitch_report(venue: str) -> dict:
     })())
 
 
+async def _fetch_player_stats_safe(pid: str) -> tuple[str, dict]:
+    """Fetch stats for one player, gated by the concurrency semaphore.
+
+    Returns ``(pid, stats_dict)`` on success or ``(pid, {})`` on any failure
+    so callers can always unpack a 2-tuple.
+    """
+    async with _PLAYER_STATS_SEMAPHORE:
+        try:
+            result = await player_stats_chain.fetch(player_id=pid)
+            return pid, result.value
+        except Exception:  # best-effort; skip broken sources
+            return pid, {}
+
+
+async def cricket_head_to_head(team_a: str, team_b: str) -> dict:
+    """Compare two cricket teams head-to-head using squad form and player stats.
+
+    Args:
+        team_a: First team code or name (e.g. "MI", "India").
+        team_b: Second team code or name (e.g. "CSK", "Australia").
+
+    Returns:
+        data: {team_a, team_b, team_a_edge_count, team_b_edge_count,
+               key_players_a, key_players_b, h2h_win_rate_a, h2h_win_rate_b,
+               win_prob_a, win_prob_b}.
+        meta.estimated: true.
+    """
+    if not team_a or not team_a.strip():
+        return error_envelope(code="INVALID_INPUT", message="team_a must not be empty.")
+    if not team_b or not team_b.strip():
+        return error_envelope(code="INVALID_INPUT", message="team_b must not be empty.")
+    if team_a.strip().lower() == team_b.strip().lower():
+        return error_envelope(code="INVALID_INPUT", message="team_a and team_b must be different.")
+
+    # --- fetch squads ---
+    try:
+        squad_result_a = await squad_chain.fetch(team=team_a.strip())
+        squad_result_b = await squad_chain.fetch(team=team_b.strip())
+    except AllSourcesFailedError as e:
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message="Could not fetch squad data.",
+            sources_tried=e.attempts,
+        )
+
+    squad_a_players: list[dict] = squad_result_a.value.get("players", [])
+    squad_b_players: list[dict] = squad_result_b.value.get("players", [])
+
+    # --- fetch player stats concurrently (best-effort, up to 11 per side) ---
+    def _pids(players: list[dict]) -> list[str]:
+        pids = []
+        for p in players[:11]:
+            pid = p.get("player_id") or p.get("id")
+            if pid:
+                pids.append(str(pid))
+        return pids
+
+    all_pids = _pids(squad_a_players) + _pids(squad_b_players)
+    if all_pids:
+        fetch_results = await asyncio.gather(
+            *[_fetch_player_stats_safe(pid) for pid in all_pids],
+            return_exceptions=True,
+        )
+        stats_by_player: dict[str, dict] = {}
+        for item in fetch_results:
+            if isinstance(item, Exception):
+                continue
+            pid, stats = item
+            if stats:
+                stats_by_player[pid] = stats
+    else:
+        stats_by_player = {}
+
+    # --- derive H2H summary ---
+    h2h_result = summarise_h2h(
+        team_a.strip(),
+        team_b.strip(),
+        squad_a_players,
+        squad_b_players,
+        stats_by_player,
+    )
+
+    # --- win probability from H2H edge ratio ---
+    probs = win_prob(
+        {"h2h_win_rate": h2h_result["h2h_win_rate_a"]},
+        {"h2h_win_rate": h2h_result["h2h_win_rate_b"]},
+    )
+
+    return {
+        "data": {
+            **h2h_result,
+            "win_prob_a": probs["team_a"],
+            "win_prob_b": probs["team_b"],
+        },
+        "meta": {
+            "source": squad_result_a.source,
+            "is_stale": squad_result_a.is_stale or squad_result_b.is_stale,
+            "estimated": True,
+            **staleness_meta(squad_result_a, squad_result_b),
+        },
+    }
+
+
 async def cricket_find_value_bets(
     team: str | None = None,
     min_edge: float = 0.05,
@@ -492,10 +601,11 @@ async def cricket_find_value_bets(
 
 
 def register_cricket_intel_tools(mcp) -> None:
-    """Register the six INTEL tools on the supplied FastMCP instance."""
+    """Register the seven INTEL tools on the supplied FastMCP instance."""
     mcp.tool()(cricket_build_dream11_team)
     mcp.tool()(cricket_captain_recommendation)
     mcp.tool()(cricket_differential_picks)
     mcp.tool()(cricket_player_form_index)
     mcp.tool()(cricket_get_pitch_report)
     mcp.tool()(cricket_find_value_bets)
+    mcp.tool()(cricket_head_to_head)

@@ -4,6 +4,9 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete` · `ci` · `fix`.
 
+## [2026-06-03] tool-added | cricket_head_to_head
+Feature 2 complete. **2.1:** `src/sportiq/cricket/models/head_to_head.py` — `summarise_h2h()` pure function: scores each squad by `player_form_index`, counts positional form edges, derives `h2h_win_rate_*` from edge ratio. **2.2:** `cricket_head_to_head` tool added to `intel_tools.py`; fetches squads + player stats concurrently (semaphore=5); folds H2H rate into `win_prob()`; `meta.estimated: true`. `player_form_index(raw_stats)` helper added to `form_index.py`. **Tests:** 16 new tests (8 unit + 8 tool). **Wiki:** `docs/wiki/tools/cricket-head-to-head.md`.
+
 ## [2026-06-03] tool-added | cricket_find_value_bets + win probability model
 Feature 1C complete. **1C.0:** `src/sportiq/core/value_bet.py` — canonical home for `implied_prob`, `devig`, `find_value`, `_OUTCOME_TO_MODEL`; `football/models/value_bet.py` now re-exports from core (no behaviour change). **1C.1:** `src/sportiq/cricket/models/win_probability.py` — heuristic T20 win probability (form 50%, H2H 30%, venue tilt 20%); pure function, no I/O, defaults to 50/50 on missing signals. **1C.2:** `cricket_find_value_bets` tool added to `intel_tools.py`; reuses `odds_chain`; `meta.estimated: true` always set. **Tests:** 10 new tests (7 unit + 3 tool → 404 total). **Wiki:** `docs/wiki/tools/cricket-find-value-bets.md` + `docs/wiki/models/cricket-win-probability.md`.
 
