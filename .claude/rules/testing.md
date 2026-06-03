@@ -23,6 +23,12 @@
 - Test names: `test_<unit>_<behavior>_<condition>`. Example: `test_fallback_chain_serves_stale_when_all_adapters_fail`.
 - `uv run pytest` MUST pass before any commit. Hooks enforce this.
 
+## Credential isolation
+
+Tests NEVER use real credentials. The `no_live_credentials` autouse fixture in
+`tests/conftest.py` blanks every API key and scraper toggle before each test —
+do not unset it, monkeypatch around it, or re-enable any credential in pytest.
+
 ## Cassette recording workflow
 
 How to produce the initial fixture for a new adapter (run once during development, then commit):
