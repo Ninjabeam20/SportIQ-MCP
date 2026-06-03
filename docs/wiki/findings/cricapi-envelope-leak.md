@@ -4,7 +4,7 @@ type: finding
 tags: [cricket, cricapi, security, fallback]
 sources: [2026-05-30-step8-live-findings.md, cricapi]
 last_updated: 2026-05-30
-related: [[cricapi]], [[cricket-scorecard-chain]], [[cricket-squad-chain]], [[project-not-found-invariant]]
+related: [[cricapi]], [[cricket-scorecard-chain]], [[cricket-squad-chain]], [[project-not-found-invariant]], [[error-envelope-secret-leak]]
 ---
 
 # CricAPI envelope leak + failure-as-success

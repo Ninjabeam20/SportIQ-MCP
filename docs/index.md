@@ -133,6 +133,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 ## Findings
 
 - [[cricapi-envelope-leak]] — CricAPI adapters leaked the request apikey and treated failure responses as empty successes (step8 live pass); fixed via `_unwrap` + `NotFoundError`.
+- [[error-envelope-secret-leak]] — Query-param API keys (CricAPI, TheOdds) leaked via the *error* envelope's `sources_tried` (httpx exception URL); fixed with `core/redact.py:scrub` at the fallback capture sites.
 
 ## Decisions (ADRs)
 
@@ -144,3 +145,4 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[0006-respx-for-test-mocking]] — `respx` cassettes only; no live HTTP in CI.
 - [[0007-cricket-fallback-strategy]] — Opt-in scrapers + paid escape hatch; CricSheet dropped in Phase 1 cleanup.
 - [[0008-football-fallback-strategy]] — Football source ladder + the WC 2026 48-team / 12-group / best-thirds format encoding.
+- [[0009-secret-redaction]] — Redact secrets at the fallback capture point (`core/redact.py:scrub`); query-param keys must never reach `sources_tried` or logs.
