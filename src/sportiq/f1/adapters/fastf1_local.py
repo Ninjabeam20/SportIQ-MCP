@@ -10,6 +10,9 @@ per-season auto-refresh is a Phase 3.1 follow-up.
 """
 from __future__ import annotations
 
+import os
+import tempfile
+
 # Minimal static registry: session_key → (year, round_number)
 # Extend as needed; Phase 3.1 will auto-fetch from OpenF1 /sessions.
 _SESSION_REGISTRY: dict[int, tuple[int, int]] = {
@@ -36,7 +39,8 @@ class FastF1LapsAdapter:
                 "Add it to _SESSION_REGISTRY or use the OpenF1 adapter."
             )
         year, round_number = _SESSION_REGISTRY[session_key]
-        fastf1.Cache.enable_cache("/tmp/fastf1_cache")
+        cache_dir = os.path.join(tempfile.gettempdir(), "fastf1_cache")
+        fastf1.Cache.enable_cache(cache_dir)
         session = fastf1.get_session(year, round_number, "R")
         session.load(laps=True, telemetry=False, weather=False, messages=False)
         driver_str = str(driver_number).zfill(2)
@@ -75,7 +79,8 @@ class FastF1StandingsAdapter:
                 "fastf1 is not installed. Run: uv pip install 'sportiq-mcp[f1]'"
             ) from exc
 
-        fastf1.Cache.enable_cache("/tmp/fastf1_cache")
+        cache_dir = os.path.join(tempfile.gettempdir(), "fastf1_cache")
+        fastf1.Cache.enable_cache(cache_dir)
         schedule = fastf1.get_event_schedule(year, include_testing=False)
         standings: list[dict] = []
         for _, event in schedule.iterrows():

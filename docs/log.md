@@ -4,6 +4,9 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete`.
 
+## [2026-06-03] ci | S.7a — pip-audit + bandit + gitleaks gates added
+**Scope:** CI dependency scanning gates + hardcoded `/tmp` path hardening. **New:** `.github/workflows/security.yml` with three jobs: `pip-audit --strict` (CVE scanning), `bandit -r src -ll` (static security analysis), `gitleaks` (committed-secret detection). **Added to dev:** `pip-audit>=2.7.0`, `bandit>=1.8.0`. **Fixed:** `src/sportiq/f1/adapters/fastf1_local.py` — replaced hardcoded `/tmp/fastf1_cache` paths with `tempfile.gettempdir()` (B108 MEDIUM findings). **Audit result:** 1 transitive CVE flagged (`diskcache 5.6.3 CVE-2025-69872` pickle RCE); mitigated by local-only use (cache dir `~/.cache/sportiq/` owned by user). **All gates pass:** Bandit 0 MEDIUM+ on src, ruff clean, **377 tests**. Step10 Phase S.7a DONE.
+
 ## [2026-06-03] finding | S.4 untrusted-upstream posture — SECURITY.md, payload caps, scraper HTML assertion
 
 ## [2026-06-03] finding-filed | error-envelope-secret-leak (+ ADR-0009)
