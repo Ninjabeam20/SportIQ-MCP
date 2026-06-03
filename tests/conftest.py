@@ -22,3 +22,25 @@ def isolated_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(cache_module, "_cache_singleton", None)
     yield
     monkeypatch.setattr(cache_module, "_cache_singleton", None)
+
+
+@pytest.fixture(autouse=True)
+def no_live_credentials(monkeypatch: pytest.MonkeyPatch):
+    """Blank every credential + scraper toggle for the whole test session.
+
+    No pytest test should ever depend on a real API key — adapters are exercised
+    via respx/stubs. Some healthchecks (e.g. CricAPILiveMatchesAdapter) make a
+    live HTTP call when their key is truthy, and ``settings`` loads the developer's
+    ``.env``. Without this guard, a key present in ``.env`` causes the suite to hit
+    the live upstream (quota burn + the "NEVER call live APIs in tests" rule).
+    """
+    for cred in (
+        "cricapi_key",
+        "apifootball_key",
+        "footballdata_key",
+        "rapidapi_key",
+        "theodds_key",
+    ):
+        monkeypatch.setattr(config_module.settings, cred, None)
+    monkeypatch.setattr(config_module.settings, "enable_cricbuzz_scraper", False)
+    monkeypatch.setattr(config_module.settings, "enable_ndtv_scraper", False)

@@ -68,15 +68,15 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "-q --strict-markers --cov=sportiq --cov-report=term-missing --cov-fail-under=84"
+addopts = "-q --strict-markers"
 
+# Coverage gate lives in the CI command (.github/workflows/test.yml), not in
+# addopts: a `--cov-fail-under` in addopts fails any partial/subset local run
+# (e.g. `pytest tests/tools/test_f1_tools.py`) even when every selected test
+# passes. Measure locally on demand with:
+#   uv run pytest --cov=sportiq --cov-report=term-missing
 [tool.coverage.run]
 omit = [
     "src/sportiq/f1/adapters/fastf1_local.py",
     "src/sportiq/server.py",
-]
-
-[dependency-groups]
-dev = [
-    "pytest-cov>=7.1.0",
 ]
