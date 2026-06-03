@@ -8,9 +8,14 @@ from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError
 from sportiq.core.tool_response import error_envelope, staleness_meta
-from sportiq.football.chains import football_groups_chain, football_odds_chain
+from sportiq.football.chains import (
+    football_fixtures_chain,
+    football_groups_chain,
+    football_odds_chain,
+)
 from sportiq.football.models import poisson_xg
 from sportiq.football.models.bracket_sim import simulate_tournament
+from sportiq.football.models.form_trends import compute_form_trends
 from sportiq.football.models.group_sim import simulate_group as _simulate_group
 from sportiq.football.models.value_bet import find_value
 
@@ -304,6 +309,43 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
     }
 
 
+async def football_form_trends(team: str) -> dict:
+    """Return rolling form, goal record, and xG trend for a football team.
+
+    Args:
+        team: Team name (e.g. "Brazil", "Argentina").
+
+    Returns:
+        data: {form_string, wins, draws, losses, goals_scored, goals_conceded,
+               xg_for, xg_against, recent_trend, matches_analysed}.
+        meta.estimated: true — derived from available fixture data.
+    """
+    if not team or not team.strip():
+        return error_envelope(code="INVALID_INPUT", message="team must be a non-empty string.")
+
+    try:
+        result = await football_fixtures_chain.fetch()
+    except AllSourcesFailedError as e:
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message="No fixture source is available right now.",
+            sources_tried=e.attempts,
+        )
+
+    fixtures = result.value.get("fixtures", [])
+    trends = compute_form_trends(fixtures, team)
+
+    meta: dict = {
+        "source": result.source,
+        "estimated": True,
+        **staleness_meta(result),
+    }
+    if trends["matches_analysed"] == 0:
+        meta["note"] = "No completed fixtures found for this team."
+
+    return {"data": trends, "meta": meta}
+
+
 def register_football_intel_tools(mcp) -> None:
     """Register the football INTEL tools on the supplied FastMCP instance."""
     mcp.tool()(football_xg_model)
@@ -312,3 +354,4 @@ def register_football_intel_tools(mcp) -> None:
     mcp.tool()(football_simulate_bracket)
     mcp.tool()(football_knockout_path)
     mcp.tool()(football_find_value_bets)
+    mcp.tool()(football_form_trends)

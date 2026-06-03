@@ -49,6 +49,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[football-knockout-path]] — Round-by-round survival probabilities for one team.
 - [[football-get-odds]] — Live bookmaker h2h odds for WC 2026 matches; optional team-name filter.
 - [[football-find-value-bets]] — +EV "value" bets: de-vigged bookmaker odds vs the match model's probabilities (edge %).
+- [[football-form-trends]] — Rolling form string, W/D/L record, goals, and xG trajectory for a national team.
 
 ## Models
 

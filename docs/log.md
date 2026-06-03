@@ -4,6 +4,9 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete` · `ci` · `fix`.
 
+## [2026-06-03] tool-added | football_form_trends
+`compute_form_trends` pure model in `src/sportiq/football/models/form_trends.py`; `football_form_trends` tool registered in `intel_tools.py`. Routes through `football_fixtures_chain`. Off-season graceful (empty envelope + note). 7 unit tests + 5 tool-layer tests. Wiki: `docs/wiki/tools/football-form-trends.md`.
+
 ## [2026-06-03] tool-added | cricket_head_to_head
 Feature 2 complete. **2.1:** `src/sportiq/cricket/models/head_to_head.py` — `summarise_h2h()` pure function: scores each squad by `player_form_index`, counts positional form edges, derives `h2h_win_rate_*` from edge ratio. **2.2:** `cricket_head_to_head` tool added to `intel_tools.py`; fetches squads + player stats concurrently (semaphore=5); folds H2H rate into `win_prob()`; `meta.estimated: true`. `player_form_index(raw_stats)` helper added to `form_index.py`. **Tests:** 16 new tests (8 unit + 8 tool). **Wiki:** `docs/wiki/tools/cricket-head-to-head.md`.
 
