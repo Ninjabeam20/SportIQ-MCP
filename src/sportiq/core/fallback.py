@@ -16,6 +16,7 @@ from sportiq.core.cache import get_cache
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.logging import get_logger
 from sportiq.core.ratelimit import Budget, consume, has_budget
+from sportiq.core.redact import scrub
 
 log = get_logger(__name__)
 
@@ -120,7 +121,9 @@ class FallbackChain(Generic[T]):
                     {
                         "name": adapter.name,
                         "status": "error",
-                        "error": f"{type(e).__name__}: {e}",
+                        # scrub: exception strings embed the request URL, which
+                        # carries the API key as a query param for some sources.
+                        "error": scrub(f"{type(e).__name__}: {e}"),
                         "duration_ms": int(
                             (time.monotonic() - adapter_started) * 1000
                         ),
@@ -130,7 +133,7 @@ class FallbackChain(Generic[T]):
                     "chain.adapter.failed",
                     chain=self.name,
                     adapter=adapter.name,
-                    error=str(e),
+                    error=scrub(str(e)),
                 )
                 continue
 
