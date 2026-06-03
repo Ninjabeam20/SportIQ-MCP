@@ -4,6 +4,9 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete`.
 
+## [2026-06-03] decision | stop committing step planning docs
+Per user: don't commit the `step*.md` planning docs going forward. Dropped the unpushed `step10.md` rebaseline commit (`81ae867`) via `git rebase --onto` (safety branch `backup-before-step10-drop`); the rebaselined step10.md is preserved on disk as an uncommitted working copy. Added `step*.md` to `.gitignore` — forward-looking only: `step5–9.md` are already tracked and **stay on origin untouched** (gitignore doesn't untrack them); this just stops brand-new step files (and the local step10.md copy) from being added. The S.1 redaction fix + gitignore-narrow commits are unaffected.
+
 ## [2026-06-03] fix | .gitignore — narrow the over-broad `*secret*` rule
 The bare `*secret*` (line 37) matched ANY path containing "secret" and silently un-staged source/tests — it ate `tests/chains/test_chain_redacts_secrets.py` during step10 S.1 (renamed to `test_chain_key_redaction.py` to work around it). Replaced with extension/name-scoped patterns (`*.secret`, `*.secrets`, `secrets.{json,yaml,yml,toml,env}`, `client_secret*.json`, `.env.secret`) so real secret artifacts stay ignored while `.py`/`.md` source with "secret" in the name is tracked. Verified with `git check-ignore` both ways. The `*_key_redaction` test keeps its name (no need to rename back). `.env`, `*.key`, `*KEYS*.md`, `API-KEYS-AND-SETTINGS.md` still cover the primary secret files.
 

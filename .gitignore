@@ -54,6 +54,11 @@ client_secret*.json
 # Generated artifacts
 docs/graphify/
 
+# Local planning docs — keep out of new commits. NOTE: step5–9.md are already
+# tracked and stay on origin; gitignore does not untrack them. This only stops
+# brand-new step*.md (and the local step10.md working copy) from being added.
+step*.md
+
 # OS
 .DS_Store
 Thumbs.db
