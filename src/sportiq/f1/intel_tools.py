@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import asyncio
 
-from sportiq.core.errors import AllSourcesFailedError
+from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.tool_response import error_envelope, staleness_meta
 from sportiq.f1.chains import f1_drivers_chain, f1_laps_chain, f1_stints_chain, f1_weather_chain
 from sportiq.f1.models.pit_strategy import predict as _predict_strategy
@@ -375,6 +375,11 @@ async def f1_qualifying_analysis(session_key: int) -> dict:
             message=f"Could not fetch drivers for session {session_key}.",
             sources_tried=e.attempts,
         )
+    except NotFoundError:
+        return error_envelope(
+            code="NOT_FOUND",
+            message=f"No drivers found for session {session_key}.",
+        )
 
     driver_list = drivers_result.value.get("drivers", [])
     driver_info = {
@@ -401,20 +406,19 @@ async def f1_qualifying_analysis(session_key: int) -> dict:
     grid = grid_projection(gaps, driver_info)
     pole_time = min(bests.values()) if bests else None
 
+    successful_lap_results = [r for r in raw_results if not isinstance(r, Exception)]
+    all_results = [drivers_result, *successful_lap_results]
     return {
         "data": {
             "session_key": session_key,
             "grid": grid,
-            "pole_time_s": round(pole_time, 3) if pole_time else None,
+            "pole_time_s": round(pole_time, 3) if pole_time is not None else None,
             "drivers_analysed": len(bests),
         },
         "meta": {
             "source": drivers_result.source,
-            "is_stale": drivers_result.is_stale,
-            "data_age_seconds": getattr(drivers_result, "data_age_seconds", 0),
-            "fallback_used": drivers_result.fallback_used,
-            "duration_ms": getattr(drivers_result, "duration_ms", 0),
             "estimated": True,
+            **staleness_meta(*all_results),
         },
     }
 
