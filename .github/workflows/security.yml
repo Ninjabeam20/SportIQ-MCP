@@ -15,8 +15,10 @@ jobs:
       - name: Sync deps
         run: uv sync --extra dev
       - name: Audit dependencies for known CVEs
-        # --skip-editable: skip local package (sportiq-mcp not on PyPI yet)
-        # CVE-2025-69872: diskcache pickle RCE — acceptable risk (local-only cache)
+        # --skip-editable: skip local package (not on PyPI yet); --strict cannot
+        # coexist with --skip-editable (strict fails on any skip). Fail-closed
+        # for all other transitive deps still applies via non-zero exit on any CVE.
+        # CVE-2025-69872: diskcache pickle RCE — acceptable risk (local-only cache).
         run: uv run pip-audit --skip-editable --ignore-vuln CVE-2025-69872
 
   bandit:
