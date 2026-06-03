@@ -34,7 +34,19 @@ CLAUDE.local.md
 API-KEYS-AND-SETTINGS.md
 *KEYS*.md
 *.key
-*secret*
+# Secret-bearing config/data files. Narrowed from the old bare `*secret*`, which
+# silently ignored ANY path containing "secret" — including source/tests (it
+# swallowed tests/chains/test_chain_redacts_secrets.py during step10 S.1).
+# Scoped to data/config extensions so it never eats .py/.md source again.
+*.secret
+*.secrets
+secrets.json
+secrets.yaml
+secrets.yml
+secrets.toml
+secrets.env
+client_secret*.json
+.env.secret
 
 # Git worktrees (embedded repos under .claude/)
 .claude/worktrees/
