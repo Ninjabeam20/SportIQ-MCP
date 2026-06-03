@@ -4,6 +4,9 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete` · `ci` · `fix`.
 
+## [2026-06-03] tool-added | football_build_accumulator
+`build_accumulator` pure model in `src/sportiq/core/parlay.py` (edge filter, dedup by match, combined odds/prob/edge under independence, risk flag). `football_build_accumulator` tool added to `intel_tools.py`; calls `football_find_value_bets` directly; `meta.source: derived`, `meta.estimated: true`. 7 unit tests + 6 tool-layer tests (466 total). Wiki: `docs/wiki/tools/football-build-accumulator.md` + `docs/wiki/models/parlay-builder.md`.
+
 ## [2026-06-03] tool-added | football_form_trends
 `compute_form_trends` pure model in `src/sportiq/football/models/form_trends.py`; `football_form_trends` tool registered in `intel_tools.py`. Routes through `football_fixtures_chain`. Off-season graceful (empty envelope + note). 7 unit tests + 5 tool-layer tests. Wiki: `docs/wiki/tools/football-form-trends.md`.
 

@@ -7,6 +7,7 @@ football_groups_chain (the source of the draw + ratings) and surface is_stale.
 from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError
+from sportiq.core.parlay import build_accumulator
 from sportiq.core.tool_response import error_envelope, staleness_meta
 from sportiq.football.chains import (
     football_fixtures_chain,
@@ -346,6 +347,47 @@ async def football_form_trends(team: str) -> dict:
     return {"data": trends, "meta": meta}
 
 
+async def football_build_accumulator(legs: int = 3, min_edge: float = 0.05) -> dict:
+    """Build a football accumulator from the top value bets across live markets.
+
+    Calls ``football_find_value_bets`` internally to fetch live odds, then selects
+    the best legs for an accumulator bet using the parlay builder model.
+
+    Args:
+        legs: Number of legs (2-8). Default 3.
+        min_edge: Minimum edge threshold per leg. Default 0.05.
+
+    Returns:
+        data: {legs, legs_used, combined_odds, combined_model_prob, combined_edge,
+               risk_flag, independence_warning}.
+        meta.estimated: true.
+    """
+    if not (2 <= legs <= 8):
+        return error_envelope(code="INVALID_INPUT", message="legs must be between 2 and 8 inclusive.")
+    if not (0.0 < min_edge < 1.0):
+        return error_envelope(code="INVALID_INPUT", message="min_edge must be in (0, 1) exclusive.")
+
+    result = await football_find_value_bets(min_edge=min_edge)
+
+    if result.get("error"):
+        return result
+
+    picks = result.get("data", {}).get("value_bets", [])
+    acca = build_accumulator(picks, legs=legs, min_edge=min_edge)
+
+    return {
+        "data": acca,
+        "meta": {
+            "source": "derived",
+            "is_stale": False,
+            "data_age_seconds": 0,
+            "fallback_used": False,
+            "duration_ms": 0,
+            "estimated": True,
+        },
+    }
+
+
 def register_football_intel_tools(mcp) -> None:
     """Register the football INTEL tools on the supplied FastMCP instance."""
     mcp.tool()(football_xg_model)
@@ -355,3 +397,4 @@ def register_football_intel_tools(mcp) -> None:
     mcp.tool()(football_knockout_path)
     mcp.tool()(football_find_value_bets)
     mcp.tool()(football_form_trends)
+    mcp.tool()(football_build_accumulator)
