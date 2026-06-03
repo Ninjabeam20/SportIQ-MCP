@@ -43,11 +43,22 @@ def test_extreme_form_dominates():
     a = {"form_score": 100, "h2h_win_rate": 1.0}
     b = {"form_score": 0, "h2h_win_rate": 0.0}
     result = win_prob(a, b)
-    # Form weight 50% + venue (neutral) give team_a a large advantage.
-    # h2h_win_rate=0 for b maps to b_h2h=1-0=1.0 (complementary coding),
-    # which partially offsets; empirically team_a lands at ~0.69.
-    assert result["team_a"] > 0.6
+    assert result["team_a"] >= 0.9
     assert result["team_a"] > result["team_b"]
+
+
+def test_h2h_signal_not_double_flipped():
+    """h2h_win_rate=0.6 for team_a and 0.4 for team_b should favour team_a.
+
+    Regression for the bug where b_h2h was computed as 1.0-b_rate instead
+    of b_rate directly, causing both teams to get the same h2h advantage.
+    """
+    a = {"h2h_win_rate": 0.6}
+    b = {"h2h_win_rate": 0.4}
+    result = win_prob(a, b)
+    assert result["team_a"] > result["team_b"], (
+        "team_a with 60% H2H win rate should beat team_b with 40%"
+    )
 
 
 def test_core_value_bet_reexport():

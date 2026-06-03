@@ -45,7 +45,7 @@ def win_prob(
     a_form_p = a_form / form_sum if form_sum > 0 else 0.5
 
     a_h2h = float(team_a_signals.get("h2h_win_rate", 0.5))
-    b_h2h = 1.0 - float(team_b_signals.get("h2h_win_rate", 1.0 - a_h2h))
+    b_h2h = float(team_b_signals.get("h2h_win_rate", 1.0 - a_h2h))
 
     venue_tilt = float(team_a_signals.get("venue_tilt", 0.5))
     a_venue = venue_tilt
