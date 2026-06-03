@@ -31,11 +31,11 @@ def staleness_meta(*results: Any) -> dict:
     surfaced in ``meta`` rather than swallowed. Returns the fields to splat into
     a hand-built ``meta`` dict::
 
-        {"is_stale": any(...), "data_age_seconds": max(...), "fallback_used": any(...)}
+        {"is_stale": any(...), "data_age_seconds": max(...), "fallback_used": any(...), "duration_ms": sum(...)}
 
     Args:
         *results: FallbackResult instances (any object exposing is_stale /
-            data_age_seconds / fallback_used).
+            data_age_seconds / fallback_used / duration_ms).
     """
     return {
         "is_stale": any(getattr(r, "is_stale", False) for r in results),
@@ -43,6 +43,7 @@ def staleness_meta(*results: Any) -> dict:
             (getattr(r, "data_age_seconds", 0) for r in results), default=0
         ),
         "fallback_used": any(getattr(r, "fallback_used", False) for r in results),
+        "duration_ms": sum(getattr(r, "duration_ms", 0) for r in results),
     }
 
 

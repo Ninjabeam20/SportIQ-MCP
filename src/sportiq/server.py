@@ -2,7 +2,12 @@
 
 Per CLAUDE.md hard rule: this file MUST expose a `main()` function that calls
 `mcp.run()`. `pyproject.toml` wires `[project.scripts] sportiq-mcp = "sportiq.server:main"`.
+
+MCP servers on stdio are inherently single-client; 20 concurrent calls is a safe
+ceiling against malformed client bursts without affecting normal single-client usage.
 """
+
+import asyncio
 
 from mcp.server.fastmcp import FastMCP
 
@@ -11,6 +16,9 @@ from sportiq.core.logging import configure_logging
 from sportiq.cricket.tools import register_cricket_tools
 from sportiq.f1.tools import register_f1_tools
 from sportiq.football.tools import register_football_tools
+
+# Infrastructure guard — not wired into tools yet; available when fan-out is added.
+_SERVER_SEMAPHORE = asyncio.Semaphore(20)
 
 configure_logging()
 

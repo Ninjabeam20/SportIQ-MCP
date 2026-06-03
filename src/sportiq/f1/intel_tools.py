@@ -5,12 +5,25 @@ Flagship: f1_predict_pit_strategy.
 """
 from __future__ import annotations
 
+import asyncio
+
 from sportiq.core.errors import AllSourcesFailedError
 from sportiq.core.tool_response import error_envelope, staleness_meta
 from sportiq.f1.chains import f1_laps_chain, f1_stints_chain, f1_weather_chain
 from sportiq.f1.models.pit_strategy import predict as _predict_strategy
 from sportiq.f1.models.tyre_deg import annotate_laps_with_stints, fit_degradation
 from sportiq.f1.models.undercut import undercut_window
+
+# Cap concurrent per-driver lap fetches. When asyncio.gather fan-out is added
+# later (e.g. fetching laps for all 20 drivers in parallel), this semaphore
+# ensures at most 5 in-flight requests hit OpenF1 at once.
+_F1_LAP_SEMAPHORE = asyncio.Semaphore(5)
+
+
+async def _fetch_driver_laps(session_key: int, driver_number: int):
+    """Fetch laps for one driver, gated by the per-driver concurrency cap."""
+    async with _F1_LAP_SEMAPHORE:
+        return await f1_laps_chain.fetch(session_key=session_key, driver_number=driver_number)
 
 
 async def f1_tyre_degradation(session_key: int, driver_number: int, compound: str) -> dict:
@@ -100,8 +113,8 @@ async def f1_undercut_window(
         )
 
     try:
-        attacker_laps = await f1_laps_chain.fetch(session_key=session_key, driver_number=attacker_number)
-        target_laps = await f1_laps_chain.fetch(session_key=session_key, driver_number=target_number)
+        attacker_laps = await _fetch_driver_laps(session_key=session_key, driver_number=attacker_number)
+        target_laps = await _fetch_driver_laps(session_key=session_key, driver_number=target_number)
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
@@ -153,8 +166,8 @@ async def f1_head_to_head_pace(session_key: int, driver_a: int, driver_b: int) -
         return error_envelope(code="INVALID_INPUT", message="All args must be positive.")
 
     try:
-        laps_a = await f1_laps_chain.fetch(session_key=session_key, driver_number=driver_a)
-        laps_b = await f1_laps_chain.fetch(session_key=session_key, driver_number=driver_b)
+        laps_a = await _fetch_driver_laps(session_key=session_key, driver_number=driver_a)
+        laps_b = await _fetch_driver_laps(session_key=session_key, driver_number=driver_b)
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",

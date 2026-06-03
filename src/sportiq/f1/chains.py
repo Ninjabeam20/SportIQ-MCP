@@ -73,16 +73,16 @@ f1_laps_chain: FallbackChain[dict] = FallbackChain(
     name="f1:laps",
     adapters=[_openf1_laps, _fastf1_laps],
     cache_key_fn=lambda session_key, driver_number, **_: f"sportiq:f1:laps:{session_key}:{driver_number}",
-    fresh_ttl=3600,
-    stale_ttl=86400,
+    fresh_ttl=10,   # live telemetry — per caching-policy.md
+    stale_ttl=60,
 )
 
 f1_stints_chain: FallbackChain[dict] = FallbackChain(
     name="f1:stints",
     adapters=[_openf1_stints],
     cache_key_fn=lambda session_key, driver_number, **_: f"sportiq:f1:stints:{session_key}:{driver_number}",
-    fresh_ttl=3600,
-    stale_ttl=86400,
+    fresh_ttl=10,   # live telemetry — per caching-policy.md
+    stale_ttl=60,
 )
 
 f1_weather_chain: FallbackChain[dict] = FallbackChain(
