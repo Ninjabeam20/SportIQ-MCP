@@ -115,7 +115,7 @@ squad_chain: FallbackChain[dict] = FallbackChain(
         "sportiq:cricket:squad:"
         + hashlib.blake2s((team or "all").lower().encode(), digest_size=8).hexdigest()
         + ":"
-        + (series_id or "none")
+        + hashlib.blake2s((series_id or "none").lower().encode(), digest_size=8).hexdigest()
     ),
     fresh_ttl=43200,
     stale_ttl=259200,

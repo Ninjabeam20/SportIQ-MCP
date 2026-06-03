@@ -304,11 +304,24 @@ def test_squad_cache_key_no_raw_colon():
     key = squad_chain.cache_key_fn(team="Mumbai:Indians*", series_id=None)
     assert key.startswith("sportiq:cricket:squad:")
     parts = key.split(":")
-    # parts: ['sportiq', 'cricket', 'squad', <hash>, <series>]
+    # parts: ['sportiq', 'cricket', 'squad', <team_hash>, <series_hash>]
     assert len(parts) == 5, f"unexpected key structure: {key!r}"
     team_hash = parts[3]
     assert ":" not in team_hash, f"raw colon in team hash: {key!r}"
     assert "*" not in team_hash, f"raw star in team hash: {key!r}"
+
+
+def test_squad_cache_key_no_raw_colon_with_series_id():
+    from sportiq.cricket.chains import squad_chain
+
+    key = squad_chain.cache_key_fn(team="MI", series_id="ipl:2026*malicious")
+    assert key.startswith("sportiq:cricket:squad:")
+    parts = key.split(":")
+    # parts: ['sportiq', 'cricket', 'squad', <team_hash>, <series_hash>]
+    assert len(parts) == 5, f"unexpected key structure: {key!r}"
+    series_hash = parts[4]
+    assert ":" not in series_hash, f"raw colon leaked into series_hash: {key!r}"
+    assert "*" not in series_hash, f"raw star leaked into series_hash: {key!r}"
 
 
 def test_football_squad_cache_key_no_raw_colon():

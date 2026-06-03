@@ -39,17 +39,18 @@ async def football_xg_model(home_team: str, away_team: str, neutral: bool = True
         data: {expected_home_goals, expected_away_goals, home_win, draw, away_win}.
         meta.estimated: true.
     """
+    home, away = home_team.upper(), away_team.upper()
+    if len(home_team) > 100:
+        return error_envelope(code="INVALID_INPUT", message="home_team must not exceed 100 characters.")
+    if len(away_team) > 100:
+        return error_envelope(code="INVALID_INPUT", message="away_team must not exceed 100 characters.")
+
     try:
         result = await _groups_payload()
     except AllSourcesFailedError as e:
         return error_envelope(code="ALL_SOURCES_FAILED", message="Could not load ratings.", sources_tried=e.attempts)
 
     ratings = result.value.get("ratings", {})
-    home, away = home_team.upper(), away_team.upper()
-    if len(home_team) > 100:
-        return error_envelope(code="INVALID_INPUT", message="home_team must not exceed 100 characters.")
-    if len(away_team) > 100:
-        return error_envelope(code="INVALID_INPUT", message="away_team must not exceed 100 characters.")
     if home not in ratings or away not in ratings:
         return error_envelope(code="NOT_FOUND", message="Unknown team code; see football_get_groups.")
 
@@ -80,17 +81,18 @@ async def football_match_predictor(home_team: str, away_team: str, neutral: bool
         data: {most_likely_score, home_win, draw, away_win, predicted_winner}.
         meta.estimated: true.
     """
+    home, away = home_team.upper(), away_team.upper()
+    if len(home_team) > 100:
+        return error_envelope(code="INVALID_INPUT", message="home_team must not exceed 100 characters.")
+    if len(away_team) > 100:
+        return error_envelope(code="INVALID_INPUT", message="away_team must not exceed 100 characters.")
+
     try:
         result = await _groups_payload()
     except AllSourcesFailedError as e:
         return error_envelope(code="ALL_SOURCES_FAILED", message="Could not load ratings.", sources_tried=e.attempts)
 
     ratings = result.value.get("ratings", {})
-    home, away = home_team.upper(), away_team.upper()
-    if len(home_team) > 100:
-        return error_envelope(code="INVALID_INPUT", message="home_team must not exceed 100 characters.")
-    if len(away_team) > 100:
-        return error_envelope(code="INVALID_INPUT", message="away_team must not exceed 100 characters.")
     if home not in ratings or away not in ratings:
         return error_envelope(code="NOT_FOUND", message="Unknown team code; see football_get_groups.")
 
@@ -190,6 +192,10 @@ async def football_knockout_path(team: str, iterations: int = 10000, seed: int |
         data: {team, reach_r32, reach_r16, reach_qf, reach_sf, reach_final, win}.
         meta.estimated: true.
     """
+    if len(team) > 100:
+        return error_envelope(code="INVALID_INPUT", message="team must not exceed 100 characters.")
+    code = team.upper()
+
     try:
         result = await _groups_payload()
     except AllSourcesFailedError as e:
@@ -197,9 +203,6 @@ async def football_knockout_path(team: str, iterations: int = 10000, seed: int |
 
     groups = result.value.get("groups", {})
     ratings = result.value.get("ratings", {})
-    if len(team) > 100:
-        return error_envelope(code="INVALID_INPUT", message="team must not exceed 100 characters.")
-    code = team.upper()
     if code not in ratings:
         return error_envelope(code="NOT_FOUND", message="Unknown team code; see football_get_groups.")
 
