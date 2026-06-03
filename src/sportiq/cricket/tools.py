@@ -64,6 +64,8 @@ async def cricket_get_scorecard(match_id: str) -> dict:
     """
     if not match_id or not match_id.strip():
         return error_envelope(code="INVALID_INPUT", message="match_id must not be empty.")
+    if len(match_id) > 100:
+        return error_envelope(code="INVALID_INPUT", message="match_id must not exceed 100 characters.")
     try:
         result = await scorecard_chain.fetch(match_id=match_id.strip())
     except NotFoundError:
@@ -92,6 +94,8 @@ async def cricket_get_points_table(series_id: str) -> dict:
     """
     if not series_id or not series_id.strip():
         return error_envelope(code="INVALID_INPUT", message="series_id must not be empty.")
+    if len(series_id) > 100:
+        return error_envelope(code="INVALID_INPUT", message="series_id must not exceed 100 characters.")
     try:
         result = await standings_chain.fetch(series_id=series_id.strip())
     except NotFoundError:
@@ -144,6 +148,8 @@ async def cricket_get_squad(team: str, series_id: str | None = None) -> dict:
     """
     if not team or not team.strip():
         return error_envelope(code="INVALID_INPUT", message="team must not be empty.")
+    if len(team) > 100:
+        return error_envelope(code="INVALID_INPUT", message="team must not exceed 100 characters.")
     try:
         result = await squad_chain.fetch(team=team.strip(), series_id=series_id)
     except AllSourcesFailedError as e:

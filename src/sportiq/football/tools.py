@@ -96,6 +96,8 @@ async def football_get_squad(team: str) -> dict:
     """
     if not team or not team.strip():
         return error_envelope(code="INVALID_INPUT", message="team must be non-empty.")
+    if len(team) > 100:
+        return error_envelope(code="INVALID_INPUT", message="team must not exceed 100 characters.")
     try:
         result = await football_squad_chain.fetch(team=team.strip())
     except AllSourcesFailedError as e:

@@ -13,6 +13,8 @@ same call signature and returns the same output shape.
 """
 from __future__ import annotations
 
+import hashlib
+
 from sportiq.core.fallback import FallbackChain
 from sportiq.core.health import register_adapter_for_health
 from sportiq.football.adapters.api_football import (
@@ -94,7 +96,7 @@ football_team_stats_chain: FallbackChain[dict] = FallbackChain(
 football_squad_chain: FallbackChain[dict] = FallbackChain(
     name="football:squad",
     adapters=[_af_squad, _seed_squad],
-    cache_key_fn=lambda team, **_: f"sportiq:football:squad:{team}",
+    cache_key_fn=lambda team, **_: "sportiq:football:squad:" + hashlib.blake2s(team.lower().encode(), digest_size=8).hexdigest(),
     fresh_ttl=43200,
     stale_ttl=259200,
 )

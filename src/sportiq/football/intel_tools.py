@@ -46,6 +46,10 @@ async def football_xg_model(home_team: str, away_team: str, neutral: bool = True
 
     ratings = result.value.get("ratings", {})
     home, away = home_team.upper(), away_team.upper()
+    if len(home_team) > 100:
+        return error_envelope(code="INVALID_INPUT", message="home_team must not exceed 100 characters.")
+    if len(away_team) > 100:
+        return error_envelope(code="INVALID_INPUT", message="away_team must not exceed 100 characters.")
     if home not in ratings or away not in ratings:
         return error_envelope(code="NOT_FOUND", message="Unknown team code; see football_get_groups.")
 
@@ -83,6 +87,10 @@ async def football_match_predictor(home_team: str, away_team: str, neutral: bool
 
     ratings = result.value.get("ratings", {})
     home, away = home_team.upper(), away_team.upper()
+    if len(home_team) > 100:
+        return error_envelope(code="INVALID_INPUT", message="home_team must not exceed 100 characters.")
+    if len(away_team) > 100:
+        return error_envelope(code="INVALID_INPUT", message="away_team must not exceed 100 characters.")
     if home not in ratings or away not in ratings:
         return error_envelope(code="NOT_FOUND", message="Unknown team code; see football_get_groups.")
 
@@ -189,6 +197,8 @@ async def football_knockout_path(team: str, iterations: int = 10000, seed: int |
 
     groups = result.value.get("groups", {})
     ratings = result.value.get("ratings", {})
+    if len(team) > 100:
+        return error_envelope(code="INVALID_INPUT", message="team must not exceed 100 characters.")
     code = team.upper()
     if code not in ratings:
         return error_envelope(code="NOT_FOUND", message="Unknown team code; see football_get_groups.")

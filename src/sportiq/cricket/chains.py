@@ -12,6 +12,8 @@ Resolution order per chain:
 
 from __future__ import annotations
 
+import hashlib
+
 from sportiq.core.fallback import FallbackChain
 from sportiq.core.health import register_adapter_for_health
 from sportiq.cricket.adapters.cricapi import (
@@ -110,7 +112,10 @@ squad_chain: FallbackChain[dict] = FallbackChain(
     name="cricket:squad",
     adapters=[_cricapi_squad, _static_squad],
     cache_key_fn=lambda team=None, series_id=None, **_: (
-        f"sportiq:cricket:squad:{team or 'all'}:{series_id or 'none'}"
+        "sportiq:cricket:squad:"
+        + hashlib.blake2s((team or "all").lower().encode(), digest_size=8).hexdigest()
+        + ":"
+        + (series_id or "none")
     ),
     fresh_ttl=43200,
     stale_ttl=259200,
@@ -127,7 +132,7 @@ player_stats_chain: FallbackChain[dict] = FallbackChain(
 pitch_data_chain: FallbackChain[dict] = FallbackChain(
     name="cricket:pitch_data",
     adapters=[_static_venue],
-    cache_key_fn=lambda venue, **_: f"sportiq:cricket:pitch:{venue.lower().replace(' ', '_')}",
+    cache_key_fn=lambda venue, **_: "sportiq:cricket:pitch:" + hashlib.blake2s(venue.lower().encode(), digest_size=8).hexdigest(),
     fresh_ttl=31_536_000,
     stale_ttl=0,
 )

@@ -11,6 +11,8 @@ Resolution order:
 """
 from __future__ import annotations
 
+import hashlib
+
 from sportiq.core.fallback import FallbackChain
 from sportiq.core.health import register_adapter_for_health
 from sportiq.f1.adapters.fastf1_local import FastF1LapsAdapter, FastF1StandingsAdapter
@@ -51,7 +53,10 @@ for _a in [
 f1_sessions_chain: FallbackChain[dict] = FallbackChain(
     name="f1:sessions",
     adapters=[_openf1_sessions],
-    cache_key_fn=lambda year, country=None, **_: f"sportiq:f1:sessions:{year}:{country or 'all'}",
+    cache_key_fn=lambda year, country=None, **_: (
+        f"sportiq:f1:sessions:{year}:"
+        + (hashlib.blake2s(country.lower().encode(), digest_size=8).hexdigest() if country else "all")
+    ),
     fresh_ttl=21600,
     stale_ttl=86400,
 )

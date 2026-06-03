@@ -113,8 +113,14 @@ async def cricket_build_dream11_team(
 
     if not team_a or not team_a.strip() or not team_b or not team_b.strip():
         return error_envelope(code="INVALID_INPUT", message="team_a and team_b must be non-empty.")
+    if len(team_a) > 100:
+        return error_envelope(code="INVALID_INPUT", message="team_a must not exceed 100 characters.")
+    if len(team_b) > 100:
+        return error_envelope(code="INVALID_INPUT", message="team_b must not exceed 100 characters.")
     if not venue or not venue.strip():
         return error_envelope(code="INVALID_INPUT", message="venue must be non-empty.")
+    if len(venue) > 200:
+        return error_envelope(code="INVALID_INPUT", message="venue must not exceed 200 characters.")
 
     try:
         venue_result = await pitch_data_chain.fetch(venue=venue)
@@ -173,6 +179,12 @@ async def cricket_captain_recommendation(
 
     if not team_a or not team_a.strip() or not team_b or not team_b.strip() or not venue or not venue.strip():
         return error_envelope(code="INVALID_INPUT", message="team_a, team_b, venue must all be non-empty.")
+    if len(team_a) > 100:
+        return error_envelope(code="INVALID_INPUT", message="team_a must not exceed 100 characters.")
+    if len(team_b) > 100:
+        return error_envelope(code="INVALID_INPUT", message="team_b must not exceed 100 characters.")
+    if len(venue) > 200:
+        return error_envelope(code="INVALID_INPUT", message="venue must not exceed 200 characters.")
 
     try:
         venue_result = await pitch_data_chain.fetch(venue=venue)
@@ -234,6 +246,14 @@ async def cricket_differential_picks(
 
     if not team_a or not team_a.strip() or not team_b or not team_b.strip() or not venue or not venue.strip():
         return error_envelope(code="INVALID_INPUT", message="team_a, team_b, venue must all be non-empty.")
+    if len(team_a) > 100:
+        return error_envelope(code="INVALID_INPUT", message="team_a must not exceed 100 characters.")
+    if len(team_b) > 100:
+        return error_envelope(code="INVALID_INPUT", message="team_b must not exceed 100 characters.")
+    if len(venue) > 200:
+        return error_envelope(code="INVALID_INPUT", message="venue must not exceed 200 characters.")
+    if not 0 <= ownership_threshold <= 100:
+        return error_envelope(code="INVALID_INPUT", message="ownership_threshold must be in [0, 100].")
 
     try:
         venue_result = await pitch_data_chain.fetch(venue=venue)
@@ -353,6 +373,8 @@ async def cricket_get_pitch_report(venue: str) -> dict:
     """
     if not venue.strip():
         return error_envelope(code="INVALID_INPUT", message="venue must not be empty.")
+    if len(venue) > 200:
+        return error_envelope(code="INVALID_INPUT", message="venue must not exceed 200 characters.")
 
     try:
         venue_result = await pitch_data_chain.fetch(venue=venue.strip())

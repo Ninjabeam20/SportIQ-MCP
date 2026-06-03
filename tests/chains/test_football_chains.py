@@ -96,8 +96,11 @@ async def test_squad_chain_keys_by_team():
 
     key_a = chains.football_squad_chain.cache_key_fn(team="ARG")
     key_b = chains.football_squad_chain.cache_key_fn(team="BRA")
+    # Keys must be distinct for different teams; raw team string must not appear
+    # in the key (S.3b hashing prevents cache-key injection via ':' or '*').
     assert key_a != key_b
-    assert "ARG" in key_a
+    assert key_a.startswith("sportiq:football:squad:")
+    assert "ARG" not in key_a[len("sportiq:football:squad:"):]
 
 
 @respx.mock
