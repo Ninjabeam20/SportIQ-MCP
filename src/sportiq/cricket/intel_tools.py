@@ -110,6 +110,10 @@ async def cricket_build_dream11_team(
         data.total_credits: sum of credits used (<= 100).
         data.total_projected_points: fantasy points including C x2 and VC x1.5 boosts.
         meta.estimated: true — projections are model output, not Dream11 oracle.
+
+    Example:
+        cricket_build_dream11_team(team_a="MI", team_b="CSK", venue="wankhede")
+        cricket_build_dream11_team(match_id="abc123")
     """
     if match_id:
         try:

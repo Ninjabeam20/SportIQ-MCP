@@ -171,6 +171,10 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
         data.champion: most likely winner.
         data.iterations: iterations run.
         meta.estimated: true.
+
+    Example:
+        football_simulate_bracket()
+        football_simulate_bracket(iterations=20000, seed=42)
     """
     try:
         result = await _groups_payload()

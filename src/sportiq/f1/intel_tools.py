@@ -280,6 +280,10 @@ async def f1_predict_pit_strategy(
         data.confidence: 0.0-1.0 model confidence.
         meta.total_laps: race length used (explicit arg, else inferred from laps).
         meta.estimated: true.
+
+    Example:
+        f1_predict_pit_strategy(session_key=9158, driver_number=1)
+        f1_predict_pit_strategy(session_key=9158, driver_number=16, current_lap=20, total_laps=78)
     """
     if session_key <= 0 or driver_number <= 0:
         return error_envelope(
