@@ -5,7 +5,7 @@ Thin wrappers: validate args → call chain.fetch() → return tool_response.
 from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError
-from sportiq.core.tool_response import error_envelope, tool_response, truncate_payload
+from sportiq.core.tool_response import Envelope, error_envelope, tool_response, truncate_payload
 from sportiq.f1.chains import (
     f1_drivers_chain,
     f1_laps_chain,
@@ -16,7 +16,7 @@ from sportiq.f1.chains import (
 )
 
 
-async def f1_get_sessions(year: int, country: str | None = None) -> dict:
+async def f1_get_sessions(year: int, country: str | None = None) -> Envelope:
     """Return F1 sessions for a given year, optionally filtered by country.
 
     Args:
@@ -40,7 +40,7 @@ async def f1_get_sessions(year: int, country: str | None = None) -> dict:
     return tool_response(result)
 
 
-async def f1_get_drivers(session_key: int) -> dict:
+async def f1_get_drivers(session_key: int) -> Envelope:
     """Return driver list for a specific F1 session.
 
     Args:
@@ -63,7 +63,7 @@ async def f1_get_drivers(session_key: int) -> dict:
     return tool_response(result)
 
 
-async def f1_get_lap_times(session_key: int, driver_number: int) -> dict:
+async def f1_get_lap_times(session_key: int, driver_number: int) -> Envelope:
     """Return lap times for a driver in a specific F1 session.
 
     Args:
@@ -93,7 +93,7 @@ async def f1_get_lap_times(session_key: int, driver_number: int) -> dict:
     return resp
 
 
-async def f1_get_standings(year: int) -> dict:
+async def f1_get_standings(year: int) -> Envelope:
     """Return F1 driver and constructor championship standings for a year.
 
     Args:
@@ -117,7 +117,7 @@ async def f1_get_standings(year: int) -> dict:
     return tool_response(result)
 
 
-async def f1_get_race_results(year: int, round: int) -> dict:
+async def f1_get_race_results(year: int, round: int) -> Envelope:
     """Return the final classification for one F1 race, keyed by year and round.
 
     Args:
@@ -144,7 +144,7 @@ async def f1_get_race_results(year: int, round: int) -> dict:
     return tool_response(result)
 
 
-async def f1_get_weather(session_key: int) -> dict:
+async def f1_get_weather(session_key: int) -> Envelope:
     """Return weather data for a specific F1 session.
 
     Args:
@@ -169,12 +169,13 @@ async def f1_get_weather(session_key: int) -> dict:
 
 def register_f1_tools(mcp) -> None:
     """Register all F1 tools on the supplied FastMCP instance."""
+    from sportiq.core.tool_meta import READ_ONLY
     from sportiq.f1.intel_tools import register_f1_intel_tools
 
-    mcp.tool()(f1_get_sessions)
-    mcp.tool()(f1_get_drivers)
-    mcp.tool()(f1_get_lap_times)
-    mcp.tool()(f1_get_standings)
-    mcp.tool()(f1_get_race_results)
-    mcp.tool()(f1_get_weather)
+    mcp.tool(annotations=READ_ONLY)(f1_get_sessions)
+    mcp.tool(annotations=READ_ONLY)(f1_get_drivers)
+    mcp.tool(annotations=READ_ONLY)(f1_get_lap_times)
+    mcp.tool(annotations=READ_ONLY)(f1_get_standings)
+    mcp.tool(annotations=READ_ONLY)(f1_get_race_results)
+    mcp.tool(annotations=READ_ONLY)(f1_get_weather)
     register_f1_intel_tools(mcp)

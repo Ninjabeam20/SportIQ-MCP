@@ -1,6 +1,25 @@
-from typing import Any
+from typing import Any, TypedDict
 
 from sportiq.core.errors import ErrorCode
+
+
+class Envelope(TypedDict, total=False):
+    """MCP tool return type for every SportIQ tool.
+
+    Declaring this as the tool return annotation makes FastMCP emit an
+    ``outputSchema`` and populate ``structuredContent`` (clients otherwise get
+    text only). All three keys are optional: success responses carry
+    ``data`` + ``meta``; failures carry ``error``. ``meta`` and ``data`` are
+    left as open ``dict`` so the many per-tool fields (estimated, venue,
+    total_laps, truncated, …) pass through unconstrained.
+
+    Note: FastMCP fills absent keys with ``null`` in ``structuredContent``
+    (e.g. ``error: null`` on success), so clients see a uniform 3-key envelope.
+    """
+
+    data: dict[str, Any]
+    meta: dict[str, Any]
+    error: dict[str, Any]
 
 
 def tool_response(result: Any) -> dict:

@@ -5,7 +5,7 @@ Thin wrappers: validate args -> call chain.fetch() -> return tool_response.
 from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError
-from sportiq.core.tool_response import error_envelope, tool_response, truncate_payload
+from sportiq.core.tool_response import Envelope, error_envelope, tool_response, truncate_payload
 from sportiq.football.chains import (
     football_fixtures_chain,
     football_groups_chain,
@@ -27,7 +27,7 @@ def _filter_events_by_team(events: list[dict], team: str) -> list[dict]:
     ]
 
 
-async def football_get_groups() -> dict:
+async def football_get_groups() -> Envelope:
     """Return the FIFA World Cup 2026 group draw and advancement format.
 
     Returns:
@@ -47,7 +47,7 @@ async def football_get_groups() -> dict:
     return tool_response(result)
 
 
-async def football_get_fixtures() -> dict:
+async def football_get_fixtures() -> Envelope:
     """Return World Cup 2026 fixtures (live providers, else the group schedule).
 
     Returns:
@@ -68,7 +68,7 @@ async def football_get_fixtures() -> dict:
     return resp
 
 
-async def football_get_standings() -> dict:
+async def football_get_standings() -> Envelope:
     """Return current World Cup 2026 group standings.
 
     Returns:
@@ -89,7 +89,7 @@ async def football_get_standings() -> dict:
     return resp
 
 
-async def football_get_squad(team: str) -> dict:
+async def football_get_squad(team: str) -> Envelope:
     """Return a national team's World Cup squad.
 
     Args:
@@ -115,7 +115,7 @@ async def football_get_squad(team: str) -> dict:
     return tool_response(result)
 
 
-async def football_get_match_stats(team: int) -> dict:
+async def football_get_match_stats(team: int) -> Envelope:
     """Return a team's aggregate World Cup tournament statistics.
 
     Network-only enrichment: requires a configured API-Football (or
@@ -142,7 +142,7 @@ async def football_get_match_stats(team: int) -> dict:
     return tool_response(result)
 
 
-async def football_get_top_scorers() -> dict:
+async def football_get_top_scorers() -> Envelope:
     """Return the World Cup 2026 top scorers.
 
     Returns:
@@ -160,7 +160,7 @@ async def football_get_top_scorers() -> dict:
     return tool_response(result)
 
 
-async def football_get_odds(team: str | None = None) -> dict:
+async def football_get_odds(team: str | None = None) -> Envelope:
     """Return live bookmaker head-to-head odds for upcoming World Cup 2026 matches.
 
     Sourced from The Odds API (requires THEODDS_KEY). Without a key the call
@@ -191,13 +191,14 @@ async def football_get_odds(team: str | None = None) -> dict:
 
 def register_football_tools(mcp) -> None:
     """Register all football tools on the supplied FastMCP instance."""
+    from sportiq.core.tool_meta import READ_ONLY
     from sportiq.football.intel_tools import register_football_intel_tools
 
-    mcp.tool()(football_get_groups)
-    mcp.tool()(football_get_fixtures)
-    mcp.tool()(football_get_standings)
-    mcp.tool()(football_get_squad)
-    mcp.tool()(football_get_match_stats)
-    mcp.tool()(football_get_top_scorers)
-    mcp.tool()(football_get_odds)
+    mcp.tool(annotations=READ_ONLY)(football_get_groups)
+    mcp.tool(annotations=READ_ONLY)(football_get_fixtures)
+    mcp.tool(annotations=READ_ONLY)(football_get_standings)
+    mcp.tool(annotations=READ_ONLY)(football_get_squad)
+    mcp.tool(annotations=READ_ONLY)(football_get_match_stats)
+    mcp.tool(annotations=READ_ONLY)(football_get_top_scorers)
+    mcp.tool(annotations=READ_ONLY)(football_get_odds)
     register_football_intel_tools(mcp)

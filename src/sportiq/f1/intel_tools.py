@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
-from sportiq.core.tool_response import error_envelope, staleness_meta
+from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta
 from sportiq.f1.chains import f1_drivers_chain, f1_laps_chain, f1_stints_chain, f1_weather_chain
 from sportiq.f1.models.pit_strategy import predict as _predict_strategy
 from sportiq.f1.models.quali_analysis import best_lap_per_driver, gap_to_pole, grid_projection
@@ -28,7 +28,7 @@ async def _fetch_driver_laps(session_key: int, driver_number: int):
         return await f1_laps_chain.fetch(session_key=session_key, driver_number=driver_number)
 
 
-async def f1_tyre_degradation(session_key: int, driver_number: int, compound: str) -> dict:
+async def f1_tyre_degradation(session_key: int, driver_number: int, compound: str) -> Envelope:
     """Fit a tyre degradation model for a driver + compound in a session.
 
     Args:
@@ -95,7 +95,7 @@ async def f1_undercut_window(
     attacker_number: int,
     target_number: int,
     current_lap: int,
-) -> dict:
+) -> Envelope:
     """Estimate whether an undercut is viable for the attacker against the target.
 
     Args:
@@ -152,7 +152,7 @@ async def f1_undercut_window(
     }
 
 
-async def f1_head_to_head_pace(session_key: int, driver_a: int, driver_b: int) -> dict:
+async def f1_head_to_head_pace(session_key: int, driver_a: int, driver_b: int) -> Envelope:
     """Compare lap-time pace distribution between two drivers in a session.
 
     Args:
@@ -201,7 +201,7 @@ async def f1_head_to_head_pace(session_key: int, driver_a: int, driver_b: int) -
     }
 
 
-async def f1_weather_strategy_impact(session_key: int) -> dict:
+async def f1_weather_strategy_impact(session_key: int) -> Envelope:
     """Analyse weather data and recommend compound or pit-window adjustments.
 
     Args:
@@ -261,7 +261,7 @@ async def f1_predict_pit_strategy(
     driver_number: int,
     current_lap: int = 1,
     total_laps: int | None = None,
-) -> dict:
+) -> Envelope:
     """Predict the optimal pit-stop strategy for a driver in an F1 race session.
 
     Args:
@@ -353,7 +353,7 @@ async def f1_predict_pit_strategy(
     }
 
 
-async def f1_qualifying_analysis(session_key: int) -> dict:
+async def f1_qualifying_analysis(session_key: int) -> Envelope:
     """Analyse a qualifying session: best lap per driver, gap to pole, projected grid.
 
     Args:
@@ -424,7 +424,7 @@ async def f1_qualifying_analysis(session_key: int) -> dict:
     }
 
 
-async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -> dict:
+async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -> Envelope:
     """Compare race-pace and tyre degradation between two F1 drivers in a session.
 
     Args:
@@ -479,10 +479,12 @@ async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -
 
 def register_f1_intel_tools(mcp) -> None:
     """Register all F1 INTEL tools on the supplied FastMCP instance."""
-    mcp.tool()(f1_tyre_degradation)
-    mcp.tool()(f1_undercut_window)
-    mcp.tool()(f1_head_to_head_pace)
-    mcp.tool()(f1_weather_strategy_impact)
-    mcp.tool()(f1_predict_pit_strategy)
-    mcp.tool()(f1_qualifying_analysis)
-    mcp.tool()(f1_race_pace_compare)
+    from sportiq.core.tool_meta import READ_ONLY
+
+    mcp.tool(annotations=READ_ONLY)(f1_tyre_degradation)
+    mcp.tool(annotations=READ_ONLY)(f1_undercut_window)
+    mcp.tool(annotations=READ_ONLY)(f1_head_to_head_pace)
+    mcp.tool(annotations=READ_ONLY)(f1_weather_strategy_impact)
+    mcp.tool(annotations=READ_ONLY)(f1_predict_pit_strategy)
+    mcp.tool(annotations=READ_ONLY)(f1_qualifying_analysis)
+    mcp.tool(annotations=READ_ONLY)(f1_race_pace_compare)

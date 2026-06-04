@@ -1,6 +1,6 @@
 [project]
 name = "sportiq-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "MCP server for IPL cricket, Formula 1, and FIFA World Cup 2026 intelligence tools."
 readme = "README.md"
 requires-python = ">=3.11"

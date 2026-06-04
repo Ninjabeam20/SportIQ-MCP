@@ -1,0 +1,52 @@
+<evaluation>
+  <!--
+    SportIQ MCP evaluation set.
+    Every answer is anchored on the OFFLINE / deterministic layer (static WC2026
+    draw + Elo ratings, the Poisson/Elo match model, the seeded Monte-Carlo
+    simulators, and the static pitch + squad seeds). None of these require an
+    API key, so an evaluating LLM with only the MCP tools can reach the answer
+    even with no upstream credentials configured. Answers were solved by the
+    author against the running server (2026-06-04) and are stable as long as the
+    seeded models and static seeds are unchanged.
+  -->
+  <qa_pair>
+    <question>Run a full Monte Carlo simulation of the FIFA World Cup 2026 tournament. Which single national team has the highest probability of winning the title? Answer with the team's three-letter code.</question>
+    <answer>ARG</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Across the entire World Cup 2026 field, identify the team the server rates as the strongest (highest underlying rating). Which group letter is that team drawn into? Answer with a single letter A-L.</question>
+    <answer>A</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Using the server's neutral-venue match model, estimate a Brazil versus Mexico fixture. What is Brazil's win probability? Answer as a decimal rounded to two places (e.g. 0.42).</question>
+    <answer>0.57</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Predict a France versus England match at a neutral venue using the single-match predictor. What is the most likely exact scoreline? Answer in the form home-away, e.g. 2-1.</question>
+    <answer>1-1</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Compare the pitch characteristics of these four cricket venues: Wankhede, Chepauk, Eden Gardens, and Chinnaswamy. Which one has the highest batting-friendliness rating? Answer with the venue name.</question>
+    <answer>Chinnaswamy</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Of these four cricket venues — Wankhede, Chepauk, Eden Gardens, and Chinnaswamy — exactly one is classified by the pitch model as a bowling pitch. Which venue is it? Answer with the venue name.</question>
+    <answer>Chepauk</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Build the optimal Dream11 fantasy team for a Mumbai Indians (MI) versus Chennai Super Kings (CSK) match played at the Wankhede pitch. Who does the optimizer designate as captain? Answer with the player's full name.</question>
+    <answer>Suryakumar Yadav</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>For an India versus Australia fixture at the Chinnaswamy ground, request the captain recommendation. Which player tops the ranked list of captain candidates? Answer with the player's full name.</question>
+    <answer>Rohit Sharma</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>In the World Cup 2026 tournament format this server simulates, how many teams advance out of the group stage into the first knockout round (the Round of 32)? Answer with a number.</question>
+    <answer>32</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Consider a neutral-venue match between two teams the model rates exactly equally. According to the match-outcome probabilities, is a draw MORE likely than either individual side winning? Answer True or False.</question>
+    <answer>False</answer>
+  </qa_pair>
+</evaluation>

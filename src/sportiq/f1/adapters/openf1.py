@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sportiq.core.http import get_json
+from sportiq.core.http import get_json_burst
 from sportiq.f1.adapters.base import _OPENF1_BASE
 
 
@@ -14,7 +14,7 @@ class OpenF1SessionsAdapter:
         params: dict = {"year": year}
         if country:
             params["country_name"] = country
-        data = await get_json(f"{_OPENF1_BASE}/sessions", params=params)
+        data = await get_json_burst(f"{_OPENF1_BASE}/sessions", params=params)
         return {"sessions": data if isinstance(data, list) else [data]}
 
     async def healthcheck(self) -> bool:
@@ -26,7 +26,7 @@ class OpenF1DriversAdapter:
     budget = None
 
     async def fetch(self, session_key: int, **kwargs) -> dict:
-        data = await get_json(f"{_OPENF1_BASE}/drivers", params={"session_key": session_key})
+        data = await get_json_burst(f"{_OPENF1_BASE}/drivers", params={"session_key": session_key})
         return {"drivers": data if isinstance(data, list) else [data]}
 
     async def healthcheck(self) -> bool:
@@ -38,7 +38,7 @@ class OpenF1LapsAdapter:
     budget = None
 
     async def fetch(self, session_key: int, driver_number: int, **kwargs) -> dict:
-        data = await get_json(
+        data = await get_json_burst(
             f"{_OPENF1_BASE}/laps",
             params={"session_key": session_key, "driver_number": driver_number},
         )
@@ -53,7 +53,7 @@ class OpenF1StintsAdapter:
     budget = None
 
     async def fetch(self, session_key: int, driver_number: int, **kwargs) -> dict:
-        data = await get_json(
+        data = await get_json_burst(
             f"{_OPENF1_BASE}/stints",
             params={"session_key": session_key, "driver_number": driver_number},
         )
@@ -68,7 +68,7 @@ class OpenF1WeatherAdapter:
     budget = None
 
     async def fetch(self, session_key: int, **kwargs) -> dict:
-        data = await get_json(f"{_OPENF1_BASE}/weather", params={"session_key": session_key})
+        data = await get_json_burst(f"{_OPENF1_BASE}/weather", params={"session_key": session_key})
         return {"weather": data if isinstance(data, list) else [data]}
 
     async def healthcheck(self) -> bool:

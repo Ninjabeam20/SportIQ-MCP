@@ -15,7 +15,7 @@ from __future__ import annotations
 import asyncio
 
 from sportiq.core.errors import AllSourcesFailedError, InvalidInputError, NotFoundError
-from sportiq.core.tool_response import error_envelope, staleness_meta, tool_response
+from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta, tool_response
 from sportiq.core.value_bet import find_value
 from sportiq.cricket.chains import (
     odds_chain,
@@ -94,7 +94,7 @@ async def cricket_build_dream11_team(
     team_b: str | None = None,
     venue: str | None = None,
     strategy: str = "balanced",
-) -> dict:
+) -> Envelope:
     """Recommend an optimal Dream11 XI + captain + vice-captain for one fixture.
 
     Args:
@@ -164,7 +164,7 @@ async def cricket_captain_recommendation(
     team_a: str | None = None,
     team_b: str | None = None,
     venue: str | None = None,
-) -> dict:
+) -> Envelope:
     """Return the top-3 captain candidates ranked by projected points.
 
     Args:
@@ -225,7 +225,7 @@ async def cricket_differential_picks(
     team_b: str | None = None,
     venue: str | None = None,
     ownership_threshold: int = 20,
-) -> dict:
+) -> Envelope:
     """Suggest low-ownership picks with positive projected upside.
 
     Ownership is *estimated* (we proxy by credit weight — lower-credit
@@ -330,7 +330,7 @@ def _t20_career_numbers(stats_payload: dict) -> tuple[float, float]:
     return avg, sr
 
 
-async def cricket_player_form_index(player_id: str) -> dict:
+async def cricket_player_form_index(player_id: str) -> Envelope:
     """Report a 0-100 form score for a player using the player_stats chain.
 
     Args:
@@ -370,7 +370,7 @@ async def cricket_player_form_index(player_id: str) -> dict:
     }
 
 
-async def cricket_get_pitch_report(venue: str) -> dict:
+async def cricket_get_pitch_report(venue: str) -> Envelope:
     """Summarise pitch characteristics for a venue.
 
     Args:
@@ -422,7 +422,7 @@ async def _fetch_player_stats_safe(pid: str) -> tuple[str, dict]:
             return pid, {}
 
 
-async def cricket_head_to_head(team_a: str, team_b: str) -> dict:
+async def cricket_head_to_head(team_a: str, team_b: str) -> Envelope:
     """Compare two cricket teams head-to-head using squad form and player stats.
 
     Args:
@@ -514,7 +514,7 @@ async def cricket_head_to_head(team_a: str, team_b: str) -> dict:
 async def cricket_find_value_bets(
     team: str | None = None,
     min_edge: float = 0.05,
-) -> dict:
+) -> Envelope:
     """Find +EV ("value") bets on upcoming IPL matches.
 
     Compares the server's heuristic win model (form + H2H + venue) against
@@ -601,7 +601,7 @@ async def cricket_find_value_bets(
     }
 
 
-async def cricket_player_matchup(player_a: str, player_b: str) -> dict:
+async def cricket_player_matchup(player_a: str, player_b: str) -> Envelope:
     """Analyse the head-to-head matchup between two cricket players based on role and career stats.
 
     Args:
@@ -641,11 +641,13 @@ async def cricket_player_matchup(player_a: str, player_b: str) -> dict:
 
 def register_cricket_intel_tools(mcp) -> None:
     """Register the eight INTEL tools on the supplied FastMCP instance."""
-    mcp.tool()(cricket_build_dream11_team)
-    mcp.tool()(cricket_captain_recommendation)
-    mcp.tool()(cricket_differential_picks)
-    mcp.tool()(cricket_player_form_index)
-    mcp.tool()(cricket_get_pitch_report)
-    mcp.tool()(cricket_find_value_bets)
-    mcp.tool()(cricket_head_to_head)
-    mcp.tool()(cricket_player_matchup)
+    from sportiq.core.tool_meta import READ_ONLY
+
+    mcp.tool(annotations=READ_ONLY)(cricket_build_dream11_team)
+    mcp.tool(annotations=READ_ONLY)(cricket_captain_recommendation)
+    mcp.tool(annotations=READ_ONLY)(cricket_differential_picks)
+    mcp.tool(annotations=READ_ONLY)(cricket_player_form_index)
+    mcp.tool(annotations=READ_ONLY)(cricket_get_pitch_report)
+    mcp.tool(annotations=READ_ONLY)(cricket_find_value_bets)
+    mcp.tool(annotations=READ_ONLY)(cricket_head_to_head)
+    mcp.tool(annotations=READ_ONLY)(cricket_player_matchup)

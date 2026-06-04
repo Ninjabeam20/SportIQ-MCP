@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError
 from sportiq.core.parlay import build_accumulator
-from sportiq.core.tool_response import error_envelope, staleness_meta
+from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta
 from sportiq.football.chains import (
     football_fixtures_chain,
     football_groups_chain,
@@ -33,7 +33,7 @@ def _clamp_iterations(iterations: int) -> int:
     return max(_MIN_ITERATIONS, min(_MAX_ITERATIONS, iterations))
 
 
-async def football_xg_model(home_team: str, away_team: str, neutral: bool = True) -> dict:
+async def football_xg_model(home_team: str, away_team: str, neutral: bool = True) -> Envelope:
     """Estimate a match's expected goals and win/draw/loss probabilities.
 
     Args:
@@ -75,7 +75,7 @@ async def football_xg_model(home_team: str, away_team: str, neutral: bool = True
     }
 
 
-async def football_match_predictor(home_team: str, away_team: str, neutral: bool = True) -> dict:
+async def football_match_predictor(home_team: str, away_team: str, neutral: bool = True) -> Envelope:
     """Predict a single match: most likely scoreline + outcome probabilities.
 
     Args:
@@ -124,7 +124,7 @@ async def football_match_predictor(home_team: str, away_team: str, neutral: bool
     }
 
 
-async def football_simulate_group(group: str, iterations: int = 5000) -> dict:
+async def football_simulate_group(group: str, iterations: int = 5000) -> Envelope:
     """Monte Carlo one group's round-robin -> per-team qualification probabilities.
 
     Args:
@@ -154,7 +154,7 @@ async def football_simulate_group(group: str, iterations: int = 5000) -> dict:
     }
 
 
-async def football_simulate_bracket(iterations: int = 10000, seed: int | None = None) -> dict:
+async def football_simulate_bracket(iterations: int = 10000, seed: int | None = None) -> Envelope:
     """Monte Carlo the full World Cup 2026 — per-team round + title probabilities.
 
     Simulates all 12 groups, advances the top 2 + 8 best third-placed teams to a
@@ -186,7 +186,7 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
     }
 
 
-async def football_knockout_path(team: str, iterations: int = 10000, seed: int | None = None) -> dict:
+async def football_knockout_path(team: str, iterations: int = 10000, seed: int | None = None) -> Envelope:
     """Round-by-round survival probabilities for one team in the full sim.
 
     Args:
@@ -220,7 +220,7 @@ async def football_knockout_path(team: str, iterations: int = 10000, seed: int |
     }
 
 
-async def football_find_value_bets(team: str | None = None, min_edge: float = 0.05) -> dict:
+async def football_find_value_bets(team: str | None = None, min_edge: float = 0.05) -> Envelope:
     """Find +EV ("value") bets: where the model's win probability beats the market.
 
     De-vigs each bookmaker's 1X2 decimal odds (removes the margin so implied
@@ -310,7 +310,7 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
     }
 
 
-async def football_form_trends(team: str) -> dict:
+async def football_form_trends(team: str) -> Envelope:
     """Return rolling form, goal record, and xG trend for a football team.
 
     Args:
@@ -347,7 +347,7 @@ async def football_form_trends(team: str) -> dict:
     return {"data": trends, "meta": meta}
 
 
-async def football_build_accumulator(legs: int = 3, min_edge: float = 0.05) -> dict:
+async def football_build_accumulator(legs: int = 3, min_edge: float = 0.05) -> Envelope:
     """Build a football accumulator from the top value bets across live markets.
 
     Calls ``football_find_value_bets`` internally to fetch live odds, then selects
@@ -391,11 +391,13 @@ async def football_build_accumulator(legs: int = 3, min_edge: float = 0.05) -> d
 
 def register_football_intel_tools(mcp) -> None:
     """Register the football INTEL tools on the supplied FastMCP instance."""
-    mcp.tool()(football_xg_model)
-    mcp.tool()(football_match_predictor)
-    mcp.tool()(football_simulate_group)
-    mcp.tool()(football_simulate_bracket)
-    mcp.tool()(football_knockout_path)
-    mcp.tool()(football_find_value_bets)
-    mcp.tool()(football_form_trends)
-    mcp.tool()(football_build_accumulator)
+    from sportiq.core.tool_meta import READ_ONLY
+
+    mcp.tool(annotations=READ_ONLY)(football_xg_model)
+    mcp.tool(annotations=READ_ONLY)(football_match_predictor)
+    mcp.tool(annotations=READ_ONLY)(football_simulate_group)
+    mcp.tool(annotations=READ_ONLY)(football_simulate_bracket)
+    mcp.tool(annotations=READ_ONLY)(football_knockout_path)
+    mcp.tool(annotations=READ_ONLY)(football_find_value_bets)
+    mcp.tool(annotations=READ_ONLY)(football_form_trends)
+    mcp.tool(annotations=READ_ONLY)(football_build_accumulator)

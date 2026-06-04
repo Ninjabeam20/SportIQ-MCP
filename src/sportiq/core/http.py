@@ -35,6 +35,22 @@ def _should_retry(exc: BaseException) -> bool:
     return False
 
 
+def _should_retry_burst(exc: BaseException) -> bool:
+    """Like ``_should_retry`` but ALSO retries 429.
+
+    Only for sources with **no daily quota** that rate-limit short bursts
+    (OpenF1). There, a 429 is a transient "slow down", not a quota wall, so
+    backing off and retrying is correct and burns no billable quota. NEVER use
+    this for quota-capped APIs (CricAPI, The Odds API, API-Football) — see
+    .claude/rules/api-budgets.md.
+    """
+    if _should_retry(exc):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code == 429
+    return False
+
+
 def get_client() -> httpx.AsyncClient:
     global _client
     if _client is None:
@@ -53,16 +69,10 @@ async def close_client() -> None:
         _client = None
 
 
-@retry(
-    retry=retry_if_exception(_should_retry),
-    wait=wait_exponential(multiplier=0.5, min=0.5, max=4.0),
-    stop=stop_after_attempt(3),
-    reraise=True,
-)
-async def get_json(url: str, **kwargs) -> dict:
-    """GET a URL and return parsed JSON. Retries on transport errors and 5xx.
+async def _fetch_json_once(url: str, **kwargs) -> dict:
+    """Single GET with same-host-redirect + 10 MB-ceiling enforcement.
 
-    Rejects cross-host redirects and responses over 10 MB.
+    The retry policy lives on the public wrappers below; this is one attempt.
     """
     client = get_client()
     original_host = urlparse(url).netloc
@@ -91,3 +101,35 @@ async def get_json(url: str, **kwargs) -> dict:
     if len(response.content) > _MAX_RESPONSE_BYTES:
         raise ValueError(f"Response too large ({len(response.content)} bytes); rejecting.")
     return response.json()
+
+
+@retry(
+    retry=retry_if_exception(_should_retry),
+    wait=wait_exponential(multiplier=0.5, min=0.5, max=4.0),
+    stop=stop_after_attempt(3),
+    reraise=True,
+)
+async def get_json(url: str, **kwargs) -> dict:
+    """GET a URL and return parsed JSON. Retries on transport errors and 5xx.
+
+    Does NOT retry 429 (quota protection). Rejects cross-host redirects and
+    responses over 10 MB.
+    """
+    return await _fetch_json_once(url, **kwargs)
+
+
+@retry(
+    retry=retry_if_exception(_should_retry_burst),
+    wait=wait_exponential(multiplier=0.5, min=0.5, max=4.0),
+    stop=stop_after_attempt(4),
+    reraise=True,
+)
+async def get_json_burst(url: str, **kwargs) -> dict:
+    """GET for no-quota, burst-rate-limited sources (OpenF1).
+
+    Identical to ``get_json`` but ALSO retries 429 with exponential backoff —
+    OpenF1 throttles short bursts but has no daily cap, so a brief back-off
+    clears the limit without consuming any billable quota. Do not use for
+    quota-capped APIs.
+    """
+    return await _fetch_json_once(url, **kwargs)

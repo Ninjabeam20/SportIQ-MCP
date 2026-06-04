@@ -4,12 +4,12 @@ from __future__ import annotations
 import asyncio
 
 from sportiq.core.parlay import build_accumulator, normalise_pick
-from sportiq.core.tool_response import error_envelope
+from sportiq.core.tool_response import Envelope, error_envelope
 from sportiq.cricket.intel_tools import cricket_find_value_bets
 from sportiq.football.intel_tools import football_find_value_bets
 
 
-async def cross_sport_build_accumulator(legs: int = 3, min_edge: float = 0.05) -> dict:
+async def cross_sport_build_accumulator(legs: int = 3, min_edge: float = 0.05) -> Envelope:
     """Build an accumulator mixing football and cricket value bets.
 
     Args:
@@ -76,4 +76,6 @@ async def cross_sport_build_accumulator(legs: int = 3, min_edge: float = 0.05) -
 
 def register_cross_sport_tools(mcp) -> None:
     """Register cross-sport tools on the supplied FastMCP instance."""
-    mcp.tool()(cross_sport_build_accumulator)
+    from sportiq.core.tool_meta import READ_ONLY
+
+    mcp.tool(annotations=READ_ONLY)(cross_sport_build_accumulator)

@@ -1,0 +1,25 @@
+{
+  "apikey": "test_key",
+  "status": "success",
+  "data": [
+    {
+      "teamName": "Mumbai Indians",
+      "shortname": "MI",
+      "players": [
+        {"id": "p001", "name": "Rohit Sharma", "role": "Batsman", "country": "India"},
+        {"id": "p002", "name": "Jasprit Bumrah", "role": "Bowler", "country": "India"},
+        {"id": "p003", "name": "Hardik Pandya", "role": "Allrounder", "country": "India"},
+        {"id": "p004", "name": "Suryakumar Yadav", "role": "Batsman", "country": "India"},
+        {"id": "p005", "name": "Ishan Kishan", "role": "WK-Batsman", "country": "India"}
+      ]
+    },
+    {
+      "teamName": "Chennai Super Kings",
+      "shortname": "CSK",
+      "players": [
+        {"id": "p010", "name": "Ruturaj Gaikwad", "role": "Batsman", "country": "India"},
+        {"id": "p011", "name": "Ravindra Jadeja", "role": "Allrounder", "country": "India"}
+      ]
+    }
+  ]
+}

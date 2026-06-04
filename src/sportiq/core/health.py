@@ -13,6 +13,7 @@ from sportiq import __version__
 from sportiq.core.cache import get_cache
 from sportiq.core.ratelimit import remaining
 from sportiq.core.schemas import AdapterStatus, HealthReport
+from sportiq.core.tool_response import Envelope
 
 _registered_adapters: list = []
 
@@ -72,9 +73,10 @@ async def get_health_report() -> dict:
 
 def register_health_tool(mcp) -> None:
     """Attach sportiq_health() to the FastMCP instance."""
+    from sportiq.core.tool_meta import READ_ONLY
 
-    @mcp.tool()
-    async def sportiq_health() -> dict:
+    @mcp.tool(annotations=READ_ONLY)
+    async def sportiq_health() -> Envelope:
         """Report cache backend, per-adapter healthcheck, and quota status.
 
         Returns:

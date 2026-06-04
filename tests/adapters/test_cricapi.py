@@ -84,6 +84,38 @@ async def test_squad_adapter_parses_squad():
 
 
 @respx.mock
+async def test_squad_adapter_parses_live_list_shape():
+    """Live CricAPI series_squad returns ``data`` as a LIST of {teamName, players}
+    blocks, not ``data.squad``. The adapter must parse that real shape without
+    raising (regression: it crashed with `'list' object has no attribute 'get'`).
+    """
+    fixture = _load("squad_live.json")
+    respx.get("https://api.cricapi.com/v1/series_squad").mock(
+        return_value=Response(200, json=fixture)
+    )
+    adapter = CricAPISquadAdapter()
+    result = await adapter.fetch(series_id="series001")
+    assert result["source"] == "cricapi"
+    assert len(result["players"]) == 7  # 5 MI + 2 CSK, flattened
+    assert result["players"][0]["name"] == "Rohit Sharma"
+    assert result["players"][0]["team"] == "Mumbai Indians"
+    assert result["team"] == "Mumbai Indians"
+
+
+@respx.mock
+async def test_squad_adapter_live_shape_empty_list():
+    """An empty-but-successful series_squad (squads not yet announced) returns
+    ``data: []`` — must yield an empty squad, not raise."""
+    respx.get("https://api.cricapi.com/v1/series_squad").mock(
+        return_value=Response(200, json={"status": "success", "data": []})
+    )
+    adapter = CricAPISquadAdapter()
+    result = await adapter.fetch(series_id="series001")
+    assert result["players"] == []
+    assert result["source"] == "cricapi"
+
+
+@respx.mock
 async def test_squad_adapter_filters_by_team():
     """team= kwarg keeps only the matching block from the series payload."""
     fixture = _load("squad.json")
