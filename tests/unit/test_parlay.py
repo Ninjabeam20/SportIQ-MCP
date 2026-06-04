@@ -37,7 +37,7 @@ def test_build_accumulator_basic():
 
 
 def test_deduplicates_same_match():
-    """2 picks from same match_id → only 1 (highest edge) appears in legs."""
+    """2 picks from same event_id → only 1 (highest edge) appears in legs."""
     picks = [
         _pick("m1", "home", 0.12, 0.60, 1.9),
         _pick("m1", "away", 0.07, 0.35, 3.0),  # same match, lower edge
@@ -104,6 +104,22 @@ def test_combined_edge_formula():
     assert abs(result["combined_odds"] - expected_combined_odds) < 0.001
     assert abs(result["combined_model_prob"] - expected_combined_prob) < 0.001
     assert abs(result["combined_edge"] - expected_edge) < 0.001
+
+
+def test_risk_flag_four_legs():
+    """4 legs each at decimal_odds=1.5 (combined=5.0625 < 10) → risk_flag == True."""
+    picks = [
+        _pick("m1", "home", 0.10, 0.60, 1.5),
+        _pick("m2", "home", 0.10, 0.60, 1.5),
+        _pick("m3", "home", 0.10, 0.60, 1.5),
+        _pick("m4", "home", 0.10, 0.60, 1.5),
+    ]
+    result = build_accumulator(picks, legs=4, min_edge=0.05)
+
+    # combined_odds = 1.5^4 = 5.0625 < 10 (so not triggered by odds)
+    assert result["combined_odds"] < 10
+    assert result["legs_used"] == 4
+    assert result["risk_flag"] is True
 
 
 def test_independence_warning_always_present():

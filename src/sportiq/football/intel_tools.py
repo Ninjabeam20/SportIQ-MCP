@@ -375,14 +375,15 @@ async def football_build_accumulator(legs: int = 3, min_edge: float = 0.05) -> d
     picks = result.get("data", {}).get("value_bets", [])
     acca = build_accumulator(picks, legs=legs, min_edge=min_edge)
 
+    upstream_meta = result.get("meta", {})
     return {
         "data": acca,
         "meta": {
             "source": "derived",
-            "is_stale": False,
-            "data_age_seconds": 0,
-            "fallback_used": False,
-            "duration_ms": 0,
+            "is_stale": upstream_meta.get("is_stale", False),
+            "data_age_seconds": upstream_meta.get("data_age_seconds", 0),
+            "fallback_used": upstream_meta.get("fallback_used", False),
+            "duration_ms": upstream_meta.get("duration_ms", 0),
             "estimated": True,
         },
     }
