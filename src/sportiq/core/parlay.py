@@ -15,6 +15,21 @@ from __future__ import annotations
 import math
 
 
+def normalise_pick(raw: dict, sport: str) -> dict:
+    """Coerce a raw value-pick dict from any sport into the standard parlay pick schema.
+
+    Standard schema: {match_id, outcome, edge, model_prob, decimal_odds, bookmaker, sport}.
+    The sport field is added; all other fields are passed through.
+    For cross-sport dedup: key picks as f"{sport}:{match_id}" to avoid collisions.
+    """
+    mid = str(raw.get("match_id") or raw.get("event_id") or id(raw))
+    return {
+        **raw,
+        "match_id": f"{sport}:{mid}",
+        "sport": sport,
+    }
+
+
 def build_accumulator(
     picks: list[dict],
     legs: int = 3,

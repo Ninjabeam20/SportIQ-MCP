@@ -4,6 +4,10 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete` · `ci` · `fix`.
 
+## [2026-06-04] tool-added | cross_sport_build_accumulator
+
+`normalise_pick` helper added to `core/parlay.py` (sport-prefixed `match_id` for cross-sport dedup). `cross_sport_build_accumulator` tool in `server_tools/cross_sport.py`; concurrent football + cricket value-bet fetch via `asyncio.gather`; one sport failure non-fatal. 4 unit tests + 5 tool-layer tests. Wiki: `docs/wiki/tools/cross-sport-accumulator.md`.
+
 ## [2026-06-04] tool-added | f1_race_pace_compare
 
 `compare_race_pace` pure model in `src/sportiq/f1/models/race_pace.py` (per-compound intercept comparison via `fit_degradation`). `f1_race_pace_compare` tool in `intel_tools.py`; 4-way concurrent fetch (laps + stints for both drivers); stints best-effort. 5 unit tests + 4 tool-layer tests. Wiki: `docs/wiki/tools/f1-race-pace-compare.md` + `docs/wiki/models/race-pace.md`.

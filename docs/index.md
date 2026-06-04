@@ -54,6 +54,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[football-find-value-bets]] — +EV "value" bets: de-vigged bookmaker odds vs the match model's probabilities (edge %).
 - [[football-form-trends]] — Rolling form string, W/D/L record, goals, and xG trajectory for a national team.
 - [[football-build-accumulator]] — Accumulator builder: selects top value-bet legs and computes combined odds, combined edge, and risk flag.
+- [[cross-sport-accumulator]] — Cross-sport accumulator: combines football + cricket value picks into a single multi-leg acca; one sport failure is non-fatal.
 
 ## Models
 

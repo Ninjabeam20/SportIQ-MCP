@@ -16,6 +16,7 @@ from sportiq.core.logging import configure_logging
 from sportiq.cricket.tools import register_cricket_tools
 from sportiq.f1.tools import register_f1_tools
 from sportiq.football.tools import register_football_tools
+from sportiq.server_tools.cross_sport import register_cross_sport_tools
 
 # Infrastructure guard — not wired into tools yet; available when fan-out is added.
 _SERVER_SEMAPHORE = asyncio.Semaphore(20)
@@ -28,6 +29,7 @@ register_health_tool(mcp)
 register_cricket_tools(mcp)
 register_f1_tools(mcp)
 register_football_tools(mcp)
+register_cross_sport_tools(mcp)
 
 
 def main() -> None:
