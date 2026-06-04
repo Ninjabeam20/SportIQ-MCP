@@ -276,7 +276,7 @@ async def f1_predict_pit_strategy(
     Returns:
         data.stop_laps: recommended pit laps.
         data.compound_sequence: tyre compounds for each stint.
-        data.expected_finish_position: None (modelled in Phase 4).
+        data.expected_finish_position: currently always None (not modelled).
         data.confidence: 0.0-1.0 model confidence.
         meta.total_laps: race length used (explicit arg, else inferred from laps).
         meta.estimated: true.

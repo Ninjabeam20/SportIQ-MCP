@@ -45,11 +45,11 @@ async def football_xg_model(home_team: str, away_team: str, neutral: bool = True
         data: {expected_home_goals, expected_away_goals, home_win, draw, away_win}.
         meta.estimated: true.
     """
-    home, away = home_team.upper(), away_team.upper()
     if len(home_team) > 100:
         return error_envelope(code="INVALID_INPUT", message="home_team must not exceed 100 characters.")
     if len(away_team) > 100:
         return error_envelope(code="INVALID_INPUT", message="away_team must not exceed 100 characters.")
+    home, away = home_team.upper(), away_team.upper()
 
     try:
         result = await _groups_payload()
@@ -87,11 +87,11 @@ async def football_match_predictor(home_team: str, away_team: str, neutral: bool
         data: {most_likely_score, home_win, draw, away_win, predicted_winner}.
         meta.estimated: true.
     """
-    home, away = home_team.upper(), away_team.upper()
     if len(home_team) > 100:
         return error_envelope(code="INVALID_INPUT", message="home_team must not exceed 100 characters.")
     if len(away_team) > 100:
         return error_envelope(code="INVALID_INPUT", message="away_team must not exceed 100 characters.")
+    home, away = home_team.upper(), away_team.upper()
 
     try:
         result = await _groups_payload()

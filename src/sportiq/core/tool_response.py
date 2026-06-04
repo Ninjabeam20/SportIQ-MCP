@@ -82,6 +82,31 @@ def truncate_payload(data: dict, list_key: str, max_items: int = _MAX_LIST_ITEMS
     return data, False
 
 
+def paginate(data: dict, list_key: str, limit: int, offset: int) -> dict:
+    """Window ``data[list_key]`` to ``[offset : offset+limit]`` in place and add a
+    ``data["pagination"]`` block (per mcp-builder rubric).
+
+    Returns the same dict with the list replaced by the requested page and:
+    ``{"total", "count", "offset", "limit", "has_more", "next_offset"}``.
+    ``next_offset`` is ``None`` when there are no more items.
+    """
+    items = data.get(list_key) or []
+    total = len(items)
+    window = items[offset : offset + limit]
+    data[list_key] = window
+    end = offset + len(window)
+    has_more = end < total
+    data["pagination"] = {
+        "total": total,
+        "count": len(window),
+        "offset": offset,
+        "limit": limit,
+        "has_more": has_more,
+        "next_offset": end if has_more else None,
+    }
+    return data
+
+
 def error_envelope(
     code: ErrorCode,
     message: str,

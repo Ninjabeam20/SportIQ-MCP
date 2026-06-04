@@ -11,7 +11,7 @@ from ``server.py``; we avoid importing ``mcp`` at module load.
 from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
-from sportiq.core.tool_response import Envelope, error_envelope, tool_response, truncate_payload
+from sportiq.core.tool_response import Envelope, error_envelope, paginate, tool_response
 from sportiq.cricket.chains import (
     fixtures_chain,
     live_score_chain,
@@ -102,27 +102,42 @@ async def cricket_get_points_table(series_id: str) -> Envelope:
         return error_envelope(
             code="NOT_FOUND",
             message=f"No points table available for series {series_id!r}.",
+            suggestion="Bilateral series (e.g. a 3-match tour) have no points "
+            "table — only league/round-robin series (IPL, World Cup group stage) "
+            "do. Verify the series_id refers to a league via cricket_get_schedule.",
         )
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
             message=f"Could not fetch points table for series {series_id!r}.",
             sources_tried=e.attempts,
+            suggestion="If this is a bilateral series it has no points table; "
+            "only league/round-robin series do. Otherwise the upstream may be "
+            "down — check sportiq_health().",
         )
     return tool_response(result)
 
 
-async def cricket_get_schedule(series_id: str | None = None) -> Envelope:
+async def cricket_get_schedule(
+    series_id: str | None = None, limit: int = 50, offset: int = 0
+) -> Envelope:
     """Return the upcoming match schedule, optionally filtered by series.
 
     Args:
         series_id: Optional. Filter to a specific series. If omitted, returns
                    all upcoming fixtures across all active series.
+        limit: Max matches to return, 1..200 (default 50).
+        offset: Number of matches to skip for paging (default 0).
 
     Returns:
-        data.matches: list of upcoming matches with teams, date, venue.
+        data.matches: page of upcoming matches with teams, date, venue.
+        data.pagination: {total, count, offset, limit, has_more, next_offset}.
         meta.source: adapter that served the data.
     """
+    if not 1 <= limit <= 200:
+        return error_envelope(code="INVALID_INPUT", message="limit must be in [1, 200].")
+    if offset < 0:
+        return error_envelope(code="INVALID_INPUT", message="offset must be >= 0.")
     try:
         result = await fixtures_chain.fetch(series_id=series_id)
     except AllSourcesFailedError as e:
@@ -131,10 +146,8 @@ async def cricket_get_schedule(series_id: str | None = None) -> Envelope:
             message="No schedule source is available right now.",
             sources_tried=e.attempts,
         )
-    result.value, was_truncated = truncate_payload(result.value, "matches")
-    resp = tool_response(result)
-    resp["meta"]["truncated"] = was_truncated
-    return resp
+    result.value = paginate(result.value, "matches", limit, offset)
+    return tool_response(result)
 
 
 async def cricket_get_squad(team: str, series_id: str | None = None) -> Envelope:

@@ -108,10 +108,12 @@ async def test_empty_events_returns_zero_bets():
     assert result["data"]["events_analysed"] == 0
 
 
-async def test_value_bets_sorted_by_edge_descending():
-    """Value bets are returned sorted by edge (highest first)."""
+async def test_no_value_bets_emitted_from_neutral_prior():
+    """Cricket has no calibrated win model, so value detection is disabled:
+    value_bets is always empty (even on a lopsided book) to avoid flagging every
+    underdog as +EV. The tool still screens events and labels the baseline.
+    """
     mock_result = MagicMock()
-    # Two bookmakers with different margins — larger edge should come first.
     mock_result.value = {
         "events": [
             {
@@ -119,9 +121,6 @@ async def test_value_bets_sorted_by_edge_descending():
                 "home": "Team A",
                 "away": "Team B",
                 "bookmakers": [
-                    # Model is 50/50; price 1.5 home implies ~0.667 → devigged ~0.52
-                    # edge = 0.5 - 0.52 < 0 → no home value; away edge depends on away price
-                    # Use a very lopsided bookmaker so away has positive edge vs 50% model
                     {"name": "bk1", "home": 1.3, "away": 3.5, "draw": None},
                     {"name": "bk2", "home": 1.4, "away": 2.9, "draw": None},
                 ],
@@ -137,7 +136,7 @@ async def test_value_bets_sorted_by_edge_descending():
         mock_chain.fetch = AsyncMock(return_value=mock_result)
         result = await cricket_find_value_bets(min_edge=0.0)
 
-    bets = result["data"]["value_bets"]
-    if len(bets) > 1:
-        edges = [b["edge"] for b in bets]
-        assert edges == sorted(edges, reverse=True)
+    assert result["data"]["value_bets"] == []
+    assert result["data"]["events_analysed"] == 1
+    assert result["data"]["model"] == "neutral_baseline"
+    assert "note" in result["data"]

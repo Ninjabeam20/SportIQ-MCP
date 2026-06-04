@@ -130,6 +130,10 @@ uv run python -m sportiq.server
 }
 ```
 
+**Transport:** stdio only (local subprocess), which is the right fit for a
+single-client desktop integration. There is no remote/streamable-HTTP endpoint;
+running it as a shared remote service is out of scope.
+
 ## Develop
 
 ```bash

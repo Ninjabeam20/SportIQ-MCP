@@ -16,7 +16,6 @@ import asyncio
 
 from sportiq.core.errors import AllSourcesFailedError, InvalidInputError, NotFoundError
 from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta, tool_response
-from sportiq.core.value_bet import find_value
 from sportiq.cricket.chains import (
     odds_chain,
     pitch_data_chain,
@@ -228,9 +227,9 @@ async def cricket_differential_picks(
 ) -> Envelope:
     """Suggest low-ownership picks with positive projected upside.
 
-    Ownership is *estimated* (we proxy by credit weight — lower-credit
-    players tend to have lower ownership). True ownership lands when the
-    Live Sports Odds RapidAPI server is wired in a later phase.
+    Ownership is *estimated* — proxied by credit weight (lower-credit players
+    tend to have lower ownership), not real ownership data. Flagged
+    ``estimated: true`` in the response.
 
     Args:
         match_id: CricAPI match identifier; resolves team_a/team_b/venue automatically.
@@ -397,15 +396,11 @@ async def cricket_get_pitch_report(venue: str) -> Envelope:
     except NotFoundError as e:
         return error_envelope(code="NOT_FOUND", message=str(e))
 
-    report = _pitch_report(venue_result.value)
-    return tool_response(type("Result", (), {  # ad-hoc shim for envelope
-        "value": report,
-        "source": venue_result.source,
-        "is_stale": venue_result.is_stale,
-        "data_age_seconds": venue_result.data_age_seconds,
-        "fallback_used": venue_result.fallback_used,
-        "duration_ms": venue_result.duration_ms,
-    })())
+    # Build the envelope from venue_result (carries source/staleness), then swap
+    # the raw venue record for the computed pitch report — no result shim needed.
+    resp = tool_response(venue_result)
+    resp["data"] = _pitch_report(venue_result.value)
+    return resp
 
 
 async def _fetch_player_stats_safe(pid: str) -> tuple[str, dict]:
@@ -515,22 +510,27 @@ async def cricket_find_value_bets(
     team: str | None = None,
     min_edge: float = 0.05,
 ) -> Envelope:
-    """Find +EV ("value") bets on upcoming IPL matches.
+    """Screen upcoming IPL odds events for +EV ("value") bets. Requires THEODDS_KEY.
 
-    Compares the server's heuristic win model (form + H2H + venue) against
-    de-vigged bookmaker head-to-head odds. Requires THEODDS_KEY.
+    NOTE: cricket has no calibrated team-strength model wired yet (unlike the
+    football Elo/Poisson path), so this tool currently returns an EMPTY
+    ``value_bets`` list — scoring value against a neutral 50/50 prior would flag
+    every market underdog as +EV, which is misleading for a betting tool. It
+    still reports how many events were screened so callers know odds were
+    available. For raw de-vigged prices use ``cricket_get_live_odds``. Real value
+    detection lands when a cricket win model is wired (see cricket_head_to_head).
 
     Args:
         team: Optional team name to filter events (case-insensitive substring).
             Omit to scan every IPL odds event.
         min_edge: Minimum edge (model_prob - devigged_market_prob), 0..1.
-            Default 0.05 (5 percentage points).
+            Default 0.05. Currently informational only (no bets emitted).
 
     Returns:
-        data.value_bets: list of {event_id, home, away, outcome, model_prob,
-            fair_odds, market_odds, edge, bookmaker}, sorted by edge descending.
-        data.events_analysed: count of events where model + odds were available.
-        meta.estimated: true — model probabilities are heuristic estimates.
+        data.value_bets: always ``[]`` until a cricket model is wired.
+        data.events_analysed: count of events screened (both teams present).
+        data.model: ``"neutral_baseline"``. data.note: why no bets are emitted.
+        meta.estimated: true.
     """
     import time as _time
 
@@ -556,39 +556,24 @@ async def cricket_find_value_bets(
             if needle in ev.get("home", "").lower() or needle in ev.get("away", "").lower()
         ]
 
-    value_bets = []
-    analysed = 0
-
-    for ev in events:
-        home_team = ev.get("home", "")
-        away_team = ev.get("away", "")
-        if not home_team or not away_team:
-            continue
-
-        # Use neutral signals (no form data available at this scope); tool is
-        # still useful as a de-vigged baseline even with 50/50 priors.
-        probs = win_prob({}, {})
-        model_probs = {"home_win": probs["team_a"], "away_win": probs["team_b"]}
-
-        for bookmaker in ev.get("bookmakers", []):
-            for pick in find_value(model_probs, bookmaker, min_edge):
-                value_bets.append(
-                    {
-                        "event_id": ev.get("event_id"),
-                        "home": home_team,
-                        "away": away_team,
-                        **pick,
-                    }
-                )
-        analysed += 1
-
-    value_bets.sort(key=lambda x: x.get("edge", 0), reverse=True)
+    # Cricket has no calibrated team-strength model wired yet (unlike football's
+    # Elo/Poisson path). Scoring "value" against a neutral 50/50 prior would flag
+    # every market underdog as +EV — false confidence in a betting tool. So we
+    # screen the events for de-vig readiness but emit NO value bets until a real
+    # model lands (the eventual signal source is cricket_head_to_head's win_prob).
+    analysed = sum(1 for ev in events if ev.get("home") and ev.get("away"))
 
     return {
         "data": {
-            "value_bets": value_bets,
+            "value_bets": [],
             "events_analysed": analysed,
             "min_edge": min_edge,
+            "model": "neutral_baseline",
+            "note": (
+                "No calibrated cricket win model yet; value detection is disabled "
+                "to avoid false positives from a neutral 50/50 prior. Use "
+                "cricket_get_live_odds for de-vigged market prices."
+            ),
         },
         "meta": {
             "source": odds_result.source,

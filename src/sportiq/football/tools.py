@@ -5,7 +5,7 @@ Thin wrappers: validate args -> call chain.fetch() -> return tool_response.
 from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError
-from sportiq.core.tool_response import Envelope, error_envelope, tool_response, truncate_payload
+from sportiq.core.tool_response import Envelope, error_envelope, paginate, tool_response
 from sportiq.football.chains import (
     football_fixtures_chain,
     football_groups_chain,
@@ -47,13 +47,22 @@ async def football_get_groups() -> Envelope:
     return tool_response(result)
 
 
-async def football_get_fixtures() -> Envelope:
+async def football_get_fixtures(limit: int = 50, offset: int = 0) -> Envelope:
     """Return World Cup 2026 fixtures (live providers, else the group schedule).
 
+    Args:
+        limit: Max fixtures to return, 1..200 (default 50).
+        offset: Number of fixtures to skip for paging (default 0).
+
     Returns:
-        data.fixtures: list of {home, away, date/group, status, home_goals, away_goals}.
+        data.fixtures: page of {home, away, date/group, status, home_goals, away_goals}.
+        data.pagination: {total, count, offset, limit, has_more, next_offset}.
         meta.source: adapter that served the data (static_seed = group schedule only).
     """
+    if not 1 <= limit <= 200:
+        return error_envelope(code="INVALID_INPUT", message="limit must be in [1, 200].")
+    if offset < 0:
+        return error_envelope(code="INVALID_INPUT", message="offset must be >= 0.")
     try:
         result = await football_fixtures_chain.fetch()
     except AllSourcesFailedError as e:
@@ -62,19 +71,26 @@ async def football_get_fixtures() -> Envelope:
             message="Could not fetch World Cup 2026 fixtures.",
             sources_tried=e.attempts,
         )
-    result.value, was_truncated = truncate_payload(result.value, "fixtures")
-    resp = tool_response(result)
-    resp["meta"]["truncated"] = was_truncated
-    return resp
+    result.value = paginate(result.value, "fixtures", limit, offset)
+    return tool_response(result)
 
 
-async def football_get_standings() -> Envelope:
+async def football_get_standings(limit: int = 50, offset: int = 0) -> Envelope:
     """Return current World Cup 2026 group standings.
 
+    Args:
+        limit: Max standing rows to return, 1..200 (default 50).
+        offset: Number of rows to skip for paging (default 0).
+
     Returns:
-        data.standings: list of {rank, team, group, points, played, goals_diff}.
+        data.standings: page of {rank, team, group, points, played, goals_diff}.
+        data.pagination: {total, count, offset, limit, has_more, next_offset}.
         meta.source: adapter that served the data.
     """
+    if not 1 <= limit <= 200:
+        return error_envelope(code="INVALID_INPUT", message="limit must be in [1, 200].")
+    if offset < 0:
+        return error_envelope(code="INVALID_INPUT", message="offset must be >= 0.")
     try:
         result = await football_standings_chain.fetch()
     except AllSourcesFailedError as e:
@@ -83,10 +99,8 @@ async def football_get_standings() -> Envelope:
             message="Could not fetch World Cup 2026 standings.",
             sources_tried=e.attempts,
         )
-    result.value, was_truncated = truncate_payload(result.value, "standings")
-    resp = tool_response(result)
-    resp["meta"]["truncated"] = was_truncated
-    return resp
+    result.value = paginate(result.value, "standings", limit, offset)
+    return tool_response(result)
 
 
 async def football_get_squad(team: str) -> Envelope:
