@@ -19,6 +19,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[cricket-get-live-odds]] — Live bookmaker h2h odds for IPL matches; optional team-name filter.
 - [[cricket-find-value-bets]] — +EV "value" bets: de-vigged bookmaker odds vs the heuristic win model (form + H2H + venue).
 - [[cricket-head-to-head]] — Head-to-head team comparison using squad form edges + win-probability estimate.
+- [[cricket-player-matchup]] — Analyse the head-to-head matchup between two players by role and career stats.
 
 ### F1
 
@@ -33,6 +34,8 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[f1-head-to-head-pace]] — Compares median lap-time pace between two drivers in the same session.
 - [[f1-weather-strategy-impact]] — Analyzes session weather and returns a compound recommendation.
 - [[f1-predict-pit-strategy]] — **Phase 3 flagship**: predict optimal pit stops + compound sequence using tyre-degradation fits.
+- [[f1-qualifying-analysis]] — Analyse a qualifying session: best lap per driver, gap to pole, projected grid.
+- [[f1-race-pace-compare]] — Compare race-pace and tyre degradation between two drivers by compound using linear degradation fits.
 
 ### Football
 
@@ -63,12 +66,14 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[pitch-report]] — Friendliness profile + recommendation derived from a venue record.
 - [[cricket-win-probability-model]] — Heuristic pre-match T20 win probability using form (50%), H2H (30%), and venue tilt (20%).
 - [[head-to-head]] — `summarise_h2h()` scores squads by player form edges and derives an H2H win-rate estimate.
+- [[player-matchup]] — Role-aware heuristic comparing batter avg, bowler avg, and strike rate to assign an edge holder.
 
 ### F1
 
 - [[tyre-degradation-model]] — Linear fit (lap_time = intercept + slope × tyre_age) per compound with outlier filtering.
 - [[undercut-model]] — Pure-arithmetic undercut viability calculator.
 - [[pit-strategy-model]] — Predicts optimal stop laps and compound sequence for the remainder of a race.
+- [[race-pace]] — Per-compound linear degradation comparison between two drivers; fresh-tyre intercept delta and overall winner.
 
 ### Football
 

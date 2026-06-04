@@ -4,6 +4,12 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete` · `ci` · `fix`.
 
+## [2026-06-04] tool-added | f1_race_pace_compare
+
+`compare_race_pace` pure model in `src/sportiq/f1/models/race_pace.py` (per-compound intercept comparison via `fit_degradation`). `f1_race_pace_compare` tool in `intel_tools.py`; 4-way concurrent fetch (laps + stints for both drivers); stints best-effort. 5 unit tests + 4 tool-layer tests. Wiki: `docs/wiki/tools/f1-race-pace-compare.md` + `docs/wiki/models/race-pace.md`.
+
+## [2026-06-04] tool-added | cricket_player_matchup
+
 ## [2026-06-03] tool-added | football_build_accumulator
 `build_accumulator` pure model in `src/sportiq/core/parlay.py` (edge filter, dedup by match, combined odds/prob/edge under independence, risk flag). `football_build_accumulator` tool added to `intel_tools.py`; calls `football_find_value_bets` directly; `meta.source: derived`, `meta.estimated: true`. 7 unit tests + 6 tool-layer tests (466 total). Wiki: `docs/wiki/tools/football-build-accumulator.md` + `docs/wiki/models/parlay-builder.md`.
 

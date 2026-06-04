@@ -12,6 +12,7 @@ from sportiq.core.tool_response import error_envelope, staleness_meta
 from sportiq.f1.chains import f1_drivers_chain, f1_laps_chain, f1_stints_chain, f1_weather_chain
 from sportiq.f1.models.pit_strategy import predict as _predict_strategy
 from sportiq.f1.models.quali_analysis import best_lap_per_driver, gap_to_pole, grid_projection
+from sportiq.f1.models.race_pace import compare_race_pace
 from sportiq.f1.models.tyre_deg import annotate_laps_with_stints, fit_degradation
 from sportiq.f1.models.undercut import undercut_window
 
@@ -423,6 +424,59 @@ async def f1_qualifying_analysis(session_key: int) -> dict:
     }
 
 
+async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -> dict:
+    """Compare race-pace and tyre degradation between two F1 drivers in a session.
+
+    Args:
+        session_key: OpenF1 session identifier.
+        driver_a: First driver's race number.
+        driver_b: Second driver's race number.
+
+    Returns:
+        data: {by_compound, overall_faster, compounds_compared}.
+        meta.estimated: true — degradation model fit, not official timing.
+    """
+    if session_key <= 0 or driver_a <= 0 or driver_b <= 0:
+        return error_envelope(code="INVALID_INPUT", message="All args must be positive.")
+    if driver_a == driver_b:
+        return error_envelope(code="INVALID_INPUT", message="driver_a and driver_b must differ.")
+
+    laps_a_r, stints_a_r, laps_b_r, stints_b_r = await asyncio.gather(
+        _fetch_driver_laps(session_key, driver_a),
+        f1_stints_chain.fetch(session_key=session_key, driver_number=driver_a),
+        _fetch_driver_laps(session_key, driver_b),
+        f1_stints_chain.fetch(session_key=session_key, driver_number=driver_b),
+        return_exceptions=True,
+    )
+
+    # Laps are required; stints are best-effort
+    if isinstance(laps_a_r, Exception) or isinstance(laps_b_r, Exception):
+        attempts = []
+        for exc in (laps_a_r, laps_b_r):
+            if isinstance(exc, AllSourcesFailedError):
+                attempts.extend(exc.attempts)
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message="Could not fetch lap data for one or both drivers.",
+            sources_tried=attempts,
+        )
+
+    laps_a = laps_a_r.value.get("laps", [])
+    stints_a = stints_a_r.value.get("stints", []) if not isinstance(stints_a_r, Exception) else []
+    laps_b = laps_b_r.value.get("laps", [])
+    stints_b = stints_b_r.value.get("stints", []) if not isinstance(stints_b_r, Exception) else []
+
+    result = compare_race_pace(laps_a, stints_a, laps_b, stints_b, driver_a, driver_b)
+    return {
+        "data": result,
+        "meta": {
+            "source": laps_a_r.source,
+            "estimated": True,
+            **staleness_meta(laps_a_r, laps_b_r),
+        },
+    }
+
+
 def register_f1_intel_tools(mcp) -> None:
     """Register all F1 INTEL tools on the supplied FastMCP instance."""
     mcp.tool()(f1_tyre_degradation)
@@ -431,3 +485,4 @@ def register_f1_intel_tools(mcp) -> None:
     mcp.tool()(f1_weather_strategy_impact)
     mcp.tool()(f1_predict_pit_strategy)
     mcp.tool()(f1_qualifying_analysis)
+    mcp.tool()(f1_race_pace_compare)

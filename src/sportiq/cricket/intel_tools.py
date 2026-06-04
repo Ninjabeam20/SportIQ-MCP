@@ -29,6 +29,7 @@ from sportiq.cricket.models.dream11_solver import solve as _solve_dream11
 from sportiq.cricket.models.form_index import compute_form_index
 from sportiq.cricket.models.head_to_head import summarise_h2h
 from sportiq.cricket.models.pitch_report import pitch_report as _pitch_report
+from sportiq.cricket.models.player_matchup import compute_matchup as _compute_matchup
 from sportiq.cricket.models.win_probability import win_prob
 
 # Cap concurrent per-player stats fetches during H2H analysis.
@@ -600,8 +601,46 @@ async def cricket_find_value_bets(
     }
 
 
+async def cricket_player_matchup(player_a: str, player_b: str) -> dict:
+    """Analyse the head-to-head matchup between two cricket players based on role and career stats.
+
+    Args:
+        player_a: Player ID or name for the first player.
+        player_b: Player ID or name for the second player.
+
+    Returns:
+        data: {matchup_type, edge_holder, edge_reason, signals, role_a, role_b}.
+        meta.estimated: true — heuristic model, not ball-by-ball H2H data.
+    """
+    if not player_a or not player_a.strip():
+        return error_envelope(code="INVALID_INPUT", message="player_a must not be empty.")
+    if not player_b or not player_b.strip():
+        return error_envelope(code="INVALID_INPUT", message="player_b must not be empty.")
+    if player_a.strip() == player_b.strip():
+        return error_envelope(code="INVALID_INPUT", message="player_a and player_b must be different.")
+
+    stats_a_r, stats_b_r = await asyncio.gather(
+        player_stats_chain.fetch(player_id=player_a.strip()),
+        player_stats_chain.fetch(player_id=player_b.strip()),
+        return_exceptions=True,
+    )
+
+    if isinstance(stats_a_r, Exception) or isinstance(stats_b_r, Exception):
+        return error_envelope(code="ALL_SOURCES_FAILED", message="Could not fetch player stats.")
+
+    result = _compute_matchup(stats_a_r.value, stats_b_r.value)
+    return {
+        "data": result,
+        "meta": {
+            "source": stats_a_r.source,
+            "estimated": True,
+            **staleness_meta(stats_a_r, stats_b_r),
+        },
+    }
+
+
 def register_cricket_intel_tools(mcp) -> None:
-    """Register the seven INTEL tools on the supplied FastMCP instance."""
+    """Register the eight INTEL tools on the supplied FastMCP instance."""
     mcp.tool()(cricket_build_dream11_team)
     mcp.tool()(cricket_captain_recommendation)
     mcp.tool()(cricket_differential_picks)
@@ -609,3 +648,4 @@ def register_cricket_intel_tools(mcp) -> None:
     mcp.tool()(cricket_get_pitch_report)
     mcp.tool()(cricket_find_value_bets)
     mcp.tool()(cricket_head_to_head)
+    mcp.tool()(cricket_player_matchup)
