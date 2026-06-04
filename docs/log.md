@@ -14,6 +14,12 @@ Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `ad
 
 ## [2026-06-04] tool-added | cricket_player_matchup
 
+`compute_matchup` pure model in `src/sportiq/cricket/models/player_matchup.py` (batter_vs_bowler / batter_vs_batter / bowler_vs_bowler role classification; batting_avg, bowling_avg, strike_rate edge detection; None-safe). `cricket_player_matchup` tool in `intel_tools.py`; concurrent `asyncio.gather` player stats fetch; `meta.estimated: true`. 14 unit tests + 9 tool-layer tests. Wiki: `docs/wiki/tools/cricket-player-matchup.md` + `docs/wiki/models/player-matchup.md`.
+
+## [2026-06-03] tool-added | f1_qualifying_analysis
+
+`best_lap_per_driver`, `gap_to_pole`, `grid_projection` pure functions in `src/sportiq/f1/models/quali_analysis.py`. `f1_qualifying_analysis` tool in `intel_tools.py`; routes through `f1_laps_chain` + `f1_drivers_chain` for name enrichment; returns projected grid with gap-to-pole seconds. 8 unit tests + 4 tool-layer tests. Wiki: `docs/wiki/tools/f1-qualifying-analysis.md` + `docs/wiki/models/quali-analysis.md`.
+
 ## [2026-06-03] tool-added | football_build_accumulator
 `build_accumulator` pure model in `src/sportiq/core/parlay.py` (edge filter, dedup by match, combined odds/prob/edge under independence, risk flag). `football_build_accumulator` tool added to `intel_tools.py`; calls `football_find_value_bets` directly; `meta.source: derived`, `meta.estimated: true`. 7 unit tests + 6 tool-layer tests (466 total). Wiki: `docs/wiki/tools/football-build-accumulator.md` + `docs/wiki/models/parlay-builder.md`.
 

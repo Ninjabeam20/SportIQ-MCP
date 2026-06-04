@@ -71,6 +71,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 ### F1
 
+- [[quali-analysis]] — Best-lap extraction, gap-to-pole seconds, and projected grid from raw qualifying lap data.
 - [[tyre-degradation-model]] — Linear fit (lap_time = intercept + slope × tyre_age) per compound with outlier filtering.
 - [[undercut-model]] — Pure-arithmetic undercut viability calculator.
 - [[pit-strategy-model]] — Predicts optimal stop laps and compound sequence for the remainder of a race.
@@ -78,6 +79,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 ### Football
 
+- [[form-trends]] — Rolling form string, W/D/L, goals, xG, and recent trend for a national football team from fixture history.
 - [[poisson-xg]] — Expected goals -> Poisson scoreline matrix -> P(home/draw/away); shared match engine.
 - [[elo]] — Elo win-expectation + rating update; seeds the Poisson engine and the knockout shootout.
 - [[group-sim]] — 4-team round-robin Monte Carlo with FIFA tiebreakers; p_advance sums to 2.
