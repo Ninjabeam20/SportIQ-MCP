@@ -15,11 +15,15 @@ class Envelope(TypedDict, total=False):
 
     Note: FastMCP fills absent keys with ``null`` in ``structuredContent``
     (e.g. ``error: null`` on success), so clients see a uniform 3-key envelope.
+    The three fields are therefore typed ``| None``: the generated
+    ``outputSchema`` must permit ``null`` (``anyOf: [object, null]``) or the mcp
+    server's own output validation rejects every response with
+    "None is not of type 'object'".
     """
 
-    data: dict[str, Any]
-    meta: dict[str, Any]
-    error: dict[str, Any]
+    data: dict[str, Any] | None
+    meta: dict[str, Any] | None
+    error: dict[str, Any] | None
 
 
 def tool_response(result: Any) -> dict:
