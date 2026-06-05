@@ -18,6 +18,10 @@ SENSITIVE_PATTERNS = [
     "step10.md",
     "step9.md",
     "step8.md",
+    "launch.md",
+    "new.md",
+    "remaining",
+    "mcp-builder/",
 ]
 
 

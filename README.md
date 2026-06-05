@@ -1,6 +1,6 @@
 # sportiq-mcp
 
-[![CI](https://github.com/Ninjabeam20/sportiq-mcp/actions/workflows/test.yml/badge.svg)](https://github.com/Ninjabeam20/sportiq-mcp/actions/workflows/test.yml)
+[![CI](https://github.com/Ninjabeam20/SportIQ-MCP/actions/workflows/test.yml/badge.svg)](https://github.com/Ninjabeam20/SportIQ-MCP/actions/workflows/test.yml)
 [![PyPI](https://img.shields.io/pypi/v/sportiq-mcp.svg)](https://pypi.org/project/sportiq-mcp/)
 ![tools](https://img.shields.io/badge/tools-44-blue)
 
@@ -137,7 +137,7 @@ Copy `.env.example` to `.env` and fill in keys.
 uvx sportiq-mcp
 
 # from source
-git clone https://github.com/Ninjabeam20/sportiq-mcp
+git clone https://github.com/Ninjabeam20/SportIQ-MCP
 cd sportiq-mcp
 uv sync
 uv run python -m sportiq.server

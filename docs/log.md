@@ -166,3 +166,19 @@ publisher setup still pending. (3) Added `src/sportiq/core/prompts.py` (`registe
 5 prompts mirroring instructions.md recipes) wired into `server.py`, plus
 `tests/tools/test_prompts.py`. Verified: 44 tools, 5 prompts, 1 resource load; suite 607→613;
 ruff clean; build gate clean.
+
+## [2026-06-05] feat | prompts 5→10 + release/packaging hardening
+Follow-up audit (3 Explore agents). (1) Prompts: added 5 to round out 1:1 coverage of
+the 10 instructions.md recipes — `cricket_captain_pick`, `predict_match`,
+`build_accumulator`, `server_health`, `wc_group_situation` (verified target signatures).
+Added `Args:` docstrings to all parameterized prompts and a `_clean()` helper that strips
+string args and raises on blanks (prompt content is natural language, no escaping needed).
+(2) Defense-in-depth: added `launch.md`/`new.md`/`remaining*`/`mcp-builder/` to both the
+sdist `exclude` (pyproject) and `SENSITIVE_PATTERNS` (check_release_build.py) — those files
+are untracked so they don't ship today, but the gate now fails if they're ever committed.
+(3) release.yml hardened: concurrency guard (no cancel-in-progress), Python 3.12 pin,
+`environment: pypi` on the publish job, and a `uv run pytest` quality gate before build/publish.
+(4) Aligned GitHub URL case `sportiq-mcp`→`SportIQ-MCP` (pyproject urls + README clone/badge)
+to match the actual remote; PyPI dist name unchanged. Two audit claims downgraded after
+verification: CI badge was never broken (slugs case-insensitive) and working docs weren't
+leaking. Verified: 44 tools, 10 prompts; suite 613→619; ruff clean; build gate clean.

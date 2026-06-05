@@ -49,8 +49,8 @@ dev = [
 sportiq-mcp = "sportiq.server:main"
 
 [project.urls]
-Homepage = "https://github.com/Ninjabeam20/sportiq-mcp"
-Issues = "https://github.com/Ninjabeam20/sportiq-mcp/issues"
+Homepage = "https://github.com/Ninjabeam20/SportIQ-MCP"
+Issues = "https://github.com/Ninjabeam20/SportIQ-MCP/issues"
 
 [build-system]
 requires = ["hatchling"]
@@ -69,6 +69,10 @@ exclude = [
     "scripts/",
     "*.local.md",
     "step*.md",
+    "launch.md",
+    "new.md",
+    "remaining*.md",
+    "mcp-builder/",
 ]
 
 [tool.ruff]

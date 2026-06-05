@@ -19,6 +19,11 @@ _EXPECTED = {
     "world_cup_winner_prediction",
     "cricket_value_bets",
     "f1_driver_comparison",
+    "cricket_captain_pick",
+    "predict_match",
+    "build_accumulator",
+    "server_health",
+    "wc_group_situation",
 }
 
 # Arguments for prompts that declare required parameters.
@@ -33,6 +38,11 @@ _ARGS: dict[str, dict] = {
         "driver_a": 1,
         "driver_b": 16,
     },
+    "cricket_captain_pick": {},
+    "predict_match": {"home_team": "ARG", "away_team": "FRA"},
+    "build_accumulator": {},
+    "server_health": {},
+    "wc_group_situation": {},
 }
 
 _PROMPTS = asyncio.run(server.mcp.list_prompts())
@@ -50,3 +60,10 @@ async def test_prompt_renders_nonempty_user_message(name):
     first = result.messages[0]
     assert first.role == "user"
     assert first.content.text.strip()
+
+
+async def test_prompt_rejects_blank_string_arg():
+    with pytest.raises(Exception):  # noqa: B017 — FastMCP wraps the ValueError
+        await server.mcp.get_prompt(
+            "predict_match", {"home_team": "  ", "away_team": "FRA"}
+        )

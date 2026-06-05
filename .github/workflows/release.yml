@@ -4,9 +4,15 @@ on:
   push:
     tags: ["v*"]
 
+# Never run two releases concurrently; do NOT cancel an in-flight publish.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: pypi   # OIDC trust binding must name this env in PyPI publisher config
     permissions:
       id-token: write   # OIDC Trusted Publishing (ADR-0010)
     steps:
@@ -15,8 +21,14 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v3
 
+      - name: Pin Python
+        run: uv python install 3.12
+
       - name: Sync deps
-        run: uv sync --extra dev
+        run: uv sync --extra dev --python 3.12
+
+      - name: Test (release quality gate)
+        run: uv run pytest
 
       - name: Verify build artifacts (security gate, also builds dist/)
         run: uv run python scripts/check_release_build.py
