@@ -14,6 +14,7 @@ from mcp.server.fastmcp import FastMCP
 from sportiq.core.health import register_health_tool
 from sportiq.core.instructions import register_instructions_resource
 from sportiq.core.logging import configure_logging
+from sportiq.core.prompts import register_prompts
 from sportiq.cricket.tools import register_cricket_tools
 from sportiq.f1.tools import register_f1_tools
 from sportiq.football.tools import register_football_tools
@@ -28,6 +29,7 @@ mcp = FastMCP("sportiq")
 
 register_health_tool(mcp)
 register_instructions_resource(mcp)
+register_prompts(mcp)
 register_cricket_tools(mcp)
 register_f1_tools(mcp)
 register_football_tools(mcp)

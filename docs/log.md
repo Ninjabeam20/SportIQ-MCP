@@ -154,3 +154,15 @@ Only `ping` (no schema) worked. Fix: typed the three keys `dict[str, Any] | None
 (88 RED → GREEN) validating both success/error envelope shapes against every tool's
 outputSchema — the existing suite called tool fns directly and never hit this path.
 Suite 508→607 passing.
+
+## [2026-06-05] release | launch prep — README refresh, release workflow, MCP prompts
+launch.md Tasks 1–3 (Task 4 monetization deferred by user). (1) README: fixed stale
+"33 tools / Phase 4" → "44 tools / Phase 10", added the 11 steps-5–10 tools to the
+RAW/INTEL tables, new Cross-sport + Diagnostics sections, CI/PyPI/tools badges, and
+env-var-bearing Claude Desktop config. (2) Added `.github/workflows/release.yml` —
+tag-triggered OIDC Trusted Publishing (ADR-0010); runs `scripts/check_release_build.py`
+(builds + validates no sensitive paths) then `pypa/gh-action-pypi-publish`. One-time PyPI
+publisher setup still pending. (3) Added `src/sportiq/core/prompts.py` (`register_prompts`,
+5 prompts mirroring instructions.md recipes) wired into `server.py`, plus
+`tests/tools/test_prompts.py`. Verified: 44 tools, 5 prompts, 1 resource load; suite 607→613;
+ruff clean; build gate clean.

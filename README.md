@@ -1,5 +1,9 @@
 # sportiq-mcp
 
+[![CI](https://github.com/Ninjabeam20/sportiq-mcp/actions/workflows/test.yml/badge.svg)](https://github.com/Ninjabeam20/sportiq-mcp/actions/workflows/test.yml)
+[![PyPI](https://img.shields.io/pypi/v/sportiq-mcp.svg)](https://pypi.org/project/sportiq-mcp/)
+![tools](https://img.shields.io/badge/tools-44-blue)
+
 MCP server exposing AI-callable tools across IPL cricket, Formula 1, and FIFA World Cup 2026.
 
 Three flagship intelligence tools sit on top of raw-data primitives:
@@ -10,7 +14,7 @@ Three flagship intelligence tools sit on top of raw-data primitives:
 
 ## Status
 
-Phase 4 complete — 5 cricket RAW + 5 cricket INTEL + 6 F1 RAW + 5 F1 INTEL + 6 football RAW + 5 football INTEL tools live (33 total). All three flagships shipped: `cricket_build_dream11_team` (PuLP ILP), `f1_predict_pit_strategy` (tyre-degradation on OpenF1 telemetry), and `football_simulate_bracket` (Monte Carlo + Poisson xG over the 48-team WC 2026 format). See `plan.md` for the full build plan.
+Phase 10 complete — **44 tools live**: 6 cricket RAW + 8 cricket INTEL + 6 F1 RAW + 7 F1 INTEL + 7 football RAW + 8 football INTEL + 1 cross-sport + `sportiq_health`. All three flagships shipped: `cricket_build_dream11_team` (PuLP ILP), `f1_predict_pit_strategy` (tyre-degradation on OpenF1 telemetry), and `football_simulate_bracket` (Monte Carlo + Poisson xG over the 48-team WC 2026 format). See `plan.md` for the full build plan.
 
 ## Cricket tools
 
@@ -23,6 +27,7 @@ Phase 4 complete — 5 cricket RAW + 5 cricket INTEL + 6 F1 RAW + 5 F1 INTEL + 6
 | `cricket_get_points_table` | Series standings / points table |
 | `cricket_get_schedule` | Upcoming fixtures, optionally by series |
 | `cricket_get_squad` | Team roster; always succeeds via static seed fallback |
+| `cricket_get_live_odds` | Live bookmaker head-to-head odds for upcoming/live IPL matches |
 
 ### INTEL (Phase 2)
 
@@ -35,6 +40,9 @@ Phase 4 complete — 5 cricket RAW + 5 cricket INTEL + 6 F1 RAW + 5 F1 INTEL + 6
 | `cricket_differential_picks` | Low-ownership picks with projected upside (ownership estimated) |
 | `cricket_player_form_index` | 0-100 form score from career stats + (future) recent innings |
 | `cricket_get_pitch_report` | Pitch friendliness + recommendation for a venue |
+| `cricket_head_to_head` | Compare two teams head-to-head using squad form and player stats |
+| `cricket_player_matchup` | Head-to-head matchup between two players by role and career stats |
+| `cricket_find_value_bets` | Screen upcoming IPL odds for +EV ("value") bets (requires `THEODDS_KEY`) |
 
 The Dream11 solver uses CBC via PuLP. On macOS arm64 install with `brew install cbc`; the binary bundled with PuLP is x86-only and won't run on Apple Silicon.
 
@@ -59,6 +67,8 @@ The Dream11 solver uses CBC via PuLP. On macOS arm64 install with `brew install 
 | `f1_undercut_window` | INTEL | Is an undercut viable vs a target driver? |
 | `f1_head_to_head_pace` | INTEL | Lap-time pace comparison between two drivers |
 | `f1_weather_strategy_impact` | INTEL | Weather-based compound recommendation |
+| `f1_qualifying_analysis` | INTEL | Best lap per driver, gap to pole, projected grid |
+| `f1_race_pace_compare` | INTEL | Race-pace + tyre-degradation comparison between two drivers |
 | `f1_predict_pit_strategy` | **FLAGSHIP** | Predict optimal pit stops + compound sequence |
 
 Data sources: [OpenF1](https://openf1.org) (free, keyless) → [Jolpica](https://jolpi.ca) → `fastf1` (optional, offline, `pip install sportiq-mcp[f1]`).
@@ -75,6 +85,7 @@ Data sources: [OpenF1](https://openf1.org) (free, keyless) → [Jolpica](https:/
 | `football_get_squad` | National-team squad |
 | `football_get_match_stats` | Team aggregate tournament statistics |
 | `football_get_top_scorers` | Tournament top scorers |
+| `football_get_odds` | Live bookmaker head-to-head odds for upcoming WC 2026 matches |
 
 ### INTEL (Phase 4)
 
@@ -85,8 +96,23 @@ Data sources: [OpenF1](https://openf1.org) (free, keyless) → [Jolpica](https:/
 | `football_simulate_group` | INTEL | Monte Carlo a group into qualification probabilities |
 | `football_simulate_bracket` | **FLAGSHIP** | Monte Carlo the full 48-team WC into per-team round + title probabilities |
 | `football_knockout_path` | INTEL | Round-by-round survival probabilities for one team |
+| `football_form_trends` | INTEL | Rolling form, goal record, and xG trend for a team |
+| `football_find_value_bets` | INTEL | +EV bets where model win prob beats the market |
+| `football_build_accumulator` | INTEL | Accumulator from the top value bets across live markets |
 
 The 2026 format (48 teams, 12 groups, top 2 + 8 best thirds → 32-team knockout) is encoded in `wc2026.json`. Data sources: [API-Football](https://www.api-football.com) (`APIFOOTBALL_KEY`) → [football-data.org](https://football-data.org) (free, token optional) → bundled `wc2026.json` seed.
+
+## Cross-sport tools
+
+| Tool | Type | Description |
+|------|------|-------------|
+| `cross_sport_build_accumulator` | INTEL | Accumulator mixing football and cricket value bets |
+
+## Diagnostics
+
+| Tool | Description |
+| :--- | :--- |
+| `sportiq_health` | Cache backend + per-adapter status and remaining API quota |
 
 ### Cricket adapter defaults
 
@@ -124,11 +150,20 @@ uv run python -m sportiq.server
   "mcpServers": {
     "sportiq": {
       "command": "uvx",
-      "args": ["sportiq-mcp"]
+      "args": ["sportiq-mcp"],
+      "env": {
+        "CRICAPI_KEY": "your_cricapi_key",
+        "APIFOOTBALL_KEY": "your_apifootball_key",
+        "THEODDS_KEY": "your_theodds_key"
+      }
     }
   }
 }
 ```
+
+All env vars are optional — the server boots and serves seed/free-source data
+without any keys. Add a key to unlock the source it gates (e.g. `THEODDS_KEY`
+for the value-bet tools). F1 and most football tools use free, keyless sources.
 
 **Transport:** stdio only (local subprocess), which is the right fit for a
 single-client desktop integration. There is no remote/streamable-HTTP endpoint;
