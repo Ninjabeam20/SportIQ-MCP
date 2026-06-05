@@ -182,3 +182,44 @@ are untracked so they don't ship today, but the gate now fails if they're ever c
 to match the actual remote; PyPI dist name unchanged. Two audit claims downgraded after
 verification: CI badge was never broken (slugs case-insensitive) and working docs weren't
 leaking. Verified: 44 tools, 10 prompts; suite 613→619; ruff clean; build gate clean.
+
+## [2026-06-05] plan | go-to-market doc set (launch/) split out of marketing.md
+Decomposed the `marketing.md` brain-dump into 8 focused, local-only strategy files under
+`launch/` (README index + 01 launch/deploy, 02 monetization/pricing, 03 marketing playbook,
+04 post drafts, 05 targeting list, 06 universal AI compatibility, 07 naming decision).
+Locked decisions: keep `sportiq-mcp` name (Scenario A rename recipe preserved); monetize via
+freemium (free RAW tools / paid INTEL behind `SPORTIQ_PRO_KEY`) using Polar (MoR on Stripe)
+with **native license keys = zero hosting for V1** — Cloudflare Worker is optional V2. Grounded
+facts via web: Polar free tier is 5%+$0.50 (fixed-fee gotcha → favor annual/lifetime), Polar
+has native License Keys, and the official MCP Registry (Anthropic/GitHub/MS-backed, PulseMCP
+auto-syncs) is now the #1 listing target. Flagged: `SUBSCRIPTION_REQUIRED` is NOT in the
+exhaustive error-code table — the gate is a real Phase-2 code change. Time-sensitive: launch
+into the WC 2026 window (kickoff ~Jun 11). `launch/` is untracked + NOT in the sdist exclude /
+SENSITIVE_PATTERNS gate yet — keep it untracked or add it before any commit (repo is public).
+No code/tests touched.
+
+## [2026-06-06] plan | fantasy-platform analysis (launch/ 08–10) from new_websites.md
+Analyzed the fantasy-app list/feature-breakdown in `new_websites.md` along 3 axes and added 3
+local-only plan files. (08 data-sources) Verdict: real-money apps (Dream11/My11Circle/MPL/…) are
+closed + ToS/legally sensitive (Indian RMG) → **do not scrape**; but official tournament fantasy
+APIs expose real prices/ownership — F1 Fantasy (unofficial, Postman/GitHub libs) is the best fit
+(opt-in adapter `SPORTIQ_ENABLE_F1_FANTASY`), FPL API is open but EPL-only (WC needs FIFA WC
+Fantasy endpoints, verify at launch), Sorare skipped. Integrate via Adapter→FallbackChain, daily
+cache. (09 product roadmap) Feature-convergence → gaps: no football/F1 squad optimizer, no transfer
+optimizer, no chip advisor, no price/value tools. Proposed P0 reuse-ILP-across-sports +
+`*_optimize_transfers`; P1 chip advisor + football/F1 differentials (need 08 ownership); P2
+price-change predictor + circuit profiles + config-driven scoring. All would be Pro-gated INTEL
+tools. Out of scope: live-points engine, leagues, social, real-money. (10 positioning) These =
+market not rivals → reframe to "cross-platform fantasy edge"; multi-format scoring unlocks all
+platforms' users; Premium-subscription model validates our Pro tier; "build a fantasy app" parked
+as a separate larger decision (stay the intelligence layer). Grounded via web: FPL bootstrap-static,
+F1 Fantasy API, Sorare GraphQL. No code/tests touched.
+
+## [2026-06-06] decision | gitignore + release-gate the local strategy docs (repo is public)
+Confirmed scope: stay the MCP intelligence layer (no fantasy app). Locked down the local-only
+strategy/brain-dump docs so they can't leak on the public repo. Added to `.gitignore`: `launch/`,
+`launch.md`, `marketing.md`, `new_websites.md`, `new.md`, `remaining*.md`, `mcp-builder/`
+(`step*.md` was already ignored). Extended the existing defense-in-depth gate to the 3 new risky
+paths (`launch/`, `marketing.md`, `new_websites.md`) in both the sdist `exclude` (pyproject) and
+`SENSITIVE_PATTERNS` (check_release_build.py). Verified: `git status` shows no exposed untracked
+files; `git check-ignore` confirms all paths. No src/tests touched.

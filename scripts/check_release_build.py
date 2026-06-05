@@ -22,6 +22,9 @@ SENSITIVE_PATTERNS = [
     "new.md",
     "remaining",
     "mcp-builder/",
+    "launch/",
+    "marketing.md",
+    "new_websites.md",
 ]
 
 

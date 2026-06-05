@@ -73,6 +73,9 @@ exclude = [
     "new.md",
     "remaining*.md",
     "mcp-builder/",
+    "launch/",
+    "marketing.md",
+    "new_websites.md",
 ]
 
 [tool.ruff]

@@ -59,6 +59,16 @@ docs/graphify/
 # brand-new step*.md (and the local step10.md working copy) from being added.
 step*.md
 
+# Local go-to-market / strategy / brain-dump docs — NEVER commit (repo is public;
+# these hold pricing, targeting, post drafts, and competitive analysis).
+launch/
+launch.md
+marketing.md
+new_websites.md
+new.md
+remaining*.md
+mcp-builder/
+
 # OS
 .DS_Store
 Thumbs.db
