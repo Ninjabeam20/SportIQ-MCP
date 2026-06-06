@@ -223,3 +223,19 @@ strategy/brain-dump docs so they can't leak on the public repo. Added to `.gitig
 paths (`launch/`, `marketing.md`, `new_websites.md`) in both the sdist `exclude` (pyproject) and
 `SENSITIVE_PATTERNS` (check_release_build.py). Verified: `git status` shows no exposed untracked
 files; `git check-ignore` confirms all paths. No src/tests touched.
+
+## [2026-06-06] lint | pre-launch review — 3 P2 correctness fixes + regression locks
+Pre-launch pass (3 parallel read-only agents: secret forensics, code review, infra/packaging).
+Secret verdict: clean — no credential ever committed in history/branches/tree; safe to go public.
+Fixed 3 minor P2s found in review: `cricket_player_matchup` now returns `NOT_FOUND` (not
+`ALL_SOURCES_FAILED`) when a player genuinely doesn't exist; `f1_head_to_head_pace` returns
+`faster_driver: null` on an exact pace tie (`delta == 0`) instead of defaulting to driver_b;
+`simulate_group` / `_draw_qualifiers` now raise a clear `ValueError` on a non-4-team group instead
+of a latent `IndexError`. +4 regression tests. Suite 619 → 623 green, ruff clean.
+
+## [2026-06-06] repo-hygiene | untrack internal build/audit docs from the public repo
+`git rm --cached` (kept on disk) the internal docs that predated the ignore rules and were still
+tracked: `step5–9.md`, `remaining.md`, `AUDIT.md`, `BACKLOG.md`, `changes.md`, `plan.md`,
+`docs/hot.md`. Added the five not already covered to `.gitignore`. Removed the now-dead
+`See plan.md` reference from `README.md`. No secrets were involved — these stay in old history
+(acceptable per the chosen "untrack going forward", not a history rewrite).

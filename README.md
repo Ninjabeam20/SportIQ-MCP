@@ -14,7 +14,7 @@ Three flagship intelligence tools sit on top of raw-data primitives:
 
 ## Status
 
-Phase 10 complete — **44 tools live**: 6 cricket RAW + 8 cricket INTEL + 6 F1 RAW + 7 F1 INTEL + 7 football RAW + 8 football INTEL + 1 cross-sport + `sportiq_health`. All three flagships shipped: `cricket_build_dream11_team` (PuLP ILP), `f1_predict_pit_strategy` (tyre-degradation on OpenF1 telemetry), and `football_simulate_bracket` (Monte Carlo + Poisson xG over the 48-team WC 2026 format). See `plan.md` for the full build plan.
+Phase 10 complete — **44 tools live**: 6 cricket RAW + 8 cricket INTEL + 6 F1 RAW + 7 F1 INTEL + 7 football RAW + 8 football INTEL + 1 cross-sport + `sportiq_health`. All three flagships shipped: `cricket_build_dream11_team` (PuLP ILP), `f1_predict_pit_strategy` (tyre-degradation on OpenF1 telemetry), and `football_simulate_bracket` (Monte Carlo + Poisson xG over the 48-team WC 2026 format).
 
 ## Cricket tools
 

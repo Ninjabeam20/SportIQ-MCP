@@ -69,6 +69,15 @@ new.md
 remaining*.md
 mcp-builder/
 
+# Internal build-process / audit docs — untracked 2026-06-06 (were committed before
+# this rule). Kept local; no secrets, just behind-the-scenes notes not meant for the
+# public repo. Already-removed history copies are harmless (no credentials).
+AUDIT.md
+BACKLOG.md
+changes.md
+plan.md
+docs/hot.md
+
 # OS
 .DS_Store
 Thumbs.db
