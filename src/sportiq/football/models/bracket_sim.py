@@ -41,6 +41,10 @@ def _draw_qualifiers(
     runners: dict[str, str] = {}
     thirds: list[dict] = []
     for letter, teams in groups.items():
+        if len(teams) != 4:
+            raise ValueError(
+                f"Group {letter} must have exactly 4 teams (WC 2026 format); got {len(teams)}."
+            )
         standings = simulate_group_once(rng, teams, ratings)
         winners[letter] = standings[0]["team"]
         runners[letter] = standings[1]["team"]

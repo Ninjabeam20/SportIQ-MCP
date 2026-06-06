@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from sportiq.football.models.group_sim import simulate_group, simulate_group_once
 
@@ -41,3 +42,9 @@ def test_seeded_runs_are_reproducible():
     a = simulate_group(_TEAMS, _RATINGS, n_iter=1000, seed=7)
     b = simulate_group(_TEAMS, _RATINGS, n_iter=1000, seed=7)
     assert a == b
+
+
+def test_simulate_group_rejects_non_four_team_group():
+    """A group that isn't exactly 4 teams fails loudly instead of an IndexError."""
+    with pytest.raises(ValueError):
+        simulate_group(["AAA", "BBB", "CCC"], _RATINGS, n_iter=10, seed=1)

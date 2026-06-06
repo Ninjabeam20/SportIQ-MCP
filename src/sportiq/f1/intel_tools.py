@@ -184,7 +184,8 @@ async def f1_head_to_head_pace(session_key: int, driver_a: int, driver_b: int) -
     avg_a = _avg(laps_a.value)
     avg_b = _avg(laps_b.value)
     delta = round(avg_a - avg_b, 3) if avg_a is not None and avg_b is not None else None
-    faster = driver_a if delta is not None and delta < 0 else (driver_b if delta is not None else None)
+    # None when there's no comparable data or the pace is an exact tie (delta == 0).
+    faster = None if not delta else (driver_a if delta < 0 else driver_b)
 
     return {
         "data": {

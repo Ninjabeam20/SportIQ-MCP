@@ -73,6 +73,19 @@ async def test_all_sources_failed_player_b():
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
 
 
+# --- NOT_FOUND (genuinely unknown player, distinct from a source outage) ---
+
+async def test_not_found_when_player_unknown():
+    """A NotFoundError for either player yields NOT_FOUND, not ALL_SOURCES_FAILED."""
+    from sportiq.core.errors import NotFoundError
+
+    mock_b = _mock_stats_result("Bumrah", role="bowler", bowling_avg=22.0)
+    with patch("sportiq.cricket.intel_tools.player_stats_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(side_effect=[NotFoundError("no such player"), mock_b])
+        result = await cricket_player_matchup("nonexistent_player", "bumrah")
+    assert result["error"]["code"] == "NOT_FOUND"
+
+
 # --- valid path ---
 
 async def test_valid_returns_envelope():

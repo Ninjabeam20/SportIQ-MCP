@@ -74,6 +74,10 @@ def simulate_group(
     Returns ``{team: {p_first, p_second, p_third, p_fourth, p_advance,
     avg_points}}`` plus ``iterations``. ``p_advance = p_first + p_second``.
     """
+    if len(teams) != 4:
+        raise ValueError(
+            f"simulate_group expects exactly 4 teams (WC 2026 group format); got {len(teams)}."
+        )
     rng = np.random.default_rng(seed)
     counts = {t: [0, 0, 0, 0] for t in teams}  # rank 1..4 tallies
     points_sum = dict.fromkeys(teams, 0)

@@ -142,6 +142,19 @@ async def test_f1_head_to_head_pace_all_sources_failed():
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
 
 
+async def test_f1_head_to_head_pace_tie_has_no_faster_driver():
+    """Identical pace (delta == 0) is a tie, not a default win for driver_b."""
+    from sportiq.f1 import intel_tools
+
+    with patch("sportiq.f1.intel_tools.f1_laps_chain") as mock:
+        mock.fetch = AsyncMock(return_value=_fr(_laps_payload()))
+        result = await intel_tools.f1_head_to_head_pace(
+            session_key=9877, driver_a=1, driver_b=16
+        )
+    assert result["data"]["delta_s"] == 0.0
+    assert result["data"]["faster_driver"] is None
+
+
 # -- f1_weather_strategy_impact -----------------------------------------------
 
 

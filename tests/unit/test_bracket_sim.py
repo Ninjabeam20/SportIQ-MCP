@@ -58,3 +58,17 @@ def test_r32_uses_official_group_position_pairings():
     # Match 73 is "2A vs 2B": runners-up of A and B must be adjacent somewhere in the array.
     pairs = {(current[i], current[i + 1]) for i in range(0, 32, 2)}
     assert (runners["A"], runners["B"]) in pairs or (runners["B"], runners["A"]) in pairs
+
+
+def test_draw_qualifiers_rejects_non_four_team_group():
+    """A group that isn't exactly 4 teams fails loudly instead of an IndexError."""
+    import numpy as np
+    import pytest
+
+    from sportiq.football.models import bracket_sim
+
+    rng = np.random.default_rng(0)
+    bad_groups = {"A": ["X", "Y", "Z"]}  # only 3 teams
+    ratings = {"X": 1500.0, "Y": 1500.0, "Z": 1500.0}
+    with pytest.raises(ValueError):
+        bracket_sim._draw_qualifiers(rng, bad_groups, ratings)
