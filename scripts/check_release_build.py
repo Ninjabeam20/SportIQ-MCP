@@ -9,20 +9,31 @@ import tarfile
 import zipfile
 from pathlib import Path
 
+# Substring patterns; a match anywhere in an archive member path is a violation.
+# Covers secrets, the whole test tree, dev/eval scaffolding, and every local-only
+# planning/strategy doc (step*, remaining*, audit/backlog/changes/plan, go-to-market).
 SENSITIVE_PATTERNS = [
     ".env",
     "docs/raw/",
     "docs/graphify/",
-    "tests/fixtures/",
-    ".local.md",
-    "step10.md",
-    "step9.md",
-    "step8.md",
-    "launch.md",
-    "new.md",
-    "remaining",
+    "tests/",
+    "evals/",
     "mcp-builder/",
+    ".local.md",
+    "step5.md",
+    "step6.md",
+    "step7.md",
+    "step8.md",
+    "step9.md",
+    "step10.md",
+    "remaining",
+    "AUDIT.md",
+    "BACKLOG.md",
+    "changes.md",
+    "plan.md",
+    "launch.md",
     "launch/",
+    "new.md",
     "marketing.md",
     "new_websites.md",
 ]

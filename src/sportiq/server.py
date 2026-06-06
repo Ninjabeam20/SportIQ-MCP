@@ -30,9 +30,12 @@ mcp = FastMCP("sportiq")
 register_health_tool(mcp)
 register_instructions_resource(mcp)
 register_prompts(mcp)
-register_cricket_tools(mcp)
-register_f1_tools(mcp)
+# Registration order is the order of relevance (football → F1 → cricket); it
+# determines how tools are listed to MCP clients. Imports above stay alphabetical
+# (ruff isort); only these calls carry the relevance order.
 register_football_tools(mcp)
+register_f1_tools(mcp)
+register_cricket_tools(mcp)
 register_cross_sport_tools(mcp)
 
 

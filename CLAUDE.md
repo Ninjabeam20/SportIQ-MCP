@@ -1,6 +1,6 @@
 # sportiq-mcp
 
-MCP server exposing AI-callable tools across IPL cricket, Formula 1, and FIFA World Cup 2026. The differentiator is the intelligence layer: `cricket_build_dream11_team` (PuLP constraint solver), `f1_predict_pit_strategy` (tyre degradation model on OpenF1 telemetry), `football_simulate_bracket` (Monte Carlo with Poisson xG). Raw data tools are table stakes — the three flagships are the product.
+MCP server exposing AI-callable tools across FIFA World Cup 2026 football, Formula 1, and IPL cricket. The differentiator is the intelligence layer: `football_simulate_bracket` (Monte Carlo with Poisson xG), `f1_predict_pit_strategy` (tyre degradation model on OpenF1 telemetry), `cricket_build_dream11_team` (PuLP constraint solver). Raw data tools are table stakes — the three flagships are the product. Order of relevance everywhere (headings, lists, tool registration): football → F1 → cricket.
 
 ## Who I Am
 

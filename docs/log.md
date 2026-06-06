@@ -239,3 +239,24 @@ tracked: `step5–9.md`, `remaining.md`, `AUDIT.md`, `BACKLOG.md`, `changes.md`,
 `docs/hot.md`. Added the five not already covered to `.gitignore`. Removed the now-dead
 `See plan.md` reference from `README.md`. No secrets were involved — these stay in old history
 (acceptable per the chosen "untrack going forward", not a history rewrite).
+
+## [2026-06-06] decision | reorder to football → F1 → cricket everywhere (order of relevance)
+Per request, flipped the long-standing cricket-first convention to **football → F1 → cricket**
+everywhere. Code: `server.py` register-call order (MCP clients now list football tools first;
+imports stay alphabetical per ruff isort). Docs/prose: README (tagline, flagships, status,
+full tool-section block move, dropped out-of-sequence "Phase N" labels), CLAUDE.md tagline +
+flagships (+ a note pinning the convention), `docs/index.md` (Tools/Models/Chains/Data-sources
+subsections), `src/sportiq/instructions.md` modules table, `pyproject` description + keywords,
+`__init__.py` docstring. Verified: 623 tests green, ruff clean, runtime tool list leads with
+`football_get_groups`. Prompts order left unchanged (mirror the recipe order; out of scope).
+
+## [2026-06-06] release | launch-readiness — server.json + packaging polish
+Authored `server.json` (Official MCP Registry, schema `2025-12-11`, name
+`io.github.ninjabeam20/sportiq-mcp`, pypi+stdio+uvx, v0.2.0). Packaging polish: sdist now excludes
+the whole `tests/` tree + `evals/` + the untracked dev docs; `check_release_build.py` patterns
+generalized (all `step*`, dev docs, `tests/`, `evals/`); classifier `3 - Alpha` → `4 - Beta`;
+README gained an env-var table (incl. previously-undocumented `FOOTBALLDATA_KEY`/`REDIS_URL`/
+`SPORTIQ_LOG_*`) and POST-PUBLISH placeholders (demo GIF, registry badges). Build gate clean
+(wheel + sdist, no sensitive paths). **Remaining manual/post-publish:** register the PyPI Trusted
+Publisher (env `pypi`) before tagging `v0.2.0`; after PyPI is live, submit `server.json` via the
+`mcp-publisher` CLI and fill the README badge/GIF placeholders.

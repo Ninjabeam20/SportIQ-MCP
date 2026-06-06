@@ -1,14 +1,14 @@
 [project]
 name = "sportiq-mcp"
 version = "0.2.0"
-description = "MCP server for IPL cricket, Formula 1, and FIFA World Cup 2026 intelligence tools."
+description = "MCP server for FIFA World Cup 2026 football, Formula 1, and IPL cricket intelligence tools."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Utkarsh Gupta", email = "utkarshgupta885@gmail.com" }]
-keywords = ["mcp", "cricket", "f1", "football", "fantasy", "sports"]
+keywords = ["mcp", "football", "f1", "cricket", "fantasy", "sports"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
@@ -65,13 +65,18 @@ exclude = [
     ".env.*",
     "docs/raw/",
     "docs/graphify/",
-    "tests/fixtures/",
+    "tests/",
     "scripts/",
+    "evals/",
     "*.local.md",
     "step*.md",
     "launch.md",
     "new.md",
     "remaining*.md",
+    "AUDIT.md",
+    "BACKLOG.md",
+    "changes.md",
+    "plan.md",
     "mcp-builder/",
     "launch/",
     "marketing.md",

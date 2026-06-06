@@ -1,3 +1,3 @@
-"""sportiq-mcp — MCP server for cricket, F1, and football intelligence tools."""
+"""sportiq-mcp — MCP server for football, F1, and cricket intelligence tools."""
 
 __version__ = "0.2.0"

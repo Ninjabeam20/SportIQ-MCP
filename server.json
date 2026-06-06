@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ninjabeam20/sportiq-mcp",
+  "description": "MCP tools for FIFA World Cup 2026 football, Formula 1, and IPL cricket — sims, strategy, fantasy.",
+  "version": "0.2.0",
+  "repository": {
+    "url": "https://github.com/Ninjabeam20/SportIQ-MCP",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "sportiq-mcp",
+      "version": "0.2.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

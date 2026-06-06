@@ -9,10 +9,10 @@ efficiently, and how to interpret every response.
 
 | Module | Tools | Data scope |
 |--------|-------|-----------|
-| **Cricket** | 14 tools | IPL live scores, squads, odds, Dream11, value bets |
-| **F1** | 13 tools | OpenF1 telemetry, tyre deg, pit strategy, pace comparison |
 | **Football** | 15 tools | FIFA WC 2026 — groups, fixtures, odds, Monte Carlo bracket |
-| **Cross-sport** | 1 tool | Mixed cricket + football accumulator |
+| **F1** | 13 tools | OpenF1 telemetry, tyre deg, pit strategy, pace comparison |
+| **Cricket** | 14 tools | IPL live scores, squads, odds, Dream11, value bets |
+| **Cross-sport** | 1 tool | Mixed football + cricket accumulator |
 | **Core** | 1 tool | Health / quota status |
 
 ---

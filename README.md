@@ -3,79 +3,27 @@
 [![CI](https://github.com/Ninjabeam20/SportIQ-MCP/actions/workflows/test.yml/badge.svg)](https://github.com/Ninjabeam20/SportIQ-MCP/actions/workflows/test.yml)
 [![PyPI](https://img.shields.io/pypi/v/sportiq-mcp.svg)](https://pypi.org/project/sportiq-mcp/)
 ![tools](https://img.shields.io/badge/tools-44-blue)
+<!-- POST-PUBLISH: add registry badges once listed — glama.ai and smithery.ai provide embed badges:
+[![glama](GLAMA_BADGE_URL)](GLAMA_SERVER_URL) [![smithery](SMITHERY_BADGE_URL)](SMITHERY_SERVER_URL) -->
 
-MCP server exposing AI-callable tools across IPL cricket, Formula 1, and FIFA World Cup 2026.
+MCP server exposing AI-callable tools across FIFA World Cup 2026 football, Formula 1, and IPL cricket.
+
+<!-- POST-PUBLISH: demo GIF — record football_simulate_bracket from the MCP Inspector and drop it here:
+![SportIQ demo](docs/assets/demo.gif) -->
 
 Three flagship intelligence tools sit on top of raw-data primitives:
 
-- `cricket_build_dream11_team` — PuLP constraint solver picks a valid 11 under credit/role/team caps.
-- `f1_predict_pit_strategy` — tyre-degradation model on OpenF1 telemetry recommends stop laps and compounds.
 - `football_simulate_bracket` — Monte Carlo with Poisson xG projects World Cup qualification probabilities.
+- `f1_predict_pit_strategy` — tyre-degradation model on OpenF1 telemetry recommends stop laps and compounds.
+- `cricket_build_dream11_team` — PuLP constraint solver picks a valid 11 under credit/role/team caps.
 
 ## Status
 
-Phase 10 complete — **44 tools live**: 6 cricket RAW + 8 cricket INTEL + 6 F1 RAW + 7 F1 INTEL + 7 football RAW + 8 football INTEL + 1 cross-sport + `sportiq_health`. All three flagships shipped: `cricket_build_dream11_team` (PuLP ILP), `f1_predict_pit_strategy` (tyre-degradation on OpenF1 telemetry), and `football_simulate_bracket` (Monte Carlo + Poisson xG over the 48-team WC 2026 format).
-
-## Cricket tools
-
-### RAW (Phase 1)
-
-| Tool | What it does |
-| :--- | :--- |
-| `cricket_get_live_matches` | All currently live matches across all series |
-| `cricket_get_scorecard` | Full scorecard for a match by ID |
-| `cricket_get_points_table` | Series standings / points table |
-| `cricket_get_schedule` | Upcoming fixtures, optionally by series |
-| `cricket_get_squad` | Team roster; always succeeds via static seed fallback |
-| `cricket_get_live_odds` | Live bookmaker head-to-head odds for upcoming/live IPL matches |
-
-### INTEL (Phase 2)
-
-<!-- TODO: Dream11 demo GIF -->
-
-| Tool | What it does |
-| :--- | :--- |
-| `cricket_build_dream11_team` | Optimal Dream11 XI + C/VC under T20 fantasy constraints |
-| `cricket_captain_recommendation` | Top-3 captain candidates by projected points |
-| `cricket_differential_picks` | Low-ownership picks with projected upside (ownership estimated) |
-| `cricket_player_form_index` | 0-100 form score from career stats + (future) recent innings |
-| `cricket_get_pitch_report` | Pitch friendliness + recommendation for a venue |
-| `cricket_head_to_head` | Compare two teams head-to-head using squad form and player stats |
-| `cricket_player_matchup` | Head-to-head matchup between two players by role and career stats |
-| `cricket_find_value_bets` | Screen upcoming IPL odds for +EV ("value") bets (requires `THEODDS_KEY`) |
-
-The Dream11 solver uses CBC via PuLP. On macOS arm64 install with `brew install cbc`; the binary bundled with PuLP is x86-only and won't run on Apple Silicon.
-
-## F1 Tools
-
-### RAW (Phase 3)
-
-| Tool | Description |
-|------|-------------|
-| `f1_get_sessions` | List F1 race/qualifying/practice sessions by year |
-| `f1_get_drivers` | Driver list for a session |
-| `f1_get_lap_times` | Per-driver lap times (compound lives on stints, not laps) |
-| `f1_get_standings` | Driver + constructor championship standings |
-| `f1_get_race_results` | Final race classification by year + round (Jolpica) |
-| `f1_get_weather` | Track weather data (temp, rainfall, wind) |
-
-### INTEL (Phase 3)
-
-| Tool | Type | Description |
-|------|------|-------------|
-| `f1_tyre_degradation` | INTEL | Fit linear tyre-degradation model per compound |
-| `f1_undercut_window` | INTEL | Is an undercut viable vs a target driver? |
-| `f1_head_to_head_pace` | INTEL | Lap-time pace comparison between two drivers |
-| `f1_weather_strategy_impact` | INTEL | Weather-based compound recommendation |
-| `f1_qualifying_analysis` | INTEL | Best lap per driver, gap to pole, projected grid |
-| `f1_race_pace_compare` | INTEL | Race-pace + tyre-degradation comparison between two drivers |
-| `f1_predict_pit_strategy` | **FLAGSHIP** | Predict optimal pit stops + compound sequence |
-
-Data sources: [OpenF1](https://openf1.org) (free, keyless) → [Jolpica](https://jolpi.ca) → `fastf1` (optional, offline, `pip install sportiq-mcp[f1]`).
+**44 tools live**: 7 football RAW + 8 football INTEL + 6 F1 RAW + 7 F1 INTEL + 6 cricket RAW + 8 cricket INTEL + 1 cross-sport + `sportiq_health`. All three flagships shipped: `football_simulate_bracket` (Monte Carlo + Poisson xG over the 48-team WC 2026 format), `f1_predict_pit_strategy` (tyre-degradation on OpenF1 telemetry), and `cricket_build_dream11_team` (PuLP ILP).
 
 ## Football tools (FIFA World Cup 2026)
 
-### RAW (Phase 4)
+### RAW
 
 | Tool | Description |
 |------|-------------|
@@ -87,7 +35,7 @@ Data sources: [OpenF1](https://openf1.org) (free, keyless) → [Jolpica](https:/
 | `football_get_top_scorers` | Tournament top scorers |
 | `football_get_odds` | Live bookmaker head-to-head odds for upcoming WC 2026 matches |
 
-### INTEL (Phase 4)
+### INTEL
 
 | Tool | Type | Description |
 |------|------|-------------|
@@ -101,6 +49,61 @@ Data sources: [OpenF1](https://openf1.org) (free, keyless) → [Jolpica](https:/
 | `football_build_accumulator` | INTEL | Accumulator from the top value bets across live markets |
 
 The 2026 format (48 teams, 12 groups, top 2 + 8 best thirds → 32-team knockout) is encoded in `wc2026.json`. Data sources: [API-Football](https://www.api-football.com) (`APIFOOTBALL_KEY`) → [football-data.org](https://football-data.org) (free, token optional) → bundled `wc2026.json` seed.
+
+## F1 Tools
+
+### RAW
+
+| Tool | Description |
+|------|-------------|
+| `f1_get_sessions` | List F1 race/qualifying/practice sessions by year |
+| `f1_get_drivers` | Driver list for a session |
+| `f1_get_lap_times` | Per-driver lap times (compound lives on stints, not laps) |
+| `f1_get_standings` | Driver + constructor championship standings |
+| `f1_get_race_results` | Final race classification by year + round (Jolpica) |
+| `f1_get_weather` | Track weather data (temp, rainfall, wind) |
+
+### INTEL
+
+| Tool | Type | Description |
+|------|------|-------------|
+| `f1_tyre_degradation` | INTEL | Fit linear tyre-degradation model per compound |
+| `f1_undercut_window` | INTEL | Is an undercut viable vs a target driver? |
+| `f1_head_to_head_pace` | INTEL | Lap-time pace comparison between two drivers |
+| `f1_weather_strategy_impact` | INTEL | Weather-based compound recommendation |
+| `f1_qualifying_analysis` | INTEL | Best lap per driver, gap to pole, projected grid |
+| `f1_race_pace_compare` | INTEL | Race-pace + tyre-degradation comparison between two drivers |
+| `f1_predict_pit_strategy` | **FLAGSHIP** | Predict optimal pit stops + compound sequence |
+
+Data sources: [OpenF1](https://openf1.org) (free, keyless) → [Jolpica](https://jolpi.ca) → `fastf1` (optional, offline, `pip install sportiq-mcp[f1]`).
+
+## Cricket tools
+
+### RAW
+
+| Tool | What it does |
+| :--- | :--- |
+| `cricket_get_live_matches` | All currently live matches across all series |
+| `cricket_get_scorecard` | Full scorecard for a match by ID |
+| `cricket_get_points_table` | Series standings / points table |
+| `cricket_get_schedule` | Upcoming fixtures, optionally by series |
+| `cricket_get_squad` | Team roster; always succeeds via static seed fallback |
+| `cricket_get_live_odds` | Live bookmaker head-to-head odds for upcoming/live IPL matches |
+
+### INTEL
+
+| Tool | What it does |
+| :--- | :--- |
+| `cricket_build_dream11_team` | Optimal Dream11 XI + C/VC under T20 fantasy constraints |
+| `cricket_captain_recommendation` | Top-3 captain candidates by projected points |
+| `cricket_differential_picks` | Low-ownership picks with projected upside (ownership estimated) |
+| `cricket_player_form_index` | 0-100 form score from career stats + (future) recent innings |
+| `cricket_get_pitch_report` | Pitch friendliness + recommendation for a venue |
+| `cricket_head_to_head` | Compare two teams head-to-head using squad form and player stats |
+| `cricket_player_matchup` | Head-to-head matchup between two players by role and career stats |
+| `cricket_find_value_bets` | Screen upcoming IPL odds for +EV ("value") bets (requires `THEODDS_KEY`) |
+
+The Dream11 solver uses CBC via PuLP. On macOS arm64 install with `brew install cbc`; the binary bundled with PuLP is x86-only and won't run on Apple Silicon.
 
 ## Cross-sport tools
 
@@ -164,6 +167,19 @@ uv run python -m sportiq.server
 All env vars are optional — the server boots and serves seed/free-source data
 without any keys. Add a key to unlock the source it gates (e.g. `THEODDS_KEY`
 for the value-bet tools). F1 and most football tools use free, keyless sources.
+
+### Environment variables
+
+| Var | Unlocks | Free tier |
+|-----|---------|-----------|
+| `APIFOOTBALL_KEY` | Live football fixtures / standings / squads / scorers | 100 req/day |
+| `THEODDS_KEY` | Bookmaker odds (football + cricket value bets) | 500 req/month |
+| `FOOTBALLDATA_KEY` | football-data.org fallback (token optional) | 10 req/min |
+| `CRICAPI_KEY` | Live cricket scores / scorecards / schedules / squads | 100 req/day |
+| `RAPIDAPI_KEY` | Paid Cricbuzz fallback (player career stats) | plan-dependent |
+| `SPORTIQ_ENABLE_NDTV` / `SPORTIQ_ENABLE_CRICBUZZ` | Opt-in cricket scrapers (off by default — ToS) | — |
+| `REDIS_URL` | Shared cache backend (defaults to local diskcache) | — |
+| `SPORTIQ_LOG_LEVEL` / `SPORTIQ_LOG_FORMAT` | Log verbosity / `pretty`\|`json` output | — |
 
 **Transport:** stdio only (local subprocess), which is the right fit for a
 single-client desktop integration. There is no remote/streamable-HTTP endpoint;
