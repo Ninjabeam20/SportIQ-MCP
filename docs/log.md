@@ -268,3 +268,12 @@ test step rebuilt the venv on 3.13 *without* `--extra dev` → `No module named 
 gate crashed before publish. Fix: align all steps to Python 3.13 and pass `--extra dev`
 to both `uv run` gate steps. Verified locally: full suite passes + build gate clean.
 Re-release requires moving tag v0.2.0 to the fix commit and force-pushing it.
+
+## [2026-06-08] fix | CI missing CBC solver (real test-gate failure)
+After the pytest-plumbing fix, the release gate reached pytest and exposed the real
+failure: `PulpSolverError: cannot execute cbc`. dream11_solver.py calls `COIN_CMD()`,
+which needs a system `cbc` on PATH (present locally via brew, absent on the runner).
+Added `apt-get install coinor-cbc` to release.yml and test.yml. Also hardened test.yml
+with the same `--python <matrix> --extra dev` flags on its `uv run` steps (it had the
+identical venv-rebuild bug across the 3.11/3.12/3.13 matrix). test.yml had been red on
+main for the same CBC reason.
