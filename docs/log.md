@@ -286,3 +286,12 @@ mcp-publisher publish hit two gates: (1) 403 — namespace is case-sensitive, to
 prove ownership. PyPI READMEs are immutable, so added the marker to README.md and bumped
 0.2.0→0.2.1 (pyproject + both server.json version fields) to republish. Tag v0.2.1 fires
 release.yml → PyPI 0.2.1, then mcp-publisher publish.
+
+## [2026-06-08] decision | attribution = LICENSE file, not username watermarking
+User asked to spray `Ninjabeam20` permutations through the codebase to prevent copying.
+Declined — ineffective (trivial sed removal; source is public MIT on PyPI by design) and
+harms adoption. Real attribution added instead: LICENSE file (MIT, © 2026 Utkarsh Gupta),
+README "License & author" section, glama.json (maintainer Ninjabeam20). Registry namespace
+`io.github.Ninjabeam20/*` + PyPI ownership already prevent impersonation. License kept MIT
+(user chose, maximizes installs/credit). LICENSE not yet in the published 0.2.1 sdist —
+will bundle on next version bump.

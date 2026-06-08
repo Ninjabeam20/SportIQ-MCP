@@ -198,6 +198,13 @@ npx @modelcontextprotocol/inspector uv run python -m sportiq.server
 
 See `CLAUDE.md` for collaboration rules and `docs/index.md` for the wiki entry point.
 
-## License
+## License & author
 
-MIT
+Created and maintained by **Utkarsh Gupta** ([@Ninjabeam20](https://github.com/Ninjabeam20)).
+
+Licensed under the [MIT License](LICENSE) — © 2026 Utkarsh Gupta. You may use, copy,
+and modify this software, but the copyright notice and this permission must be retained
+in all copies or substantial portions. The canonical package is
+[`sportiq-mcp` on PyPI](https://pypi.org/project/sportiq-mcp/) and
+`io.github.Ninjabeam20/sportiq-mcp` in the
+[official MCP registry](https://registry.modelcontextprotocol.io).
