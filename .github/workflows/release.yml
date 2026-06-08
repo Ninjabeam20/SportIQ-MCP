@@ -15,6 +15,7 @@ jobs:
     environment: pypi   # OIDC trust binding must name this env in PyPI publisher config
     permissions:
       id-token: write   # OIDC Trusted Publishing (ADR-0010)
+      contents: read    # actions/checkout requires this
     steps:
       - uses: actions/checkout@v4
 
