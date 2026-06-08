@@ -78,6 +78,8 @@ exclude = [
     "changes.md",
     "plan.md",
     "mcp-builder/",
+    "mcpb/",
+    "dist/",
     "launch/",
     "marketing.md",
     "new_websites.md",

@@ -295,3 +295,12 @@ README "License & author" section, glama.json (maintainer Ninjabeam20). Registry
 `io.github.Ninjabeam20/*` + PyPI ownership already prevent impersonation. License kept MIT
 (user chose, maximizes installs/credit). LICENSE not yet in the published 0.2.1 sdist —
 will bundle on next version bump.
+
+## [2026-06-08] tool-added | MCPB (.mcpb) desktop extension
+Built a Claude Desktop one-click extension at `mcpb/manifest.json` (+ `mcpb/server/main.py`
+launcher). Because the package has heavy native deps (scipy/numpy/pandas/pulp), the bundle
+does NOT vendor them — it launches via `uvx sportiq-mcp` (pulls from PyPI), consistent with
+the project's existing uvx install story. Requires `uv` on the host. Validates + packs via
+`npx @anthropic-ai/mcpb` → `dist/sportiq-mcp.mcpb` (gitignored; release artifact). Excluded
+`mcpb/` + `dist/` from the PyPI sdist. Next: user installs into Claude Desktop and submits to
+the Claude Connectors Directory (desktop-extension form).

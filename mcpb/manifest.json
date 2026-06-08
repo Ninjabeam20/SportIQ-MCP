@@ -1,0 +1,64 @@
+{
+  "manifest_version": "0.2",
+  "name": "sportiq-mcp",
+  "display_name": "SportIQ",
+  "version": "0.2.1",
+  "description": "44 AI sports tools for FIFA World Cup 2026 football, Formula 1, and IPL cricket.",
+  "long_description": "SportIQ turns any MCP-compatible AI into a sports analyst, tipster, and fantasy strategist. Ask in plain English to simulate the World Cup 2026 bracket (Monte Carlo + Poisson xG), model F1 pit strategy from live tyre-degradation data, build optimal Dream11 teams with an ILP solver, compare bookmaker odds, and surface value bets across football, F1, and cricket. Launches via `uvx`, so it requires the `uv` toolchain (https://docs.astral.sh/uv/) on the host.",
+  "author": {
+    "name": "Utkarsh Gupta",
+    "email": "utkarshgupta885@gmail.com",
+    "url": "https://github.com/Ninjabeam20"
+  },
+  "homepage": "https://github.com/Ninjabeam20/SportIQ-MCP",
+  "documentation": "https://github.com/Ninjabeam20/SportIQ-MCP#readme",
+  "support": "https://github.com/Ninjabeam20/SportIQ-MCP/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ninjabeam20/SportIQ-MCP"
+  },
+  "license": "MIT",
+  "keywords": [
+    "sports",
+    "football",
+    "world-cup-2026",
+    "formula-1",
+    "cricket",
+    "ipl",
+    "dream11",
+    "fantasy",
+    "betting",
+    "odds",
+    "monte-carlo"
+  ],
+  "server": {
+    "type": "python",
+    "entry_point": "server/main.py",
+    "mcp_config": {
+      "command": "uvx",
+      "args": ["sportiq-mcp"],
+      "env": {}
+    }
+  },
+  "tools": [
+    {
+      "name": "football_simulate_bracket",
+      "description": "Monte Carlo World Cup 2026 bracket simulation with a Poisson xG engine."
+    },
+    {
+      "name": "f1_predict_pit_strategy",
+      "description": "Tyre-degradation pit-strategy model on live OpenF1 telemetry."
+    },
+    {
+      "name": "cricket_build_dream11_team",
+      "description": "PuLP ILP solver for an optimal Dream11 XI under all constraints."
+    },
+    {
+      "name": "football_find_value_bets",
+      "description": "Surface positive-expected-value bets from live bookmaker odds."
+    }
+  ],
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"]
+  }
+}
