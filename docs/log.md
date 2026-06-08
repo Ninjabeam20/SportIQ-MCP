@@ -277,3 +277,12 @@ Added `apt-get install coinor-cbc` to release.yml and test.yml. Also hardened te
 with the same `--python <matrix> --extra dev` flags on its `uv run` steps (it had the
 identical venv-rebuild bug across the 3.11/3.12/3.13 matrix). test.yml had been red on
 main for the same CBC reason.
+
+## [2026-06-08] release | v0.2.1 — mcp-name marker + registry namespace casing
+mcp-publisher publish hit two gates: (1) 403 — namespace is case-sensitive, token grants
+`io.github.Ninjabeam20/*` (capital N) but server.json had lowercase → fixed to
+`io.github.Ninjabeam20/sportiq-mcp`; (2) 400 — registry requires the literal marker
+`<!-- mcp-name: io.github.Ninjabeam20/sportiq-mcp -->` in the *published PyPI* README to
+prove ownership. PyPI READMEs are immutable, so added the marker to README.md and bumped
+0.2.0→0.2.1 (pyproject + both server.json version fields) to republish. Tag v0.2.1 fires
+release.yml → PyPI 0.2.1, then mcp-publisher publish.

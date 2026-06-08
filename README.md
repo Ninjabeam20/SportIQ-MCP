@@ -1,5 +1,7 @@
 # sportiq-mcp
 
+<!-- mcp-name: io.github.Ninjabeam20/sportiq-mcp -->
+
 [![CI](https://github.com/Ninjabeam20/SportIQ-MCP/actions/workflows/test.yml/badge.svg)](https://github.com/Ninjabeam20/SportIQ-MCP/actions/workflows/test.yml)
 [![PyPI](https://img.shields.io/pypi/v/sportiq-mcp.svg)](https://pypi.org/project/sportiq-mcp/)
 ![tools](https://img.shields.io/badge/tools-44-blue)
