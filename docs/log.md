@@ -260,3 +260,11 @@ README gained an env-var table (incl. previously-undocumented `FOOTBALLDATA_KEY`
 (wheel + sdist, no sensitive paths). **Remaining manual/post-publish:** register the PyPI Trusted
 Publisher (env `pypi`) before tagging `v0.2.0`; after PyPI is live, submit `server.json` via the
 `mcp-publisher` CLI and fill the README badge/GIF placeholders.
+
+## [2026-06-08] fix | release workflow PyPI publish gate
+v0.2.0 release workflow failed 3× → PyPI never published → `uvx sportiq-mcp` 404s.
+Root cause: `uv sync` pinned `--python 3.12` but `.python-version`=3.13, so the `uv run`
+test step rebuilt the venv on 3.13 *without* `--extra dev` → `No module named pytest` →
+gate crashed before publish. Fix: align all steps to Python 3.13 and pass `--extra dev`
+to both `uv run` gate steps. Verified locally: full suite passes + build gate clean.
+Re-release requires moving tag v0.2.0 to the fix commit and force-pushing it.

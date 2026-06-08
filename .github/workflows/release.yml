@@ -23,16 +23,16 @@ jobs:
         uses: astral-sh/setup-uv@v3
 
       - name: Pin Python
-        run: uv python install 3.12
+        run: uv python install 3.13
 
       - name: Sync deps
-        run: uv sync --extra dev --python 3.12
+        run: uv sync --extra dev --python 3.13
 
       - name: Test (release quality gate)
-        run: uv run python -m pytest
+        run: uv run --python 3.13 --extra dev python -m pytest
 
       - name: Verify build artifacts (security gate, also builds dist/)
-        run: uv run python scripts/check_release_build.py
+        run: uv run --python 3.13 --extra dev python scripts/check_release_build.py
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
