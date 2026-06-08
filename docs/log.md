@@ -304,3 +304,14 @@ the project's existing uvx install story. Requires `uv` on the host. Validates +
 `npx @anthropic-ai/mcpb` → `dist/sportiq-mcp.mcpb` (gitignored; release artifact). Excluded
 `mcpb/` + `dist/` from the PyPI sdist. Next: user installs into Claude Desktop and submits to
 the Claude Connectors Directory (desktop-extension form).
+
+## [2026-06-08] feat | remote streamable-HTTP transport + Dockerfile
+Added env-gated HTTP transport to server.py: `SPORTIQ_TRANSPORT=http` serves streamable-HTTP
+on 0.0.0.0:$PORT (endpoint /mcp); stdio stays the default (uvx contract intact). Dockerfile
+installs from source (so it has the HTTP entrypoint) + apt coinor-cbc for the Dream11 solver;
+CMD `python -m sportiq.server`. Verified locally without Docker: POST /mcp initialize → 200 with
+valid MCP handshake. Deploy target = container host (Cloud Run/Fly/Render), NOT Cloudflare
+Workers (free tier blocks Python + can't run the native scipy/numpy/pulp+cbc stack). Cannot
+deploy from here (needs the user's cloud login). Quota note: deploy WITHOUT live-data API keys
+so the public endpoint only powers the keyless sim/prediction/fantasy tools — avoids strangers
+burning rate-limited quotas.

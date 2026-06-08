@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+.cache
+__pycache__
+*.pyc
+tests
+evals
+docs
+launch
+mcpb
+dist
+scripts
+.env
+.env.*
+*.local.md
+.DS_Store

@@ -8,6 +8,7 @@ ceiling against malformed client bursts without affecting normal single-client u
 """
 
 import asyncio
+import os
 
 from mcp.server.fastmcp import FastMCP
 
@@ -40,8 +41,19 @@ register_cross_sport_tools(mcp)
 
 
 def main() -> None:
-    """uvx entry point. Runs the MCP server on stdio."""
-    mcp.run()
+    """Entry point. Defaults to stdio (the uvx contract); serves streamable-HTTP
+    when ``SPORTIQ_TRANSPORT=http`` (used by the remote/container deployment).
+
+    On a remote host, set ``SPORTIQ_TRANSPORT=http``; the port is read from ``PORT``
+    (Cloud Run / Fly / Render convention, default 8080) and bound on all interfaces.
+    The MCP endpoint is served at ``/mcp``.
+    """
+    if os.getenv("SPORTIQ_TRANSPORT", "stdio").lower() in ("http", "streamable-http"):
+        mcp.settings.host = "0.0.0.0"  # container must bind all interfaces
+        mcp.settings.port = int(os.getenv("PORT", "8080"))
+        mcp.run(transport="streamable-http")
+    else:
+        mcp.run()
 
 
 if __name__ == "__main__":
