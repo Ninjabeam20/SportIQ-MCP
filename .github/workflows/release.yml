@@ -29,7 +29,7 @@ jobs:
         run: uv sync --extra dev --python 3.12
 
       - name: Test (release quality gate)
-        run: uv run pytest
+        run: uv run python -m pytest
 
       - name: Verify build artifacts (security gate, also builds dist/)
         run: uv run python scripts/check_release_build.py
