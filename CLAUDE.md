@@ -16,6 +16,7 @@ Utkarsh — software engineer building an automated job application pipeline. Fa
 6. **Only modify lines directly related to the task.** Ask before rewriting existing working code. Confirm before deletes, overwrites, migrations, or irreversible commands.
 7. **Hard stops for production:** deploys, schema changes, external API calls, and anything irreversible need an explicit "yes" in the current message.
 8. **End every coding task with:** files changed, what was modified per file, what was intentionally not touched, and any follow-up needed.
+9. **Default reply structure.** End every task/answer with three short, plain-language sections — **1. What I did**, **2. What I'm unsure about / recommend**, **3. What I need you to do**. Keep it brief; cut background/sources unless asked; if a section is empty say "nothing." For coding tasks, fold the Rule #8 files-changed detail into section 1.
 
 ## Stack (frozen)
 
