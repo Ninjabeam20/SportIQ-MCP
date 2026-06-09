@@ -322,3 +322,15 @@ connect to claude.ai+ChatGPT / Part 3 maintenance). Region us-central1 (user cho
 audience). README gained a "Remote / self-hosted" section linking cloud.md + explaining
 SPORTIQ_TRANSPORT=http; fixed stale "post-release" uvx comment (package is live). Deploy
 itself is user-run (needs their GCP login). Not Cloudflare/Railway-free (RAM/runtime limits).
+
+## [2026-06-09] docs | README/SECURITY state sync for live Cloud Run instance
+Server is live on Cloud Run (verified: POST /mcp initialize → serverInfo sportiq v1.27.2).
+Synced docs to reality: README gained a "Use the hosted SportIQ" section (live URL + exact
+claude.ai and ChatGPT/Developer-Mode connection steps), an "Is it safe to use?" section
+(open-source/MIT, read-only, no data collection, no keys on host, meta.is_stale freshness
+flagging), a top-of-README "Try it now" callout, and a self-host subsection. Removed the stale
+"Transport: stdio only / no remote endpoint" paragraph (now false) and added SPORTIQ_TRANSPORT
+to the env-var table. SECURITY.md gained a "Hosted deployment" section documenting the keyless
+public instance + the intentional DNS-rebinding-protection disable in HTTP mode. cloud.md gained
+the curl gcloud-install fallback (brew cask fails on newer macOS). Committed the server.py
+DNS-rebinding fix + uv.lock that the live deploy already runs.

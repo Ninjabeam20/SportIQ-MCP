@@ -18,6 +18,12 @@ This is the runbook to put SportIQ online at a public URL so it works on **any**
    ```
    brew install --cask google-cloud-sdk
    ```
+   > If the brew cask fails (e.g. a Python virtualenv error on newer macOS), use the official
+   > installer instead — it's self-contained and reliable:
+   > ```
+   > curl https://sdk.cloud.google.com | bash
+   > ```
+   > then restart your shell (or `source ~/.zshrc`) so `gcloud` is on your PATH.
 
 2. **Log in:**
    ```

@@ -19,6 +19,11 @@ Three flagship intelligence tools sit on top of raw-data primitives:
 - `f1_predict_pit_strategy` — tyre-degradation model on OpenF1 telemetry recommends stop laps and compounds.
 - `cricket_build_dream11_team` — PuLP constraint solver picks a valid 11 under credit/role/team caps.
 
+> **Try it now, no install:** a public instance is live on Cloud Run. Add
+> `https://sportiq-mcp-329580761892.us-central1.run.app/mcp` as a custom connector in
+> claude.ai or ChatGPT — see [Use the hosted SportIQ](#use-the-hosted-sportiq--no-install--works-on-claudeai-web--chatgpt).
+> Open source, read-only, no data collection — [why it's safe](#is-it-safe-to-use).
+
 ## Status
 
 **44 tools live**: 7 football RAW + 8 football INTEL + 6 F1 RAW + 7 F1 INTEL + 6 cricket RAW + 8 cricket INTEL + 1 cross-sport + `sportiq_health`. All three flagships shipped: `football_simulate_bracket` (Monte Carlo + Poisson xG over the 48-team WC 2026 format), `f1_predict_pit_strategy` (tyre-degradation on OpenF1 telemetry), and `cricket_build_dream11_team` (PuLP ILP).
@@ -170,15 +175,74 @@ All env vars are optional — the server boots and serves seed/free-source data
 without any keys. Add a key to unlock the source it gates (e.g. `THEODDS_KEY`
 for the value-bet tools). F1 and most football tools use free, keyless sources.
 
-## Remote / self-hosted (use it from claude.ai web or ChatGPT)
+## Use the hosted SportIQ (no install — works on claude.ai web & ChatGPT)
 
-The desktop install above (`uvx`/stdio) covers Claude Desktop, Cursor, and IDEs.
-To use SportIQ from **web and mobile AIs** (claude.ai, ChatGPT) you run it as a
-remote HTTP server: set `SPORTIQ_TRANSPORT=http` and it serves the MCP endpoint at
-`/mcp`. A ready-to-build `Dockerfile` is included.
+A public instance is already running on Google Cloud Run. Add this URL as a custom
+connector and SportIQ shows up in your AI's tool list — nothing to install:
 
-See **[`cloud.md`](cloud.md)** for a step-by-step Google Cloud Run deploy (free tier),
-then add the resulting `https://…/mcp` URL as a custom connector in claude.ai or ChatGPT.
+```
+https://sportiq-mcp-329580761892.us-central1.run.app/mcp
+```
+
+The hosted instance runs **without any API keys**, so the keyless tools work out of the
+box: World Cup bracket/group simulations, F1 strategy & tyre models, Dream11 optimisation,
+match predictions, standings, and schedules. Live-score and live-odds tools (which need
+rate-limited paid keys) are off on the shared instance — self-host with your own keys if you
+need those (see below).
+
+### Add to Claude (easiest)
+
+1. **claude.ai (web):** Settings → **Connectors** → **Add custom connector**.
+2. Name it `SportIQ` and paste the URL above. Save — the tools appear immediately.
+3. **Claude Desktop:** same path (Settings → Connectors → Add custom connector), or use the
+   `uvx` config below to run it locally.
+
+### Add to ChatGPT
+
+ChatGPT needs Developer Mode turned on first:
+
+1. **Settings → Apps & Connectors → Advanced settings → enable Developer mode.**
+2. In **Settings**, make sure **"use connected apps"** (the connectors/tools toggle) is enabled
+   so the model is allowed to call them.
+3. Back in **Apps & Connectors → Create / Add app (MCP)** → paste the URL above, give it the
+   name `SportIQ`, and connect.
+4. Once it shows **Connected**, start a chat and ask something like *"Use SportIQ to simulate
+   the World Cup 2026 bracket"* — ChatGPT will call the tools.
+
+> First request after an idle period takes ~5–10s (the server scales to zero when unused, so
+> it has to wake up). After that it's fast.
+
+## Is it safe to use?
+
+Yes — and here's exactly why, so you can verify rather than take our word for it:
+
+- **Open source, MIT licensed.** Every line is on [GitHub](https://github.com/Ninjabeam20/SportIQ-MCP)
+  and the package is published on [PyPI](https://pypi.org/project/sportiq-mcp/) with signed
+  build attestations. Read the code before you connect it.
+- **Read-only.** The tools only *fetch and analyse* public sports data. There are no write,
+  delete, payment, email, or file-system tools — nothing that can change anything on your side.
+- **No data collection.** SportIQ doesn't ask for, store, or transmit your personal data,
+  prompts, or account info. It answers a tool call and forgets it.
+- **The hosted instance holds no secrets.** It runs with zero API keys, so there's nothing for
+  anyone to steal and no quota of yours to burn.
+- **Hardened.** Upstream content is treated as data (never instructions), API keys are redacted
+  from all logs, payloads are size-capped, and scrapers are opt-in only. See
+  [`SECURITY.md`](SECURITY.md) for the full trust model.
+
+**Is the data fresh?** Yes. Live sources are polled continuously and cached with tight
+freshness windows — live scores refresh every ~30s, F1 telemetry every ~10s, standings every
+~10min, fixtures every ~6h. Every response carries a `meta.is_stale` flag and a data age, so
+the AI tells you exactly how fresh each answer is (e.g. *"as of about 4 minutes ago…"*) instead
+of guessing. Caching protects free-tier quotas — it never serves you knowingly outdated data
+without flagging it.
+
+## Self-host (your own instance, with live keys)
+
+Prefer to run your own? Set `SPORTIQ_TRANSPORT=http` and the server serves the MCP endpoint at
+`/mcp` (binds `0.0.0.0:$PORT`). A ready-to-build `Dockerfile` is included. See
+**[`cloud.md`](cloud.md)** for a step-by-step Google Cloud Run deploy (free tier), then add your
+own `https://…/mcp` URL as a connector. With your own keys set as env vars, the live-score and
+odds tools come online too.
 
 ### Environment variables
 
@@ -192,10 +256,11 @@ then add the resulting `https://…/mcp` URL as a custom connector in claude.ai 
 | `SPORTIQ_ENABLE_NDTV` / `SPORTIQ_ENABLE_CRICBUZZ` | Opt-in cricket scrapers (off by default — ToS) | — |
 | `REDIS_URL` | Shared cache backend (defaults to local diskcache) | — |
 | `SPORTIQ_LOG_LEVEL` / `SPORTIQ_LOG_FORMAT` | Log verbosity / `pretty`\|`json` output | — |
+| `SPORTIQ_TRANSPORT` | `stdio` (default, local) or `http` (remote/Cloud Run) | — |
 
-**Transport:** stdio only (local subprocess), which is the right fit for a
-single-client desktop integration. There is no remote/streamable-HTTP endpoint;
-running it as a shared remote service is out of scope.
+**Transport:** `stdio` by default (local subprocess — the right fit for Claude Desktop, Cursor,
+and IDEs). Set `SPORTIQ_TRANSPORT=http` to serve the streamable-HTTP endpoint at `/mcp` for
+remote/web clients (the hosted instance above runs in this mode).
 
 ## Develop
 

@@ -11,6 +11,7 @@ import asyncio
 import os
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from sportiq.core.health import register_health_tool
 from sportiq.core.instructions import register_instructions_resource
@@ -51,6 +52,11 @@ def main() -> None:
     if os.getenv("SPORTIQ_TRANSPORT", "stdio").lower() in ("http", "streamable-http"):
         mcp.settings.host = "0.0.0.0"  # container must bind all interfaces
         mcp.settings.port = int(os.getenv("PORT", "8080"))
+        # DNS rebinding protection blocks Cloud Run host headers; disable it for
+        # the remote deployment — Cloud Run's infrastructure handles perimeter security.
+        mcp.settings.transport_security = TransportSecuritySettings(
+            enable_dns_rebinding_protection=False
+        )
         mcp.run(transport="streamable-http")
     else:
         mcp.run()
