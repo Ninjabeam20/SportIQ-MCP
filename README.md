@@ -4,8 +4,12 @@
 
 [![CI](https://github.com/Ninjabeam20/SportIQ-MCP/actions/workflows/test.yml/badge.svg)](https://github.com/Ninjabeam20/SportIQ-MCP/actions/workflows/test.yml)
 [![PyPI](https://img.shields.io/pypi/v/sportiq-mcp.svg)](https://pypi.org/project/sportiq-mcp/)
-![tools](https://img.shields.io/badge/tools-44-blue)
-<!-- POST-PUBLISH: add registry badges once listed — glama.ai and smithery.ai provide embed badges:
+[![Python](https://img.shields.io/pypi/pyversions/sportiq-mcp.svg)](https://pypi.org/project/sportiq-mcp/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![MCP Registry](https://img.shields.io/badge/MCP%20Registry-listed-blue)](https://registry.modelcontextprotocol.io)
+[![tools](https://img.shields.io/badge/tools-44-blue)](#status)
+[![live demo](https://img.shields.io/badge/▶_live_demo-Claude_%26_ChatGPT-orange)](#use-the-hosted-sportiq--no-install--works-on-claudeai-web--chatgpt)
+<!-- POST-PUBLISH: add directory badges once listed — glama.ai and smithery.ai provide embed badges:
 [![glama](GLAMA_BADGE_URL)](GLAMA_SERVER_URL) [![smithery](SMITHERY_BADGE_URL)](SMITHERY_SERVER_URL) -->
 
 MCP server exposing AI-callable tools across FIFA World Cup 2026 football, Formula 1, and IPL cricket.
