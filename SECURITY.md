@@ -45,6 +45,27 @@ themselves are read-only and stateless, so there is no rebinding-sensitive surfa
 Self-hosters who expose the HTTP endpoint on an untrusted network should put it behind the same
 kind of managed HTTPS perimeter.
 
+## Independent review
+
+sportiq-mcp is **fully open source (MIT)** — the entire codebase, build pipeline, and test
+suite are public, so anyone can audit it themselves rather than trust a claim. It has already
+been put through two automated AI code-review passes prior to launch:
+
+- **Full MCP-rubric audit (2026-06-04)** — a code-audit agent ran static analysis, a runtime
+  smoke test, and a **clean-room install** (fresh venv → install the published wheel → drive the
+  server over real MCP stdio). Verdict: **ship-ready, no P0 (broken / data-wrong / security)
+  findings**. The build artifact was verified to exclude `.env`, internal docs, and test
+  fixtures — **no secret leak**. `ruff` clean, full test suite green.
+- **Pre-launch multi-agent sweep (2026-06-06)** — three independent read-only agents (secret
+  forensics, code review, infra/packaging). Secret-forensics verdict: **CLEAN** — no credential
+  was ever present in the git history, branches, or working tree; `.env` was never committed;
+  recorded test fixtures are scrubbed. Cleared for publish.
+
+These are automated AI reviews, not a formal third-party security certification or penetration
+test. Because the project is open source, you're encouraged to re-run your own audit — point any
+AI code-review tool at <https://github.com/Ninjabeam20/SportIQ-MCP> and verify the above for
+yourself.
+
 ## Reporting a vulnerability
 
 Open a GitHub issue tagged `security`. For sensitive disclosures, email

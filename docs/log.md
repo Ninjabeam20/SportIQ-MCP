@@ -334,3 +334,12 @@ to the env-var table. SECURITY.md gained a "Hosted deployment" section documenti
 public instance + the intentional DNS-rebinding-protection disable in HTTP mode. cloud.md gained
 the curl gcloud-install fallback (brew cask fails on newer macOS). Committed the server.py
 DNS-rebinding fix + uv.lock that the live deploy already runs.
+
+## [2026-06-09] docs | SECURITY.md independent-review section + README open-source claim
+Documented the two real pre-launch AI reviews in SECURITY.md (new "Independent review"
+section): the 2026-06-04 full MCP-rubric audit (ship-ready, no P0/security, no secret leak,
+clean-room install verified) and the 2026-06-06 multi-agent secret/code/infra sweep (secret
+verdict CLEAN). Worded as automated AI reviews, NOT a formal third-party certification, with an
+invite to re-audit the public repo. README "Is it safe?" now says "Completely open source" and
+links to SECURITY.md#independent-review. Grounded in AUDIT.md (internal/gitignored) + launch
+memory — no overclaim.

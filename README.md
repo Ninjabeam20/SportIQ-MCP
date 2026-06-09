@@ -216,9 +216,13 @@ ChatGPT needs Developer Mode turned on first:
 
 Yes — and here's exactly why, so you can verify rather than take our word for it:
 
-- **Open source, MIT licensed.** Every line is on [GitHub](https://github.com/Ninjabeam20/SportIQ-MCP)
+- **Completely open source, MIT licensed.** Every line is on [GitHub](https://github.com/Ninjabeam20/SportIQ-MCP)
   and the package is published on [PyPI](https://pypi.org/project/sportiq-mcp/) with signed
   build attestations. Read the code before you connect it.
+- **Independently reviewed by AI code-audit agents** before launch — a full MCP-rubric audit
+  (verdict: ship-ready, no security findings, no secret leak) plus a multi-agent secret/code
+  sweep (verdict: clean). The findings are written up in [`SECURITY.md`](SECURITY.md#independent-review)
+  so you can check them — and re-run your own audit, since the whole codebase is public.
 - **Read-only.** The tools only *fetch and analyse* public sports data. There are no write,
   delete, payment, email, or file-system tools — nothing that can change anything on your side.
 - **No data collection.** SportIQ doesn't ask for, store, or transmit your personal data,
