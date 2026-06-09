@@ -10,8 +10,9 @@
 
 MCP server exposing AI-callable tools across FIFA World Cup 2026 football, Formula 1, and IPL cricket.
 
-<!-- POST-PUBLISH: demo GIF — record football_simulate_bracket from the MCP Inspector and drop it here:
-![SportIQ demo](docs/assets/demo.gif) -->
+![SportIQ demo — Claude calling football_simulate_bracket for World Cup 2026 title probabilities](docs/assets/demo.gif)
+
+*SportIQ running live in Claude and ChatGPT — Monte Carlo World Cup bracket, F1 pit strategy, and Dream11 optimisation, each backed by a visible MCP tool call. ([full 1-min demo](docs/assets/SportIQ.mp4))*
 
 Three flagship intelligence tools sit on top of raw-data primitives:
 

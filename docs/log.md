@@ -343,3 +343,11 @@ verdict CLEAN). Worded as automated AI reviews, NOT a formal third-party certifi
 invite to re-audit the public repo. README "Is it safe?" now says "Completely open source" and
 links to SECURITY.md#independent-review. Grounded in AUDIT.md (internal/gitignored) + launch
 memory — no overclaim.
+
+## [2026-06-09] release | demo GIF + full MP4 added to README
+Recorded a ~64s multi-tab demo (Claude + ChatGPT, all 3 sports, visible SportIQ tool calls)
+→ docs/assets/SportIQ.mp4 (3.2MB). Cut a 15s hero GIF (17–32s, the World Cup 2026
+title-probability table from football_simulate_bracket) via ffmpeg palette method →
+docs/assets/demo.gif (3.6MB, 1000px/12fps, under GitHub's inline limit). Embedded the GIF at
+the top of the README with a caption + link to the full MP4. Closes the last POST-PUBLISH
+placeholder. Keyless tools only in the demo (hosted instance has no keys) so every answer renders full.
