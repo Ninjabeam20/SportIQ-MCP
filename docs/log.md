@@ -315,3 +315,10 @@ Workers (free tier blocks Python + can't run the native scipy/numpy/pulp+cbc sta
 deploy from here (needs the user's cloud login). Quota note: deploy WITHOUT live-data API keys
 so the public endpoint only powers the keyless sim/prediction/fantasy tools — avoids strangers
 burning rate-limited quotas.
+
+## [2026-06-09] docs | cloud.md deploy runbook + README remote section
+Added repo-root cloud.md: step-by-step Google Cloud Run deploy (Part 1 deploy / Part 2
+connect to claude.ai+ChatGPT / Part 3 maintenance). Region us-central1 (user chose global
+audience). README gained a "Remote / self-hosted" section linking cloud.md + explaining
+SPORTIQ_TRANSPORT=http; fixed stale "post-release" uvx comment (package is live). Deploy
+itself is user-run (needs their GCP login). Not Cloudflare/Railway-free (RAM/runtime limits).

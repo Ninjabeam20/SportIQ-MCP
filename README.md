@@ -138,7 +138,7 @@ Copy `.env.example` to `.env` and fill in keys.
 ## Install
 
 ```bash
-# from PyPI (post-release)
+# from PyPI
 uvx sportiq-mcp
 
 # from source
@@ -169,6 +169,16 @@ uv run python -m sportiq.server
 All env vars are optional — the server boots and serves seed/free-source data
 without any keys. Add a key to unlock the source it gates (e.g. `THEODDS_KEY`
 for the value-bet tools). F1 and most football tools use free, keyless sources.
+
+## Remote / self-hosted (use it from claude.ai web or ChatGPT)
+
+The desktop install above (`uvx`/stdio) covers Claude Desktop, Cursor, and IDEs.
+To use SportIQ from **web and mobile AIs** (claude.ai, ChatGPT) you run it as a
+remote HTTP server: set `SPORTIQ_TRANSPORT=http` and it serves the MCP endpoint at
+`/mcp`. A ready-to-build `Dockerfile` is included.
+
+See **[`cloud.md`](cloud.md)** for a step-by-step Google Cloud Run deploy (free tier),
+then add the resulting `https://…/mcp` URL as a custom connector in claude.ai or ChatGPT.
 
 ### Environment variables
 
