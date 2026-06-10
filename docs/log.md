@@ -372,3 +372,13 @@ player_id sanitised via _key_part (readable when alnum/-/_, hashed otherwise) pe
 caching-policy.md. docs/index.md static-seed line corrected (19 squads, not "IPL + 4").
 Deferred by explicit zero-budget decision: min-instances, Memorystore/shared Redis, Secret
 Manager keys, paid API tiers — revisit after traction.
+
+## [2026-06-11] release | Cloud Run canary redeploy of zero-cost batch (rev 00003-rog)
+Pushed `ac48a8d` to origin/main, then redeployed Cloud Run with the safe-rollback pattern:
+`gcloud run deploy --no-traffic --tag candidate` built revision `sportiq-mcp-00003-rog` at 0%
+traffic, verified on the tagged URL (initialize OK; sportiq_health = diskcache healthy, free
+sources up, keyless adapters correctly down; football_simulate_bracket(500, seed=42) → ARG 22.2%
+champion, 20ms), then `update-traffic --to-latest` shifted 100%. Main URL re-verified serving
+00003-rog. Previous working revision `sportiq-mcp-00002-mhb` retained — rollback is one command:
+`gcloud run services update-traffic sportiq-mcp --region us-central1 --project sportiq-mcp-prod
+--to-revisions=sportiq-mcp-00002-mhb=100`.
