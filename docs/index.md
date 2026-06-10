@@ -142,7 +142,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[ndtv-sports-scraper]] — Opt-in scraper (SPORTIQ_ENABLE_NDTV=1); live scores + fixtures.
 - [[cricbuzz-scraper]] — Opt-in scraper (SPORTIQ_ENABLE_CRICBUZZ=1); live scores.
 - [[rapidapi-cricbuzz]] — Paid licensed Cricbuzz mirror; escape hatch; requires RAPIDAPI_KEY; serves player career stats.
-- [[static-seed]] — Local JSON reader; always-on; ships IPL + 4 internationals squads + 14 IPL venues.
+- [[static-seed]] — Local JSON reader; always-on; ships 19 squads (10 IPL + 9 internationals) + 14 IPL venues.
 
 ### Odds
 

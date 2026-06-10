@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from sportiq.core.errors import AllSourcesFailedError
@@ -101,6 +103,59 @@ async def test_serves_stale_when_all_adapters_fail():
     assert result.is_stale is True
     assert result.fallback_used is True
     assert result.source.startswith("cache:stale:")
+
+
+@pytest.mark.asyncio
+async def test_concurrent_identical_fetches_hit_upstream_once():
+    """Cache-stampede guard: N concurrent misses for the same key must result in
+    ONE adapter call; the rest serve from the cache the first call populated.
+    On the shared hosted instance this protects both latency and API quota."""
+
+    class SlowAdapter(StubAdapter):
+        async def fetch(self, **kwargs):
+            self.call_count += 1
+            await asyncio.sleep(0.05)
+            return self._response
+
+    adapter = SlowAdapter("slow", response={"x": 1})
+    chain = FallbackChain(
+        name="t6", adapters=[adapter], cache_key_fn=_key, fresh_ttl=60
+    )
+
+    results = await asyncio.gather(*[chain.fetch(q="same") for _ in range(5)])
+
+    assert adapter.call_count == 1
+    assert all(r.value == {"x": 1} for r in results)
+
+
+@pytest.mark.asyncio
+async def test_hanging_adapter_times_out_and_chain_falls_back():
+    """A hung upstream must not stall the whole chain: the walk has a time
+    budget, a too-slow adapter is recorded as an error attempt, and the next
+    adapter still gets its turn."""
+
+    class HangingAdapter(StubAdapter):
+        async def fetch(self, **kwargs):
+            self.call_count += 1
+            await asyncio.sleep(5)
+            return self._response
+
+    hanging = HangingAdapter("hanging", response={"x": 1})
+    fast = StubAdapter("fast", response={"x": 2})
+    chain = FallbackChain(
+        name="t7",
+        adapters=[hanging, fast],
+        cache_key_fn=_key,
+        fresh_ttl=60,
+        time_budget_s=0.1,
+    )
+
+    result = await chain.fetch(q="hung-upstream")
+
+    assert result.value == {"x": 2}
+    assert result.source == "fast"
+    assert result.attempts[0]["status"] == "error"
+    assert "Timeout" in result.attempts[0]["error"]
 
 
 @pytest.mark.asyncio

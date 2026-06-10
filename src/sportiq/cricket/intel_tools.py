@@ -62,8 +62,10 @@ async def _candidate_pool(
     Returns the candidate dicts plus the two squad ``FallbackResult``s so callers
     can aggregate freshness into ``meta`` (per fallback-contract.md).
     """
-    a = await squad_chain.fetch(team=team_a)
-    b = await squad_chain.fetch(team=team_b)
+    # Independent fetches — gather so a cold cache costs one round-trip, not two.
+    a, b = await asyncio.gather(
+        squad_chain.fetch(team=team_a), squad_chain.fetch(team=team_b)
+    )
     candidates: list[dict] = []
     for squad_result in (a, b):
         squad = squad_result.value
@@ -441,10 +443,12 @@ async def cricket_head_to_head(team_a: str, team_b: str) -> Envelope:
     if team_a.strip().lower() == team_b.strip().lower():
         return error_envelope(code="INVALID_INPUT", message="team_a and team_b must be different.")
 
-    # --- fetch squads ---
+    # --- fetch squads (independent — gather) ---
     try:
-        squad_result_a = await squad_chain.fetch(team=team_a.strip())
-        squad_result_b = await squad_chain.fetch(team=team_b.strip())
+        squad_result_a, squad_result_b = await asyncio.gather(
+            squad_chain.fetch(team=team_a.strip()),
+            squad_chain.fetch(team=team_b.strip()),
+        )
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",

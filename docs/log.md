@@ -351,3 +351,24 @@ title-probability table from football_simulate_bracket) via ffmpeg palette metho
 docs/assets/demo.gif (3.6MB, 1000px/12fps, under GitHub's inline limit). Embedded the GIF at
 the top of the README with a caption + link to the full MP4. Closes the last POST-PUBLISH
 placeholder. Keyless tools only in the demo (hosted instance has no keys) so every answer renders full.
+
+## [2026-06-11] fix | zero-cost latency + correctness batch (post-audit)
+Implemented the no-spend punch-list from the 2026-06-10 full-repo audit, TDD throughout
+(red verified per fix). (1) CricAPI Live/Schedule adapters now route through `_unwrap` —
+a failure envelope (e.g. quota exhausted) raises NotFoundError instead of caching an empty
+"success" that blocked the NDTV/Cricbuzz/RapidAPI fallback ladder and burned a budget token.
+(2) CricAPILiveMatchesAdapter.healthcheck() no longer makes a live API call (was burning
+1 CricAPI req per sportiq_health() — publicly callable on the hosted endpoint). (3) RapidAPI
+path ids percent-encoded (`../` traversal proven + blocked in test). (4) cache.py now truly
+downgrades redis→diskcache on unreachable daemon (from_url is lazy; previously crashed every
+tool). (5) FallbackChain: per-key in-flight lock (stampede guard — N concurrent misses = 1
+upstream call) + per-adapter time budget (12s default; hung upstream → error attempt → next
+adapter). (6) Serial→asyncio.gather: jolpica standings pair; f1 tyre_deg/undercut/h2h-pace/
+pit-strategy; football find_value_bets odds+groups; cricket _candidate_pool + head_to_head
+squads. (7) cross_sport meta now aggregates sub-tool staleness (was hardcoding is_stale:false).
+(8) NDTV/Cricbuzz scrapers carry Budget(per_minute=20) — the ≤1 req/3s courtesy rule is now
+enforced, not just documented. (9) Cricket cache keys: user-supplied series_id/match_id/
+player_id sanitised via _key_part (readable when alnum/-/_, hashed otherwise) per
+caching-policy.md. docs/index.md static-seed line corrected (19 squads, not "IPL + 4").
+Deferred by explicit zero-budget decision: min-instances, Memorystore/shared Redis, Secret
+Manager keys, paid API tiers — revisit after traction.

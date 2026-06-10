@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from sportiq.core.http import get_json
 from sportiq.f1.adapters.base import _JOLPICA_BASE
 
@@ -11,8 +13,10 @@ class JolpicaStandingsAdapter:
     budget = None
 
     async def fetch(self, year: int, **kwargs) -> dict:
-        driver_data = await get_json(f"{_JOLPICA_BASE}/f1/{year}/driverStandings.json")
-        constructor_data = await get_json(f"{_JOLPICA_BASE}/f1/{year}/constructorStandings.json")
+        driver_data, constructor_data = await asyncio.gather(
+            get_json(f"{_JOLPICA_BASE}/f1/{year}/driverStandings.json"),
+            get_json(f"{_JOLPICA_BASE}/f1/{year}/constructorStandings.json"),
+        )
         return {
             "driver_standings": driver_data,
             "constructor_standings": constructor_data,

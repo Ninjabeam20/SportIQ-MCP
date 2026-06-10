@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import AsyncMock, patch
 
 from sportiq.core.errors import AllSourcesFailedError
@@ -48,6 +49,36 @@ def _two_team_squads():
         _fr({"players": team_a_players, "team": "Team A", "source": "static_seed"}),
         _fr({"players": team_b_players, "team": "Team B", "source": "static_seed"}),
     )
+
+
+async def test_candidate_pool_fetches_both_squads_concurrently():
+    """The two squad fetches are independent — they must overlap, not serialize
+    (one upstream round-trip instead of two on a cold cache)."""
+    from sportiq.cricket import intel_tools
+
+    squad_a, squad_b = _two_team_squads()
+    responses = [squad_a, squad_b]
+    in_flight = 0
+    max_in_flight = 0
+
+    class _TrackingChain:
+        async def fetch(self, **kwargs):
+            nonlocal in_flight, max_in_flight
+            in_flight += 1
+            max_in_flight = max(max_in_flight, in_flight)
+            response = responses.pop(0)
+            await asyncio.sleep(0.01)
+            in_flight -= 1
+            return response
+
+    with patch("sportiq.cricket.intel_tools.squad_chain", _TrackingChain()):
+        candidates, results = await intel_tools._candidate_pool(
+            "Team A", "Team B", _venue_record()
+        )
+
+    assert max_in_flight == 2
+    assert len(candidates) == 28
+    assert len(results) == 2
 
 
 # -- cricket_build_dream11_team -----------------------------------------------

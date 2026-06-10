@@ -89,6 +89,25 @@ async def test_sport_field_in_legs():
         assert "sport" in leg
 
 
+async def test_staleness_from_sub_tools_is_surfaced():
+    """Per fallback-contract.md, is_stale must never be swallowed: if a sport's
+    odds were served from stale cache, the cross-sport meta must say so."""
+    fb = _value_bets_response([_sample_pick("fb1", 0.12)])
+    fb["meta"].update(
+        {"is_stale": True, "data_age_seconds": 240, "fallback_used": True, "duration_ms": 35}
+    )
+    ck = _value_bets_response([_sample_pick("ck1", 0.11)])
+    ck["meta"]["duration_ms"] = 20
+    with patch(FOOTBALL_PATCH, new=AsyncMock(return_value=fb)), \
+         patch(CRICKET_PATCH, new=AsyncMock(return_value=ck)):
+        result = await cross_sport_build_accumulator(legs=3, min_edge=0.05)
+
+    assert result["meta"]["is_stale"] is True
+    assert result["meta"]["data_age_seconds"] == 240
+    assert result["meta"]["fallback_used"] is True
+    assert result["meta"]["duration_ms"] == 55
+
+
 async def test_one_sport_unavailable_still_succeeds():
     """Cricket fails → only football picks used; no error envelope."""
     fb_picks = [_sample_pick("fb1", 0.12), _sample_pick("fb2", 0.10)]

@@ -59,6 +59,9 @@ class Cache:
                     error=str(e),
                 )
 
+        self._init_disk()
+
+    def _init_disk(self) -> None:
         settings.diskcache_dir.mkdir(parents=True, exist_ok=True)
         self._disk = diskcache.Cache(str(settings.diskcache_dir))
         self.backend = "diskcache"
@@ -66,12 +69,25 @@ class Cache:
             "cache.backend.selected", backend="diskcache", dir=str(settings.diskcache_dir)
         )
 
+    def _downgrade_to_disk(self, error: Exception) -> None:
+        """redis.from_url is lazy (no I/O), so an unreachable daemon only fails
+        at first use. Downgrade permanently for this process instead of letting
+        the error crash every tool (the CLAUDE.md cache contract)."""
+        log.warning(
+            "cache.redis.unreachable_falling_back_to_diskcache", error=str(error)
+        )
+        self._init_disk()
+
     async def get(self, key: str) -> CachedEntry | None:
         if self.backend == "redis":
-            raw = await self._redis.get(key)
-            if raw is None:
-                return None
-            return _decode(raw)
+            try:
+                raw = await self._redis.get(key)
+            except Exception as e:
+                self._downgrade_to_disk(e)
+            else:
+                if raw is None:
+                    return None
+                return _decode(raw)
         raw = self._disk.get(key)
         if raw is None:
             return None
@@ -80,9 +96,12 @@ class Cache:
     async def set(self, key: str, value: Any, ttl_seconds: int) -> None:
         encoded = _encode(value)
         if self.backend == "redis":
-            await self._redis.set(key, encoded, ex=ttl_seconds)
-        else:
-            self._disk.set(key, encoded, expire=ttl_seconds)
+            try:
+                await self._redis.set(key, encoded, ex=ttl_seconds)
+                return
+            except Exception as e:
+                self._downgrade_to_disk(e)
+        self._disk.set(key, encoded, expire=ttl_seconds)
 
     async def healthcheck(self) -> bool:
         try:

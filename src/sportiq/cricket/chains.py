@@ -13,6 +13,7 @@ Resolution order per chain:
 from __future__ import annotations
 
 import hashlib
+import re
 
 from sportiq.core.fallback import FallbackChain
 from sportiq.core.health import register_adapter_for_health
@@ -38,6 +39,20 @@ from sportiq.cricket.adapters.static_seed import (
     StaticSeedVenueAdapter,
 )
 from sportiq.cricket.adapters.theodds import TheOddsCricketAdapter
+
+_SAFE_KEY_PART = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+def _key_part(value: str) -> str:
+    """Make a user-supplied string safe for a cache key (caching-policy.md).
+
+    Upstream ids (alnum/-/_) pass through readable; anything that could carry
+    `:` or `*` is hashed so it cannot collide with another key namespace.
+    """
+    if _SAFE_KEY_PART.match(value):
+        return value
+    return hashlib.blake2s(value.encode(), digest_size=8).hexdigest()
+
 
 # -- Adapter singletons -------------------------------------------------------
 
@@ -87,7 +102,7 @@ live_score_chain: FallbackChain[dict] = FallbackChain(
 scorecard_chain: FallbackChain[dict] = FallbackChain(
     name="cricket:scorecard",
     adapters=[_cricapi_scorecard, _rapidapi_scorecard],
-    cache_key_fn=lambda match_id, **_: f"sportiq:cricket:scorecard:{match_id}",
+    cache_key_fn=lambda match_id, **_: f"sportiq:cricket:scorecard:{_key_part(match_id)}",
     fresh_ttl=30,
     stale_ttl=300,
 )
@@ -95,7 +110,7 @@ scorecard_chain: FallbackChain[dict] = FallbackChain(
 fixtures_chain: FallbackChain[dict] = FallbackChain(
     name="cricket:fixtures",
     adapters=[_cricapi_schedule, _ndtv_schedule, _rapidapi_schedule],
-    cache_key_fn=lambda series_id=None, **_: f"sportiq:cricket:fixtures:{series_id or 'all'}",
+    cache_key_fn=lambda series_id=None, **_: f"sportiq:cricket:fixtures:{_key_part(series_id) if series_id else 'all'}",
     fresh_ttl=21600,
     stale_ttl=86400,
 )
@@ -103,7 +118,7 @@ fixtures_chain: FallbackChain[dict] = FallbackChain(
 standings_chain: FallbackChain[dict] = FallbackChain(
     name="cricket:standings",
     adapters=[_cricapi_standings, _rapidapi_standings],
-    cache_key_fn=lambda series_id="", **_: f"sportiq:cricket:standings:{series_id}",
+    cache_key_fn=lambda series_id="", **_: f"sportiq:cricket:standings:{_key_part(series_id) if series_id else ''}",
     fresh_ttl=600,
     stale_ttl=3600,
 )
@@ -124,7 +139,7 @@ squad_chain: FallbackChain[dict] = FallbackChain(
 player_stats_chain: FallbackChain[dict] = FallbackChain(
     name="cricket:player_stats",
     adapters=[_cricapi_player_info, _rapidapi_player_stats],
-    cache_key_fn=lambda player_id, **_: f"sportiq:cricket:player_stats:{player_id}",
+    cache_key_fn=lambda player_id, **_: f"sportiq:cricket:player_stats:{_key_part(player_id)}",
     fresh_ttl=86400,
     stale_ttl=604800,
 )

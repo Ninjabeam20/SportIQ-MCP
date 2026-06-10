@@ -12,8 +12,13 @@ from sportiq.config import settings
 from sportiq.core.errors import MissingCredentialsError
 from sportiq.core.http import get_client
 from sportiq.core.logging import get_logger
+from sportiq.core.ratelimit import Budget
 
 log = get_logger(__name__)
+
+# Courtesy throttle per .claude/rules/api-budgets.md: ≤1 req/3s to avoid an IP
+# block. 20/min averages exactly that; the chain's budget gate enforces it.
+_NDTV_BUDGET = Budget(source="ndtv_sports_scraper", per_minute=20)
 
 _LIVE_URL = "https://sports.ndtv.com/cricket/live-scores"
 _SCHEDULE_URL = "https://sports.ndtv.com/cricket/schedule"
@@ -35,7 +40,7 @@ def _check_enabled() -> None:
 
 class NDTVLiveMatchesAdapter:
     name = "ndtv_sports_scraper"
-    budget = None  # informal scraper limit; courtesy throttling happens in core/http
+    budget = _NDTV_BUDGET
 
     async def fetch(self, **kwargs) -> dict:
         _check_enabled()
@@ -52,7 +57,7 @@ class NDTVLiveMatchesAdapter:
 
 class NDTVScheduleAdapter:
     name = "ndtv_sports_scraper"
-    budget = None
+    budget = _NDTV_BUDGET
 
     async def fetch(self, series_id: str | None = None, **kwargs) -> dict:
         _check_enabled()

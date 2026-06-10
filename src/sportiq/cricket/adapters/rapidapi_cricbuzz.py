@@ -5,6 +5,8 @@ Raises MissingCredentialsError when RAPIDAPI_KEY is unset so the chain skips it.
 
 from __future__ import annotations
 
+from urllib.parse import quote
+
 from sportiq.config import settings
 from sportiq.core.errors import MissingCredentialsError
 from sportiq.core.http import get_json
@@ -14,6 +16,12 @@ log = get_logger(__name__)
 
 _HOST = "cricbuzz-cricket.p.rapidapi.com"
 _BASE = f"https://{_HOST}"
+
+
+def _path_id(value: str) -> str:
+    """Percent-encode a user-supplied id used as a URL path segment, so `../`
+    or `/` sequences can't redirect the request to another endpoint."""
+    return quote(value, safe="")
 
 
 def _headers() -> dict:
@@ -49,7 +57,7 @@ class RapidAPICricbuzzScorecardAdapter:
 
     async def fetch(self, match_id: str, **kwargs) -> dict:
         h = _headers()
-        return await get_json(f"{_BASE}/mcenter/v1/{match_id}/scard", headers=h)
+        return await get_json(f"{_BASE}/mcenter/v1/{_path_id(match_id)}/scard", headers=h)
 
     async def healthcheck(self) -> bool:
         return bool(settings.rapidapi_key)
@@ -80,7 +88,7 @@ class RapidAPICricbuzzStandingsAdapter:
 
     async def fetch(self, series_id: str, **kwargs) -> dict:
         h = _headers()
-        data = await get_json(f"{_BASE}/series/v1/{series_id}/points-table", headers=h)
+        data = await get_json(f"{_BASE}/series/v1/{_path_id(series_id)}/points-table", headers=h)
         return data
 
     async def healthcheck(self) -> bool:
@@ -96,7 +104,7 @@ class RapidAPICricbuzzPlayerStatsAdapter:
     async def fetch(self, player_id: str, **kwargs) -> dict:
         h = _headers()
         return await get_json(
-            f"{_BASE}/stats/v1/player/{player_id}/career", headers=h
+            f"{_BASE}/stats/v1/player/{_path_id(player_id)}/career", headers=h
         )
 
     async def healthcheck(self) -> bool:

@@ -113,6 +113,27 @@ async def test_player_stats_chain_keys_by_player_id():
     assert "p2" in b
 
 
+async def test_hostile_user_args_are_hashed_in_cache_keys():
+    """caching-policy.md: user-supplied strings that could contain `:` or `*`
+    must not enter a cache key raw — a crafted arg could otherwise collide with
+    another key namespace. Legit upstream ids (alnum/-/_) stay readable."""
+    from sportiq.cricket import chains
+
+    hostile = "ipl:2026:*"
+    keys = [
+        chains.standings_chain.cache_key_fn(series_id=hostile),
+        chains.fixtures_chain.cache_key_fn(series_id=hostile),
+        chains.scorecard_chain.cache_key_fn(match_id=hostile),
+        chains.player_stats_chain.cache_key_fn(player_id=hostile),
+    ]
+    for key in keys:
+        assert hostile not in key
+        assert "*" not in key
+        # prefix stays intact: sportiq:cricket:<category>:<hashed-arg>
+        assert key.startswith("sportiq:cricket:")
+    assert len(set(keys)) == len(keys)  # distinct categories stay distinct
+
+
 async def test_player_stats_chain_falls_through_to_rapidapi():
     chain = FallbackChain(
         name="cricket:player_stats",

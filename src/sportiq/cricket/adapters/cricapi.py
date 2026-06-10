@@ -48,17 +48,14 @@ class CricAPILiveMatchesAdapter:
 
     async def fetch(self, **kwargs) -> dict:
         k = _key()
-        data = await get_json(f"{_BASE}/currentMatches", params={"apikey": k, "offset": 0})
-        return {"matches": data.get("data", [])}
+        raw = await get_json(f"{_BASE}/currentMatches", params={"apikey": k, "offset": 0})
+        return {"matches": _unwrap(raw) or []}
 
     async def healthcheck(self) -> bool:
-        if not settings.cricapi_key:
-            return False
-        try:
-            data = await get_json(f"{_BASE}/currentMatches", params={"apikey": settings.cricapi_key, "offset": 0})
-            return data.get("status") == "success"
-        except Exception:
-            return False
+        # Key-presence only — a live call here would burn a CricAPI quota token
+        # on every sportiq_health() invocation (publicly callable on the hosted
+        # endpoint) without going through the chain's budget gate.
+        return bool(settings.cricapi_key)
 
 
 class CricAPIScorecardAdapter:
@@ -96,8 +93,8 @@ class CricAPIScheduleAdapter:
         params: dict = {"apikey": k, "offset": 0}
         if series_id:
             params["id"] = series_id
-        data = await get_json(f"{_BASE}/matches", params=params)
-        return {"matches": data.get("data", [])}
+        raw = await get_json(f"{_BASE}/matches", params=params)
+        return {"matches": _unwrap(raw) or []}
 
     async def healthcheck(self) -> bool:
         return bool(settings.cricapi_key)

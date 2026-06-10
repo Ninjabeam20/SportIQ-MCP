@@ -7,6 +7,7 @@ AllSourcesFailedError so the tool can return the error envelope.
 
 from __future__ import annotations
 
+import asyncio
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -55,19 +56,24 @@ class FallbackChain(Generic[T]):
         cache_key_fn: Callable[..., str],
         fresh_ttl: int,
         stale_ttl: int = 0,
+        time_budget_s: float | None = 12.0,
     ) -> None:
         self.name = name
         self.adapters = adapters
         self.cache_key_fn = cache_key_fn
         self.fresh_ttl = fresh_ttl
         self.stale_ttl = stale_ttl
+        # Per-adapter wall-clock cap. Without it a hung upstream stalls the walk
+        # for the full retry envelope (~35s per adapter); with it the chain
+        # records a timeout attempt and moves to the next adapter / stale cache.
+        # None disables. (Adapters doing sync-blocking work, e.g. fastf1, cannot
+        # be preempted mid-call — for those this degrades to no cap, as today.)
+        self.time_budget_s = time_budget_s
+        # Per-key stampede guard: concurrent misses for the same key serialize,
+        # and the waiters serve from the cache the first caller populated.
+        self._key_locks: dict[str, asyncio.Lock] = {}
 
-    async def fetch(self, **kwargs: Any) -> FallbackResult[T]:
-        started = time.monotonic()
-        cache = get_cache()
-        key = self.cache_key_fn(**kwargs)
-
-        cached = await cache.get(key)
+    def _fresh_hit(self, cached, started: float) -> FallbackResult[T] | None:
         if (
             cached is not None
             and self.fresh_ttl > 0
@@ -81,7 +87,34 @@ class FallbackChain(Generic[T]):
                 fallback_used=False,
                 duration_ms=int((time.monotonic() - started) * 1000),
             )
+        return None
 
+    async def fetch(self, **kwargs: Any) -> FallbackResult[T]:
+        started = time.monotonic()
+        cache = get_cache()
+        key = self.cache_key_fn(**kwargs)
+
+        hit = self._fresh_hit(await cache.get(key), started)
+        if hit is not None:
+            return hit
+
+        lock = self._key_locks.setdefault(key, asyncio.Lock())
+        try:
+            async with lock:
+                # Re-check: a concurrent caller holding the lock may have
+                # populated the cache while we waited.
+                cached = await cache.get(key)
+                hit = self._fresh_hit(cached, started)
+                if hit is not None:
+                    return hit
+                return await self._fetch_uncached(cache, key, cached, started, **kwargs)
+        finally:
+            if not lock.locked():
+                self._key_locks.pop(key, None)
+
+    async def _fetch_uncached(
+        self, cache, key: str, cached, started: float, **kwargs: Any
+    ) -> FallbackResult[T]:
         attempts: list[dict] = []
         # Track failure shape so we can distinguish "entity genuinely missing"
         # (every adapter raised NotFoundError) from "sources unavailable".
@@ -111,7 +144,15 @@ class FallbackChain(Generic[T]):
 
             adapter_started = time.monotonic()
             try:
-                value = await adapter.fetch(**kwargs)
+                if self.time_budget_s is not None:
+                    # wait_for (not asyncio.timeout): the inner coroutine runs as
+                    # its own task, so an expiry can never leave a pending
+                    # cancellation on the caller's task.
+                    value = await asyncio.wait_for(
+                        adapter.fetch(**kwargs), timeout=self.time_budget_s
+                    )
+                else:
+                    value = await adapter.fetch(**kwargs)
             except Exception as e:
                 if isinstance(e, NotFoundError):
                     saw_not_found = True

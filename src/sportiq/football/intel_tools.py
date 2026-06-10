@@ -6,6 +6,8 @@ football_groups_chain (the source of the draw + ratings) and surface is_stale.
 """
 from __future__ import annotations
 
+import asyncio
+
 from sportiq.core.errors import AllSourcesFailedError
 from sportiq.core.parlay import build_accumulator
 from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta
@@ -249,20 +251,24 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
     if not 0.0 <= min_edge <= 1.0:
         return error_envelope(code="INVALID_INPUT", message="min_edge must be in [0, 1].")
 
-    try:
-        odds_result = await football_odds_chain.fetch()
-    except AllSourcesFailedError as e:
+    # Independent chains — fetch concurrently (one round-trip on a cold cache).
+    odds_r, groups_r = await asyncio.gather(
+        football_odds_chain.fetch(), _groups_payload(), return_exceptions=True
+    )
+    if isinstance(odds_r, AllSourcesFailedError):
         return error_envelope(
             code="ALL_SOURCES_FAILED",
             message="No football odds source is available right now.",
-            sources_tried=e.attempts,
+            sources_tried=odds_r.attempts,
             suggestion="Set THEODDS_KEY to enable live odds.",
         )
-
-    try:
-        groups_result = await _groups_payload()
-    except AllSourcesFailedError as e:
-        return error_envelope(code="ALL_SOURCES_FAILED", message="Could not load ratings.", sources_tried=e.attempts)
+    if isinstance(odds_r, BaseException):
+        raise odds_r
+    if isinstance(groups_r, AllSourcesFailedError):
+        return error_envelope(code="ALL_SOURCES_FAILED", message="Could not load ratings.", sources_tried=groups_r.attempts)
+    if isinstance(groups_r, BaseException):
+        raise groups_r
+    odds_result, groups_result = odds_r, groups_r
 
     ratings = groups_result.value.get("ratings", {})
     # Odds carry full team names; ratings are keyed by code. Map name -> code from

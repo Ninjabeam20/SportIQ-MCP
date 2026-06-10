@@ -52,26 +52,35 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
             message="compound must be SOFT, MEDIUM, HARD, INTER, or WET.",
         )
 
-    try:
-        laps_result = await f1_laps_chain.fetch(session_key=session_key, driver_number=driver_number)
-    except AllSourcesFailedError as e:
+    # OpenF1 /laps carries no compound/tyre_life — those live on /stints, which we
+    # merge in to enrich the fit. Laps are required; stint enrichment is
+    # *best-effort*: if the stints source is down we still fit on whatever the
+    # laps already carry (e.g. fastf1 laps), so a stints outage degrades quality
+    # rather than failing the call. The two chains are independent — gather them.
+    laps_r, stints_r = await asyncio.gather(
+        f1_laps_chain.fetch(session_key=session_key, driver_number=driver_number),
+        f1_stints_chain.fetch(session_key=session_key, driver_number=driver_number),
+        return_exceptions=True,
+    )
+    if isinstance(laps_r, AllSourcesFailedError):
         return error_envelope(
             code="ALL_SOURCES_FAILED",
             message="Could not fetch lap data.",
-            sources_tried=e.attempts,
+            sources_tried=laps_r.attempts,
         )
+    if isinstance(laps_r, BaseException):
+        raise laps_r
+    laps_result = laps_r
 
-    # OpenF1 /laps carries no compound/tyre_life — those live on /stints, which we
-    # merge in to enrich the fit. But stint enrichment is *best-effort*: if the
-    # stints source is down we still fit on whatever the laps already carry (e.g.
-    # fastf1 laps), so a stints outage degrades quality rather than failing the call.
     stints: list[dict] = []
     stints_result = None
-    try:
-        stints_result = await f1_stints_chain.fetch(session_key=session_key, driver_number=driver_number)
-        stints = stints_result.value.get("stints", [])
-    except AllSourcesFailedError:
+    if isinstance(stints_r, AllSourcesFailedError):
         pass
+    elif isinstance(stints_r, BaseException):
+        raise stints_r
+    else:
+        stints_result = stints_r
+        stints = stints_result.value.get("stints", [])
 
     annotated = annotate_laps_with_stints(laps_result.value.get("laps", []), stints)
     model = fit_degradation(annotated, compound_upper)
@@ -115,8 +124,10 @@ async def f1_undercut_window(
         )
 
     try:
-        attacker_laps = await _fetch_driver_laps(session_key=session_key, driver_number=attacker_number)
-        target_laps = await _fetch_driver_laps(session_key=session_key, driver_number=target_number)
+        attacker_laps, target_laps = await asyncio.gather(
+            _fetch_driver_laps(session_key=session_key, driver_number=attacker_number),
+            _fetch_driver_laps(session_key=session_key, driver_number=target_number),
+        )
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
@@ -168,8 +179,10 @@ async def f1_head_to_head_pace(session_key: int, driver_a: int, driver_b: int) -
         return error_envelope(code="INVALID_INPUT", message="All args must be positive.")
 
     try:
-        laps_a = await _fetch_driver_laps(session_key=session_key, driver_number=driver_a)
-        laps_b = await _fetch_driver_laps(session_key=session_key, driver_number=driver_b)
+        laps_a, laps_b = await asyncio.gather(
+            _fetch_driver_laps(session_key=session_key, driver_number=driver_a),
+            _fetch_driver_laps(session_key=session_key, driver_number=driver_b),
+        )
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
@@ -297,33 +310,46 @@ async def f1_predict_pit_strategy(
             message="current_lap must be >= 1 and <= total_laps.",
         )
 
-    try:
-        laps_result = await f1_laps_chain.fetch(session_key=session_key, driver_number=driver_number)
-    except AllSourcesFailedError as e:
+    # Laps are required; stints + weather are best-effort enrichment. If either
+    # enrichment source is down the model still runs (the pit_strategy model
+    # falls back to TyreSpec constants and dry-weather assumptions), so we
+    # degrade quality rather than 500-ing. All three chains are independent —
+    # gather them instead of paying three serial round-trips.
+    laps_r, stints_r, weather_r = await asyncio.gather(
+        f1_laps_chain.fetch(session_key=session_key, driver_number=driver_number),
+        f1_stints_chain.fetch(session_key=session_key, driver_number=driver_number),
+        f1_weather_chain.fetch(session_key=session_key),
+        return_exceptions=True,
+    )
+    if isinstance(laps_r, AllSourcesFailedError):
         return error_envelope(
             code="ALL_SOURCES_FAILED",
             message="Could not fetch lap data for pit strategy prediction.",
-            sources_tried=e.attempts,
+            sources_tried=laps_r.attempts,
         )
+    if isinstance(laps_r, BaseException):
+        raise laps_r
+    laps_result = laps_r
 
-    # Stints + weather are best-effort enrichment. If either source is down the
-    # model still runs (the pit_strategy model falls back to TyreSpec constants
-    # and dry-weather assumptions), so we degrade quality rather than 500-ing.
     stints: list[dict] = []
     stints_result = None
-    try:
-        stints_result = await f1_stints_chain.fetch(session_key=session_key, driver_number=driver_number)
-        stints = stints_result.value.get("stints", [])
-    except AllSourcesFailedError:
+    if isinstance(stints_r, AllSourcesFailedError):
         pass
+    elif isinstance(stints_r, BaseException):
+        raise stints_r
+    else:
+        stints_result = stints_r
+        stints = stints_result.value.get("stints", [])
 
     weather: list[dict] = []
     weather_result = None
-    try:
-        weather_result = await f1_weather_chain.fetch(session_key=session_key)
-        weather = weather_result.value.get("weather", [])
-    except AllSourcesFailedError:
+    if isinstance(weather_r, AllSourcesFailedError):
         pass
+    elif isinstance(weather_r, BaseException):
+        raise weather_r
+    else:
+        weather_result = weather_r
+        weather = weather_result.value.get("weather", [])
 
     laps = laps_result.value.get("laps", [])
     # Caller left total_laps unset → infer from the highest observed lap_number

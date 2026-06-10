@@ -34,12 +34,14 @@ async def cross_sport_build_accumulator(legs: int = 3, min_edge: float = 0.05) -
     all_picks: list[dict] = []
     sports_available: list[str] = []
     notes: list[str] = []
+    sub_metas: list[dict] = []
 
     # Collect football picks
     if not isinstance(football_r, Exception) and not football_r.get("error"):
         fb_picks = football_r.get("data", {}).get("value_bets", [])
         all_picks.extend(normalise_pick(p, "football") for p in fb_picks)
         sports_available.append("football")
+        sub_metas.append(football_r.get("meta") or {})
     else:
         notes.append("football picks unavailable")
 
@@ -48,6 +50,7 @@ async def cross_sport_build_accumulator(legs: int = 3, min_edge: float = 0.05) -
         ck_picks = cricket_r.get("data", {}).get("value_bets", [])
         all_picks.extend(normalise_pick(p, "cricket") for p in ck_picks)
         sports_available.append("cricket")
+        sub_metas.append(cricket_r.get("meta") or {})
     else:
         notes.append("cricket picks unavailable")
 
@@ -59,12 +62,14 @@ async def cross_sport_build_accumulator(legs: int = 3, min_edge: float = 0.05) -
 
     acca = build_accumulator(all_picks, legs=legs, min_edge=min_edge)
 
+    # Aggregate freshness from the sub-tools — per fallback-contract.md the
+    # worst-case staleness must be surfaced, never swallowed.
     meta: dict = {
         "source": "derived",
-        "is_stale": False,
-        "data_age_seconds": 0,
-        "fallback_used": False,
-        "duration_ms": 0,
+        "is_stale": any(m.get("is_stale", False) for m in sub_metas),
+        "data_age_seconds": max((m.get("data_age_seconds", 0) for m in sub_metas), default=0),
+        "fallback_used": any(m.get("fallback_used", False) for m in sub_metas),
+        "duration_ms": sum(m.get("duration_ms", 0) for m in sub_metas),
         "estimated": True,
         "sports_available": sports_available,
     }

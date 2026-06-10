@@ -9,6 +9,7 @@ opts in via SPORTIQ_ENABLE_NDTV=1 / SPORTIQ_ENABLE_CRICBUZZ=1.
 import pytest
 
 from sportiq.core.errors import MissingCredentialsError
+from sportiq.core.ratelimit import Budget
 from sportiq.cricket.adapters.cricbuzz_scraper import CricbuzzLiveMatchesAdapter
 from sportiq.cricket.adapters.ndtv_sports_scraper import (
     NDTVLiveMatchesAdapter,
@@ -35,6 +36,21 @@ async def test_cricbuzz_live_raises_when_disabled():
     adapter = CricbuzzLiveMatchesAdapter()
     with pytest.raises(MissingCredentialsError, match="SPORTIQ_ENABLE_CRICBUZZ"):
         await adapter.fetch()
+
+
+def test_scraper_adapters_declare_courtesy_budget():
+    """api-budgets.md mandates ≤1 req/3s for the scrapers; the chain's budget
+    gate is the enforcement point, so each scraper adapter must declare a
+    per-minute budget (20/min = 1 per 3s average)."""
+    assert NDTVLiveMatchesAdapter().budget == Budget(
+        source="ndtv_sports_scraper", per_minute=20
+    )
+    assert NDTVScheduleAdapter().budget == Budget(
+        source="ndtv_sports_scraper", per_minute=20
+    )
+    assert CricbuzzLiveMatchesAdapter().budget == Budget(
+        source="cricbuzz_scraper", per_minute=20
+    )
 
 
 async def test_ndtv_healthcheck_false_when_disabled():

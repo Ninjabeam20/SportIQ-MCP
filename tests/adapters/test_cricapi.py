@@ -55,6 +55,45 @@ async def test_live_matches_adapter_returns_empty_list_off_season():
 
 
 @respx.mock
+async def test_live_matches_adapter_raises_not_found_on_failure_envelope():
+    """A CricAPI failure envelope (status != success, e.g. quota exhausted) must
+    raise so the chain walks to NDTV/Cricbuzz/RapidAPI — NOT return an empty
+    "success" that gets cached and shadows every fallback adapter."""
+    respx.get("https://api.cricapi.com/v1/currentMatches").mock(
+        return_value=Response(
+            200, json={"apikey": "test_key", "status": "failure", "reason": "hits today exceeded"}
+        )
+    )
+    adapter = CricAPILiveMatchesAdapter()
+    with pytest.raises(NotFoundError):
+        await adapter.fetch()
+
+
+@respx.mock
+async def test_schedule_adapter_raises_not_found_on_failure_envelope():
+    """Same contract as live matches: a failure envelope must not become an
+    empty cached success."""
+    respx.get("https://api.cricapi.com/v1/matches").mock(
+        return_value=Response(
+            200, json={"apikey": "test_key", "status": "failure", "reason": "hits today exceeded"}
+        )
+    )
+    adapter = CricAPIScheduleAdapter()
+    with pytest.raises(NotFoundError):
+        await adapter.fetch()
+
+
+@respx.mock
+async def test_live_matches_healthcheck_makes_no_http_call():
+    """healthcheck() must be a key-presence check only. A live API call here
+    burns CricAPI quota (100/day) every time sportiq_health() runs — and the
+    hosted endpoint lets anyone call that."""
+    adapter = CricAPILiveMatchesAdapter()
+    assert await adapter.healthcheck() is True
+    assert len(respx.calls) == 0
+
+
+@respx.mock
 async def test_schedule_adapter_parses_matches():
     fixture = _load("schedule.json")
     respx.get("https://api.cricapi.com/v1/matches").mock(

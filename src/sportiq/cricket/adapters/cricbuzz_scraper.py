@@ -12,8 +12,13 @@ from sportiq.config import settings
 from sportiq.core.errors import MissingCredentialsError
 from sportiq.core.http import get_client
 from sportiq.core.logging import get_logger
+from sportiq.core.ratelimit import Budget
 
 log = get_logger(__name__)
+
+# Courtesy throttle per .claude/rules/api-budgets.md: ≤1 req/3s. 20/min averages
+# exactly that; the chain's budget gate enforces it.
+_CRICBUZZ_BUDGET = Budget(source="cricbuzz_scraper", per_minute=20)
 
 _BASE = "https://m.cricbuzz.com"
 _LIVE_URL = f"{_BASE}/cricket-match/live-scores"
@@ -37,7 +42,7 @@ def _check_enabled() -> None:
 
 class CricbuzzLiveMatchesAdapter:
     name = "cricbuzz_scraper"
-    budget = None
+    budget = _CRICBUZZ_BUDGET
 
     async def fetch(self, **kwargs) -> dict:
         _check_enabled()
