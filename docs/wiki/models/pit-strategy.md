@@ -2,9 +2,9 @@
 title: Pit Strategy Predictor
 type: model
 tags: [f1, pit-stop, strategy]
-sources: []
-last_updated: 2026-05-28
-related: [[f1-predict-pit-strategy]], [[tyre-degradation-model]], [[undercut-model]]
+sources: [f1db]
+last_updated: 2026-06-11
+related: [[f1-predict-pit-strategy]], [[tyre-degradation-model]], [[undercut-model]], [[f1db]]
 ---
 
 # Pit Strategy Predictor
@@ -14,6 +14,10 @@ Predicts optimal pit-stop timing and tyre compound sequence for the remainder of
 ## Function
 
 `predict(laps, stints, weather, current_lap, total_laps, pit_loss_s=22.0) -> dict`
+
+`pit_loss_s` defaults to `22.0` but [[f1-predict-pit-strategy]] passes the
+**measured** per-circuit value from [[f1db]] (`circuits.json`) when the session's
+circuit resolves; unknown circuit → `22.0` default with `meta.circuit_profile: false`.
 
 ## Algorithm
 1. Determine current compound from most recent stint.

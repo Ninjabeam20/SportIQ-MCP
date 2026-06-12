@@ -77,6 +77,7 @@ BACKLOG.md
 changes.md
 plan.md
 docs/hot.md
+LEARNING-GUIDE.md
 
 # OS
 .DS_Store
@@ -88,3 +89,12 @@ Thumbs.db
 
 # diskcache local store
 .cache/
+
+# Offline calibration datasets — raw data NEVER committed (only derived seeds in
+# src/.../data/*.json are). See new_dataset.md / scripts/calibrate_*.py.
+datasets/
+
+# Local analytics dashboard (scripts/dashboard.py) — generated output + cache.
+# Read-only personal monitoring; never committed.
+.dashboard_cache/
+dashboard.html

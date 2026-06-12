@@ -61,6 +61,17 @@ f1_sessions_chain: FallbackChain[dict] = FallbackChain(
     stale_ttl=86400,
 )
 
+# Single session resolved by session_key — used to recover a session's
+# circuit_key for per-circuit pit-loss profiles. Static once a session exists,
+# so it caches long (6h fresh / 24h stale, like the calendar listing).
+f1_session_meta_chain: FallbackChain[dict] = FallbackChain(
+    name="f1:session_meta",
+    adapters=[_openf1_sessions],
+    cache_key_fn=lambda session_key, **_: f"sportiq:f1:session_meta:{session_key}",
+    fresh_ttl=21600,
+    stale_ttl=86400,
+)
+
 f1_results_chain: FallbackChain[dict] = FallbackChain(
     name="f1:results",
     adapters=[_jolpica_results],

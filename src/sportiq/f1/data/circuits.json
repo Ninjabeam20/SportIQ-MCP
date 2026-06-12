@@ -1,0 +1,218 @@
+{
+  "2": {
+    "circuit": "Silverstone",
+    "country": "United Kingdom",
+    "f1db_id": "silverstone",
+    "pit_loss_s": 31.9,
+    "typical_stops": 2,
+    "lap_length_km": 5.891,
+    "sample_size": 75
+  },
+  "4": {
+    "circuit": "Hungaroring",
+    "country": "Hungary",
+    "f1db_id": "hungaroring",
+    "pit_loss_s": 23.0,
+    "typical_stops": 2,
+    "lap_length_km": 4.381,
+    "sample_size": 105
+  },
+  "6": {
+    "circuit": "Imola",
+    "country": "Italy",
+    "f1db_id": "imola",
+    "pit_loss_s": 29.6,
+    "typical_stops": 1,
+    "lap_length_km": 4.909,
+    "sample_size": 36
+  },
+  "7": {
+    "circuit": "Spa-Francorchamps",
+    "country": "Belgium",
+    "f1db_id": "spa-francorchamps",
+    "pit_loss_s": 21.2,
+    "typical_stops": 2,
+    "lap_length_km": 7.004,
+    "sample_size": 84
+  },
+  "9": {
+    "circuit": "Austin",
+    "country": "United States",
+    "f1db_id": "austin",
+    "pit_loss_s": 23.0,
+    "typical_stops": 2,
+    "lap_length_km": 5.513,
+    "sample_size": 78
+  },
+  "10": {
+    "circuit": "Melbourne",
+    "country": "Australia",
+    "f1db_id": "melbourne",
+    "pit_loss_s": 22.6,
+    "typical_stops": 2,
+    "lap_length_km": 5.278,
+    "sample_size": 43
+  },
+  "14": {
+    "circuit": "Interlagos",
+    "country": "Brazil",
+    "f1db_id": "interlagos",
+    "pit_loss_s": 23.8,
+    "typical_stops": 2,
+    "lap_length_km": 4.309,
+    "sample_size": 69
+  },
+  "15": {
+    "circuit": "Catalunya",
+    "country": "Spain",
+    "f1db_id": "catalunya",
+    "pit_loss_s": 25.1,
+    "typical_stops": 2,
+    "lap_length_km": 4.657,
+    "sample_size": 124
+  },
+  "19": {
+    "circuit": "Spielberg",
+    "country": "Austria",
+    "f1db_id": "spielberg",
+    "pit_loss_s": 22.7,
+    "typical_stops": 2,
+    "lap_length_km": 4.326,
+    "sample_size": 104
+  },
+  "22": {
+    "circuit": "Monte Carlo",
+    "country": "Monaco",
+    "f1db_id": "monaco",
+    "pit_loss_s": 20.5,
+    "typical_stops": 2,
+    "lap_length_km": 3.337,
+    "sample_size": 43
+  },
+  "23": {
+    "circuit": "Montreal",
+    "country": "Canada",
+    "f1db_id": "montreal",
+    "pit_loss_s": 22.1,
+    "typical_stops": 2,
+    "lap_length_km": 4.361,
+    "sample_size": 73
+  },
+  "39": {
+    "circuit": "Monza",
+    "country": "Italy",
+    "f1db_id": "monza",
+    "pit_loss_s": 26.9,
+    "typical_stops": 1,
+    "lap_length_km": 5.793,
+    "sample_size": 74
+  },
+  "46": {
+    "circuit": "Suzuka",
+    "country": "Japan",
+    "f1db_id": "suzuka",
+    "pit_loss_s": 25.2,
+    "typical_stops": 2,
+    "lap_length_km": 5.807,
+    "sample_size": 85
+  },
+  "49": {
+    "circuit": "Shanghai",
+    "country": "China",
+    "f1db_id": "shanghai",
+    "pit_loss_s": 25.4,
+    "typical_stops": 2,
+    "lap_length_km": 5.451,
+    "sample_size": 45
+  },
+  "55": {
+    "circuit": "Zandvoort",
+    "country": "Netherlands",
+    "f1db_id": "zandvoort",
+    "pit_loss_s": 26.0,
+    "typical_stops": 3,
+    "lap_length_km": 4.259,
+    "sample_size": 81
+  },
+  "61": {
+    "circuit": "Singapore",
+    "country": "Singapore",
+    "f1db_id": "marina-bay",
+    "pit_loss_s": 29.0,
+    "typical_stops": 1,
+    "lap_length_km": 4.927,
+    "sample_size": 48
+  },
+  "63": {
+    "circuit": "Sakhir",
+    "country": "Bahrain",
+    "f1db_id": "bahrain",
+    "pit_loss_s": 26.2,
+    "typical_stops": 2,
+    "lap_length_km": 5.412,
+    "sample_size": 68
+  },
+  "65": {
+    "circuit": "Mexico City",
+    "country": "Mexico",
+    "f1db_id": "mexico-city",
+    "pit_loss_s": 24.6,
+    "typical_stops": 1,
+    "lap_length_km": 4.304,
+    "sample_size": 63
+  },
+  "70": {
+    "circuit": "Yas Marina Circuit",
+    "country": "United Arab Emirates",
+    "f1db_id": "yas-marina",
+    "pit_loss_s": 24.7,
+    "typical_stops": 2,
+    "lap_length_km": 5.281,
+    "sample_size": 62
+  },
+  "144": {
+    "circuit": "Baku",
+    "country": "Azerbaijan",
+    "f1db_id": "baku",
+    "pit_loss_s": 23.2,
+    "typical_stops": 1,
+    "lap_length_km": 6.003,
+    "sample_size": 36
+  },
+  "149": {
+    "circuit": "Jeddah",
+    "country": "Saudi Arabia",
+    "f1db_id": "jeddah",
+    "pit_loss_s": 22.3,
+    "typical_stops": 1,
+    "lap_length_km": 6.174,
+    "sample_size": 20
+  },
+  "150": {
+    "circuit": "Lusail",
+    "country": "Qatar",
+    "f1db_id": "lusail",
+    "pit_loss_s": 30.7,
+    "typical_stops": 3,
+    "lap_length_km": 5.419,
+    "sample_size": 55
+  },
+  "151": {
+    "circuit": "Miami",
+    "country": "United States",
+    "f1db_id": "miami",
+    "pit_loss_s": 24.4,
+    "typical_stops": 1,
+    "lap_length_km": 5.412,
+    "sample_size": 24
+  },
+  "152": {
+    "circuit": "Las Vegas",
+    "country": "United States",
+    "f1db_id": "las-vegas",
+    "pit_loss_s": 25.7,
+    "typical_stops": 2,
+    "lap_length_km": 6.201,
+    "sample_size": 55
+  }
+}

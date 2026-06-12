@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
-from sportiq.core.errors import AllSourcesFailedError
+from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.fallback import FallbackResult
 
 
@@ -97,7 +97,10 @@ async def test_f1_tyre_degradation_degrades_gracefully_when_stints_down():
 async def test_f1_undercut_window_returns_viability():
     from sportiq.f1 import intel_tools
 
-    with patch("sportiq.f1.intel_tools.f1_laps_chain") as mock:
+    with (
+        patch("sportiq.f1.intel_tools.f1_laps_chain") as mock,
+        patch("sportiq.f1.intel_tools._resolve_circuit_profile", AsyncMock(return_value=None)),
+    ):
         mock.fetch = AsyncMock(return_value=_fr(_laps_payload()))
         result = await intel_tools.f1_undercut_window(
             session_key=9877, attacker_number=1, target_number=16, current_lap=25
@@ -105,6 +108,59 @@ async def test_f1_undercut_window_returns_viability():
     assert "data" in result
     assert "viable" in result["data"]
     assert result["meta"]["estimated"] is True
+    # Circuit did not resolve -> generic default, flagged false.
+    assert result["meta"]["circuit_profile"] is False
+
+
+async def test_f1_undercut_window_uses_circuit_profile_when_resolved():
+    """When the session's circuit resolves, the measured pit loss + circuit name
+    surface in meta and feed the undercut math."""
+    from sportiq.f1 import intel_tools
+    from sportiq.f1.circuits import profile_for_circuit_key
+
+    monaco = profile_for_circuit_key(22)  # real committed Monte Carlo profile
+    with (
+        patch("sportiq.f1.intel_tools.f1_laps_chain") as mock,
+        patch("sportiq.f1.intel_tools._resolve_circuit_profile", AsyncMock(return_value=monaco)),
+    ):
+        mock.fetch = AsyncMock(return_value=_fr(_laps_payload()))
+        result = await intel_tools.f1_undercut_window(
+            session_key=9877, attacker_number=1, target_number=16, current_lap=25
+        )
+    assert result["meta"]["circuit_profile"] is True
+    assert result["meta"]["pit_loss_s"] == monaco["pit_loss_s"]
+    assert result["meta"]["circuit"] == "Monte Carlo"
+
+
+async def test_resolve_circuit_profile_happy_path_returns_real_profile():
+    """The real payload-parsing path: an OpenF1-shaped sessions payload with a
+    circuit_key must resolve to the committed circuits.json profile. Locks the
+    `circuit_key` field name — if OpenF1 renames it, this fails loudly instead of
+    prod silently defaulting every circuit to the generic pit loss."""
+    from sportiq.f1 import intel_tools
+    from sportiq.f1.circuits import profile_for_circuit_key
+
+    payload = {"sessions": [{"session_key": 9877, "circuit_key": 22, "year": 2026}]}
+    with patch("sportiq.f1.intel_tools.f1_session_meta_chain") as mock:
+        mock.fetch = AsyncMock(return_value=_fr(payload))
+        profile = await intel_tools._resolve_circuit_profile(9877)
+
+    assert profile is not None
+    assert profile == profile_for_circuit_key(22)  # Monte Carlo, measured pit loss
+    assert profile["circuit"] == "Monte Carlo"
+    assert 15.0 <= profile["pit_loss_s"] <= 45.0
+
+
+async def test_resolve_circuit_profile_swallows_chain_errors():
+    """Enrichment is best-effort: a NotFoundError or AllSourcesFailedError from
+    the session-meta chain must resolve to None, never propagate (would 500 the
+    undercut tool, which awaits it directly without an except NotFoundError)."""
+    from sportiq.f1 import intel_tools
+
+    for exc in (NotFoundError("no session"), AllSourcesFailedError("down", attempts=[])):
+        with patch("sportiq.f1.intel_tools.f1_session_meta_chain") as mock:
+            mock.fetch = AsyncMock(side_effect=exc)
+            assert await intel_tools._resolve_circuit_profile(9877) is None
 
 
 async def test_f1_undercut_window_invalid_args():
@@ -198,6 +254,7 @@ async def test_f1_predict_pit_strategy_returns_stop_laps():
         patch("sportiq.f1.intel_tools.f1_laps_chain") as mock_laps,
         patch("sportiq.f1.intel_tools.f1_stints_chain") as mock_stints,
         patch("sportiq.f1.intel_tools.f1_weather_chain") as mock_weather,
+        patch("sportiq.f1.intel_tools._resolve_circuit_profile", AsyncMock(return_value=None)),
     ):
         mock_laps.fetch = AsyncMock(return_value=_fr(laps_p))
         mock_stints.fetch = AsyncMock(return_value=_fr(stints_p))
@@ -226,6 +283,7 @@ async def test_f1_predict_pit_strategy_infers_total_laps_from_lap_numbers():
         patch("sportiq.f1.intel_tools.f1_laps_chain") as mock_laps,
         patch("sportiq.f1.intel_tools.f1_stints_chain") as mock_stints,
         patch("sportiq.f1.intel_tools.f1_weather_chain") as mock_weather,
+        patch("sportiq.f1.intel_tools._resolve_circuit_profile", AsyncMock(return_value=None)),
     ):
         mock_laps.fetch = AsyncMock(return_value=_fr(laps_p))
         mock_stints.fetch = AsyncMock(return_value=_fr({"stints": []}))
@@ -241,6 +299,7 @@ async def test_f1_predict_pit_strategy_all_sources_failed():
         patch("sportiq.f1.intel_tools.f1_laps_chain") as mock_laps,
         patch("sportiq.f1.intel_tools.f1_stints_chain") as mock_stints,
         patch("sportiq.f1.intel_tools.f1_weather_chain") as mock_weather,
+        patch("sportiq.f1.intel_tools._resolve_circuit_profile", AsyncMock(return_value=None)),
     ):
         mock_laps.fetch = AsyncMock(side_effect=AllSourcesFailedError("failed", attempts=[]))
         mock_stints.fetch = AsyncMock(return_value=_fr({"stints": []}))

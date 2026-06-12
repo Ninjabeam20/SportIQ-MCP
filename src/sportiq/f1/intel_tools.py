@@ -9,7 +9,15 @@ import asyncio
 
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta
-from sportiq.f1.chains import f1_drivers_chain, f1_laps_chain, f1_stints_chain, f1_weather_chain
+from sportiq.f1.chains import (
+    f1_drivers_chain,
+    f1_laps_chain,
+    f1_session_meta_chain,
+    f1_stints_chain,
+    f1_weather_chain,
+)
+from sportiq.f1.circuits import profile_for_circuit_key
+from sportiq.f1.models.pit_strategy import _DEFAULT_PIT_LOSS_S
 from sportiq.f1.models.pit_strategy import predict as _predict_strategy
 from sportiq.f1.models.quali_analysis import best_lap_per_driver, gap_to_pole, grid_projection
 from sportiq.f1.models.race_pace import compare_race_pace
@@ -26,6 +34,25 @@ async def _fetch_driver_laps(session_key: int, driver_number: int):
     """Fetch laps for one driver, gated by the per-driver concurrency cap."""
     async with _F1_LAP_SEMAPHORE:
         return await f1_laps_chain.fetch(session_key=session_key, driver_number=driver_number)
+
+
+async def _resolve_circuit_profile(session_key: int) -> dict | None:
+    """Best-effort: resolve a session's circuit and return its measured profile.
+
+    Looks up the session's ``circuit_key`` (cached 6h) and maps it to the F1DB
+    pit-loss profile. Returns None on any failure or unknown circuit — the caller
+    falls back to the generic pit-loss default, never erroring on enrichment.
+    """
+    try:
+        meta = await f1_session_meta_chain.fetch(session_key=session_key)
+    except (AllSourcesFailedError, NotFoundError):
+        # NotFoundError fires when the session_key resolves to nothing; both are
+        # enrichment failures the caller treats as "no profile", never a 500.
+        return None
+    sessions = meta.value.get("sessions", [])
+    if not sessions:
+        return None
+    return profile_for_circuit_key(sessions[0].get("circuit_key"))
 
 
 async def f1_tyre_degradation(session_key: int, driver_number: int, compound: str) -> Envelope:
@@ -124,9 +151,12 @@ async def f1_undercut_window(
         )
 
     try:
-        attacker_laps, target_laps = await asyncio.gather(
+        # _resolve_circuit_profile is best-effort (never raises) so it rides the
+        # same gather as the lap fetches — one round-trip, not a serial follow-up.
+        attacker_laps, target_laps, profile = await asyncio.gather(
             _fetch_driver_laps(session_key=session_key, driver_number=attacker_number),
             _fetch_driver_laps(session_key=session_key, driver_number=target_number),
+            _resolve_circuit_profile(session_key),
         )
     except AllSourcesFailedError as e:
         return error_envelope(
@@ -143,11 +173,15 @@ async def f1_undercut_window(
     attacker_pace = _recent_pace(attacker_laps.value)
     target_pace = _recent_pace(target_laps.value)
 
-    # Default pit loss and fresh-tyre delta — circuit-specific tuning in Phase 3.1
+    # Measured per-circuit pit loss (F1DB) when the circuit resolves; else the
+    # generic 22.0s default. fresh_tyre_delta stays a generic estimate (F1DB
+    # carries no tyre-delta data).
+    pit_loss_s = profile["pit_loss_s"] if profile else _DEFAULT_PIT_LOSS_S
+
     result = undercut_window(
         driver_pace_s=attacker_pace,
         target_pace_s=target_pace,
-        pit_loss_s=22.0,
+        pit_loss_s=pit_loss_s,
         fresh_tyre_delta_s=1.5,
         gap_to_target_s=2.0,
     )
@@ -158,6 +192,9 @@ async def f1_undercut_window(
             "estimated": True,
             "attacker": attacker_number,
             "target": target_number,
+            "pit_loss_s": pit_loss_s,
+            "circuit_profile": profile is not None,
+            "circuit": profile["circuit"] if profile else None,
             **staleness_meta(attacker_laps, target_laps),
         },
     }
@@ -315,10 +352,11 @@ async def f1_predict_pit_strategy(
     # falls back to TyreSpec constants and dry-weather assumptions), so we
     # degrade quality rather than 500-ing. All three chains are independent —
     # gather them instead of paying three serial round-trips.
-    laps_r, stints_r, weather_r = await asyncio.gather(
+    laps_r, stints_r, weather_r, profile = await asyncio.gather(
         f1_laps_chain.fetch(session_key=session_key, driver_number=driver_number),
         f1_stints_chain.fetch(session_key=session_key, driver_number=driver_number),
         f1_weather_chain.fetch(session_key=session_key),
+        _resolve_circuit_profile(session_key),  # best-effort, never raises
         return_exceptions=True,
     )
     if isinstance(laps_r, AllSourcesFailedError):
@@ -358,6 +396,11 @@ async def f1_predict_pit_strategy(
         observed = [n for lap in laps if (n := lap.get("lap_number")) and n > 0]
         total_laps = max(observed) if observed else 57
 
+    # Measured per-circuit pit loss when resolvable; else the model default.
+    # gather may hand back an exception here — treat anything non-dict as "unknown".
+    circuit = profile if isinstance(profile, dict) else None
+    pit_loss_s = circuit["pit_loss_s"] if circuit else _DEFAULT_PIT_LOSS_S
+
     # Annotate laps with compound/tyre_life from /stints so the degradation fit
     # uses telemetry instead of silently falling back to TyreSpec constants.
     annotated = annotate_laps_with_stints(laps, stints)
@@ -367,6 +410,7 @@ async def f1_predict_pit_strategy(
         weather=weather,
         current_lap=current_lap,
         total_laps=total_laps,
+        pit_loss_s=pit_loss_s,
     )
     sources = [r for r in (laps_result, stints_result, weather_result) if r is not None]
     return {
@@ -379,6 +423,9 @@ async def f1_predict_pit_strategy(
             "estimated": True,
             "stint_enrichment": stints_result is not None,
             "weather_enrichment": weather_result is not None,
+            "pit_loss_s": pit_loss_s,
+            "circuit_profile": circuit is not None,
+            "circuit": circuit["circuit"] if circuit else None,
             **staleness_meta(*sources),
         },
     }

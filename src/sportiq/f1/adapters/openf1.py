@@ -10,8 +10,23 @@ class OpenF1SessionsAdapter:
     name = "openf1"
     budget = None
 
-    async def fetch(self, year: int, country: str | None = None, **kwargs) -> dict:
-        params: dict = {"year": year}
+    async def fetch(
+        self,
+        year: int | None = None,
+        country: str | None = None,
+        session_key: int | None = None,
+        **kwargs,
+    ) -> dict:
+        # session_key resolves a single session (carries circuit_key for circuit
+        # profiles); year[+country] lists a calendar. Both hit the same endpoint.
+        if session_key is None and year is None:
+            # A selector-less /sessions query would pull OpenF1's entire history.
+            raise ValueError("OpenF1SessionsAdapter.fetch needs year or session_key")
+        params: dict = {}
+        if session_key is not None:
+            params["session_key"] = session_key
+        if year is not None:
+            params["year"] = year
         if country:
             params["country_name"] = country
         data = await get_json_burst(f"{_OPENF1_BASE}/sessions", params=params)
