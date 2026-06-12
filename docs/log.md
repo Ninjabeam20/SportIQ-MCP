@@ -539,3 +539,22 @@ release/redeploy.
 
 653 tests green (1 new), ruff clean. D-phase review action list fully closed — D2 + D3a
 ready to commit on go.
+
+## [2026-06-12] release | D2 + D3a + release batch committed; canary deploy -> rev 00007-xeh at 100%
+
+Five commits: aab62e1 (D2 measured pit-loss profiles), c5060e1 (D3a venue priors +
+178 par), ddf9098 (cold-start lazy imports + client-id middleware + param-docs shim
++ analytics extra), a2057c1 (credits/index/log), be73de7 (middleware fix, below).
+
+**Canary caught a real regression:** rev 00006-quf (first candidate, 0% traffic)
+returned HTTP 200 with an EMPTY body on initialize. Root cause: ClientInfoMiddleware
+as Starlette BaseHTTPMiddleware — request.body() consumed the receive stream
+(re-priming request._receive does NOT reach the downstream ASGI app) and
+BaseHTTPMiddleware buffers/breaks SSE streaming. Rewritten as a pure ASGI tee
+(be73de7) + in-process e2e regression test (TestClient drives initialize through
+app+middleware, asserts serverInfo payload). 655 tests green, ruff clean.
+
+Candidate rev 00007-xeh smoke: initialize OK, tools=44, **params_described=87/87**
+(param-docs shim live), sportiq_health OK, bracket sim OK, pitch report serving
+measured venues (Eden 188 vs 178 par). Traffic flipped to 100%; rollback target =
+00004-z7m. NOT pushed to GitHub yet (push discipline — pending sign-off).
