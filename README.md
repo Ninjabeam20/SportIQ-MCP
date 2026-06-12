@@ -282,6 +282,25 @@ npx @modelcontextprotocol/inspector uv run python -m sportiq.server
 
 See `CLAUDE.md` for collaboration rules and `docs/index.md` for the wiki entry point.
 
+## Data sources & credits
+
+SportIQ derives some model constants offline from open datasets. Raw datasets are
+never shipped or fetched at runtime — only small derived seeds (`circuits.json`,
+`venues.json`, `elo_seed.json`) are committed.
+
+- **[F1DB](https://github.com/f1db/f1db)** — Formula 1 database (1950–present),
+  licensed **CC BY 4.0**. Used offline to derive per-circuit stop counts and lap
+  lengths in `f1/data/circuits.json`; per-circuit pit **loss** is measured offline
+  from OpenF1 lap data (in-lap + out-lap vs clean-lap baseline).
+- **[Cricsheet](https://cricsheet.org)** — free ball-by-ball IPL match data. Used
+  offline to derive measured venue scoring priors (`cricket/data/venues.json`); we
+  ship only derived aggregates, never the raw match data.
+- **[martj42 international football results](https://github.com/martj42/international_results)**
+  — match results 1872–present, **CC0**. Used offline for Elo backtesting.
+- **[OpenF1](https://openf1.org)** — free, keyless live F1 telemetry (runtime source).
+- **[football-data.org](https://football-data.org)** — free football data; their
+  free tier requests a credit link (runtime source).
+
 ## License & author
 
 Created and maintained by **Utkarsh Gupta** ([@Ninjabeam20](https://github.com/Ninjabeam20)).

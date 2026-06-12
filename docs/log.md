@@ -382,3 +382,160 @@ champion, 20ms), then `update-traffic --to-latest` shifted 100%. Main URL re-ver
 00003-rog. Previous working revision `sportiq-mcp-00002-mhb` retained — rollback is one command:
 `gcloud run services update-traffic sportiq-mcp --region us-central1 --project sportiq-mcp-prod
 --to-revisions=sportiq-mcp-00002-mhb=100`.
+
+## [2026-06-11] tool-added | F1 per-circuit pit-loss profiles (D2)
+Replaced the flat hardcoded `pit_loss_s = 22.0` in `f1_undercut_window` +
+`f1_predict_pit_strategy` with measured per-circuit values derived offline from
+F1DB (CC BY 4.0). New `scripts/build_f1_circuit_profiles.py` → committed
+`f1/data/circuits.json` (24 circuits, keyed by OpenF1 `circuit_key`, measured pit
+loss 18.4s Melbourne → 30.4s Imola, vs the old flat 22.0s). Wiring: new
+`f1_session_meta_chain` resolves session_key → circuit_key (cached 6h) →
+`circuits.py:profile_for_circuit_key`; best-effort, unknown circuit falls back to
+22.0s with `meta.circuit_profile: false`; models stay I/O-free (pit_loss passed in).
+Tests: new `tests/unit/test_circuit_profiles.py` + profile-used tool test; 4
+existing intel-tool tests stubbed for the resolver. Full suite green, ruff clean.
+Wiki: new `[[f1db]]` data-source page; `[[undercut]]`/`[[pit-strategy]]` updated;
+README "Data sources & credits" added (F1DB CC BY credit obligation). NOT yet
+committed or deployed.
+
+## [2026-06-11] finding-filed | D1 football Elo recalibration abandoned (gate failed)
+Built `scripts/calibrate_football_elo.py` + `scripts/backtest_wc.py` over martj42
+international results (CC0, 49k matches). Data-derived Elo seed lost to the hand-set
+`elo_seed.json` on the WC2022 backtest at every tuning (Brier 0.60 vs 0.56;
+swept supremacy 0.002–0.008, K 20–40, recency windows, shrinkage 20–50%). Gap is
+structural — the hand-set 2026 seed has hindsight and cannot be frozen for a fair
+comparison. Both beat the naive base-rate baseline, so the data seed is informative,
+just not sharper on 2022. Decision: keep the hand-set seed; `elo_seed.json` reverted,
+untouched. Scripts retained on disk as a reusable harness. The real accuracy wins are
+D2 (F1, done) and D3 (cricket).
+
+## [2026-06-11] decision | D2 review — robustness + latency fix on circuit-profile wiring
+Reviewed the D2 changes. Two fixes: (1) `_resolve_circuit_profile` only caught
+`AllSourcesFailedError`, but `FallbackChain.fetch` also raises `NotFoundError`
+(`fallback.py:221`) — harmless in `f1_predict_pit_strategy` (inside
+`gather(return_exceptions=True)`) but a latent 500 in `f1_undercut_window`, which
+awaits it directly with no `except NotFoundError`. Now catches both so enrichment
+truly never raises, matching its docstring. (2) Undercut resolved the profile in a
+serial round-trip after the laps `gather`; folded it into that gather (it never
+raises now) to drop one cold-cache OpenF1 hop — consistent with pit_strategy. Added
+`test_resolve_circuit_profile_swallows_chain_errors` regression test. Full suite
+green (639), ruff clean. Not committed.
+
+## [2026-06-11] tool-added | D3a cricket venue priors regenerated from Cricsheet
+Phase D3 (cricket), staged. This pass = venue priors only. New
+`scripts/build_cricket_priors.py` reads Cricsheet IPL ball-by-ball JSON (offline,
+`datasets/ipl_json/` gitignored; downloaded from cricsheet.org) and regenerates
+`cricket/data/venues.json` in place (same schema): measured mean 1st-innings
+(`avg_first_innings`) and 2nd-innings (`avg_chasing`) totals, seasons 2018+, venues
+with ≥12 in-window matches. 10/14 venues updated — most lifted to modern scoring
+(Eden 168→188, Kotla 172→186, Rajiv Gandhi 167→183); 4 thin-sample venues
+(dharamshala/visakhapatnam/guwahati/indore) kept hand-set. `pitch_type` (qualitative
+label), `boundary_size_m`, `name`, `city` all preserved — not relabeled from absolute
+averages (league-wide inflation would flip grounds for a non-venue-specific trend).
+Drop-in: static_seed already reads venues.json, no code change. Tests: new
+`tests/unit/test_venue_priors.py` (schema + band + regen-applied). Full suite green
+(641), ruff clean. Docs: new `[[cricsheet]]` data-source page; README + index updated;
+Cricsheet attribution added (aggregates-only posture, no explicit license).
+
+DEFERRED in D3: (1) `matchups.json` batter-vs-bowler H2H — blocked on name
+reconciliation (Cricsheet scorecard initials "AD Russell" vs squads.json full names
+"Andre Russell"; only 25/194 exact-match; clean join needs a hand-curated alias table
+= conflicts with the "no hand-curated player-history data" constraint). (2) Win-model
+logistic calibration + `cricket_find_value_bets` flip — its own gated phase. Both
+need a decision before proceeding. NOT committed, NOT deployed.
+
+## [2026-06-12] tool-added | local analytics dashboard (read-only)
+
+Added `scripts/dashboard.py` + `scripts/dashboard_template.html`: a local-only,
+read-only aggregator that pulls Cloud Run traffic (Cloud Monitoring), AI-client
+breakdown (Cloud Logging User-Agent heuristic), GitHub stars/forks, and PyPI
+downloads into one static `dashboard.html` (Chart.js via CDN, SRI-pinned). No
+hosting, no server, no cost; degrade-don't-crash per collector via
+`.dashboard_cache/`. GCP libs isolated in a new `analytics` pyproject extra (not
+shipped, not in CI `dev`). Anonymous by design — no per-user identity possible
+(keyless server). Chose dashboard-only (no app-side client-logging middleware,
+no redeploy) and stars/forks-only (no GITHUB_TOKEN). 8 unit tests green; live
+end-to-end render confirmed (GitHub 8★, PyPI 245 installs/30d; GCP panels
+degrade cleanly until `uv sync --extra analytics` + ADC login). See
+`docs/wiki/findings/local-analytics-dashboard.md`.
+
+## [2026-06-12] perf | lazy-load scipy + pulp off cold-start path
+
+Cloud Run p99 was ~40s, diagnosed as cold-start container boot (min-instances=0,
+scale-to-zero hourly); warm requests are ~7ms. Import profiling showed scipy.stats
+(~0.37s) + pulp loaded at boot via the model import chain. Moved
+`from scipy.stats import poisson` into `poisson_xg.scoreline_matrix()` and the pulp
+import block into `dream11_solver.solve()`. Boot no longer imports either
+(verified: `scipy`/`pulp` absent from sys.modules after `import sportiq.server`);
+the two libs cost ~407ms cold, now paid only on first Poisson/Dream11 tool call.
+numpy left at module level (cheap ~28ms, used in type hints). 649 tests green,
+ruff clean. NOT deployed — redeploy pending user go.
+
+## [2026-06-12] tool-added | MCP client-identification middleware (HTTP transport)
+
+Added `src/sportiq/core/client_info.py` — Starlette `ClientInfoMiddleware` that
+logs one `event="mcp_request"` line per `/mcp` request with `user_agent` and (on
+`initialize`) MCP `clientInfo.name`/`version`. No PII; structlog redaction applies.
+Wired into `server.py` HTTP branch only: build `mcp.streamable_http_app()`,
+`add_middleware`, run uvicorn directly (NOT `mcp.run("streamable-http")`, which
+rebuilds the app and would drop the middleware). stdio path untouched; middleware
+module is NOT imported at boot (deferred inside the HTTP branch — verified absent
+from sys.modules after `import sportiq.server`). Dashboard `collect_ai_clients`
+upgraded to prefer `jsonPayload.client_name`, fall back to User-Agent. 649 tests
+green, ruff clean. NOT deployed — ships with next release/redeploy. Live UA-fallback
+breakdown already meaningful (Claude 573 / httpx 438 / other 311 / ChatGPT 146 / Node 57).
+
+## [2026-06-12] docs | LEARNING-GUIDE.md — beginner's from-scratch guide (repo root)
+
+- Full plain-English walkthrough of the project for a newcomer: what MCP is, glossary of every term, stack rationale, architecture/request flow, the 3 flagship models, data-source budgets, testing approach, full phase-by-phase development timeline (from this log), packaging/PyPI, Cloud Run deploy, security hardening, wiki system, run commands.
+- Sourced from plan.md, docs/log.md, docs/index.md, .claude/rules/, README.md. Kept local-only — added to .gitignore alongside the other internal docs (plan.md, AUDIT.md, …).
+
+## [2026-06-12] ingest | circuits.json pit_loss_s re-measured from OpenF1 laps (D2 finding #1 fixed)
+
+D-phase review finding #1 (pit-loss semantics) resolved. F1DB pit-stop `timeMillis`
+is pit-lane TRANSIT (entry→exit), not time LOST vs staying out — it overestimated
+loss by the bypass time and inverted orderings (Monaco 24.8 > Spa 23.3, opposite of
+reality). `build_f1_circuit_profiles.py` now measures true loss from OpenF1 laps:
+`in_lap + out_lap − 2 × baseline` (baseline = median of driver's fastest-half
+green-flag laps, SC/VSC-robust), per-stop band 8–45s, min 20 samples/circuit,
+seasons 2023–2024 (2025 now 401-paywalled on OpenF1 — skipped with warning; raw
+responses cached in `datasets/openf1/` for offline re-runs). New range 20.5s
+(Monte Carlo, lowest — sanity gate from new_dataset.md now PASSES) → 31.9s
+(Silverstone). F1DB still supplies `typical_stops`/`lap_length_km`; consumers and
+schema unchanged. Wiki ([[f1db]], undercut model), index, README credits updated.
+652 tests green, ruff clean.
+
+## [2026-06-12] tool-added | param-description shim — docstring Args → tool inputSchema
+
+Added `src/sportiq/core/param_docs.py`: `apply_param_descriptions(mcp)` runs once in
+`server.py` after all registrations and copies each tool's docstring `Args:` entry
+into the matching `inputSchema` property description. FastMCP only schemas type
+hints, so all 87 params across 44 tools were undescribed to MCP clients and
+directory scorers (Smithery "Parameter descriptions 4/44"). Docstrings remain the
+single source of truth; signatures untouched; degrades to a no-op if FastMCP
+internals move. Regression test locks 100% param-description coverage
+(tests/unit/test_param_docs.py). 652 tests green, ruff clean. Ships with next
+release/redeploy.
+
+## [2026-06-12] lint | D-phase review findings #2–#9 all fixed (full batch approved)
+
+- **#2** `cricket/models/pitch_report.py`: hand-set 175 par → measured `_LEAGUE_PAR_T20 = 178`
+  (mean 1st-innings total, all in-window 2018+ Cricsheet IPL matches, n=607; derived +
+  printed by build_cricket_priors.py so future regens recheck it). Wiki [[pitch-report]] updated.
+- **#3** `f1/adapters/openf1.py`: `OpenF1SessionsAdapter.fetch` now raises ValueError when
+  called with neither `year` nor `session_key` (selector-less query = entire OpenF1 history).
+- **#4** `tests/tools/test_f1_intel_tools.py`: new happy-path test — real
+  `_resolve_circuit_profile` parsing an OpenF1-shaped payload (`circuit_key`) → committed
+  Monte Carlo profile; locks the field name against silent 22.0s fallback.
+- **#5/#7** `scripts/backtest_wc.py`: single `_played_rows()` read shared by filter + Elo
+  walk; duplicated `_name_to_code` deleted, imported from calibrate_football_elo.
+  Re-ran: identical D1 numbers (0.5602 vs 0.6047) — behavior unchanged.
+- **#6** `scripts/build_cricket_priors.py`: regex season-peek on file head before
+  `json.loads` (~75% of 1243 files skipped unparsed; run now ~0.3s). Regen idempotent.
+- **#8** `f1/intel_tools.py`: misplaced "Annotate laps…" comment moved down to
+  `annotated = ...`; pit-loss comment stays with its block.
+- **#9** `scripts/build_f1_circuit_profiles.py`: note that `typical_stops` counts ALL
+  stops (incl. penalty/red-flag) and `typical_stops`/`lap_length_km` are runtime-unconsumed.
+
+653 tests green (1 new), ruff clean. D-phase review action list fully closed — D2 + D3a
+ready to commit on go.

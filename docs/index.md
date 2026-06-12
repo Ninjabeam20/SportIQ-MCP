@@ -135,6 +135,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[openf1]] — Free public F1 telemetry API; no credentials; endpoints: sessions, drivers, laps, stints, weather.
 - [[jolpica]] — Free public Ergast successor; no credentials; historical standings and race results.
 - [[fastf1]] — Optional Python library for offline F1 data; lazy-imported; install with `pip install sportiq-mcp[f1]`.
+- [[f1db]] — Offline-only F1 database (CC BY 4.0); supplies stop-count/lap-length fields of `circuits.json` (per-circuit pit LOSS measured offline from OpenF1 laps); never shipped or fetched live.
 
 ### Cricket
 
@@ -143,6 +144,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[cricbuzz-scraper]] — Opt-in scraper (SPORTIQ_ENABLE_CRICBUZZ=1); live scores.
 - [[rapidapi-cricbuzz]] — Paid licensed Cricbuzz mirror; escape hatch; requires RAPIDAPI_KEY; serves player career stats.
 - [[static-seed]] — Local JSON reader; always-on; ships 19 squads (10 IPL + 9 internationals) + 14 IPL venues.
+- [[cricsheet]] — Offline-only IPL ball-by-ball data; derives measured venue scoring priors in `venues.json` (aggregates only, no explicit license); never shipped or fetched live.
 
 ### Odds
 
