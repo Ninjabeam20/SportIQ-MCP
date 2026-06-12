@@ -16,6 +16,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from sportiq.core.health import register_health_tool
 from sportiq.core.instructions import register_instructions_resource
 from sportiq.core.logging import configure_logging
+from sportiq.core.param_docs import apply_param_descriptions
 from sportiq.core.prompts import register_prompts
 from sportiq.cricket.tools import register_cricket_tools
 from sportiq.f1.tools import register_f1_tools
@@ -39,6 +40,9 @@ register_football_tools(mcp)
 register_f1_tools(mcp)
 register_cricket_tools(mcp)
 register_cross_sport_tools(mcp)
+# After ALL registrations: surface docstring Args descriptions in tool schemas
+# (FastMCP only schemas type hints; clients/directories score param descriptions).
+apply_param_descriptions(mcp)
 
 
 def main() -> None:
@@ -50,6 +54,10 @@ def main() -> None:
     The MCP endpoint is served at ``/mcp``.
     """
     if os.getenv("SPORTIQ_TRANSPORT", "stdio").lower() in ("http", "streamable-http"):
+        import uvicorn
+
+        from sportiq.core.client_info import ClientInfoMiddleware
+
         mcp.settings.host = "0.0.0.0"  # container must bind all interfaces
         mcp.settings.port = int(os.getenv("PORT", "8080"))
         # DNS rebinding protection blocks Cloud Run host headers; disable it for
@@ -57,7 +65,18 @@ def main() -> None:
         mcp.settings.transport_security = TransportSecuritySettings(
             enable_dns_rebinding_protection=False
         )
-        mcp.run(transport="streamable-http")
+        # Build the Starlette app ourselves so we can attach client-identification
+        # logging (HTTP transport only), then run uvicorn directly. We do NOT call
+        # mcp.run("streamable-http") here — it rebuilds the app and would drop the
+        # middleware. Host/port/security settings above are read by the app build.
+        app = mcp.streamable_http_app()
+        app.add_middleware(ClientInfoMiddleware)
+        uvicorn.run(
+            app,
+            host=mcp.settings.host,
+            port=mcp.settings.port,
+            log_level=mcp.settings.log_level.lower(),
+        )
     else:
         mcp.run()
 

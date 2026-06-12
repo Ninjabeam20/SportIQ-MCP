@@ -8,16 +8,6 @@ from __future__ import annotations
 
 import warnings
 
-from pulp import (
-    COIN_CMD,
-    LpBinary,
-    LpMaximize,
-    LpProblem,
-    LpStatus,
-    LpVariable,
-    lpSum,
-)
-
 from sportiq.core.errors import InvalidInputError
 from sportiq.cricket.data.scoring import SCORING
 
@@ -72,6 +62,18 @@ def solve(candidates: list[dict], strategy: str = "balanced") -> dict:
         raise InvalidInputError(
             f"Need >=11 candidates; got {len(candidates)}"
         )
+
+    # pulp pulls in CBC bindings at import; deferred to the solver body so it
+    # stays off the Cloud Run cold-start path (only this one tool needs it).
+    from pulp import (
+        COIN_CMD,
+        LpBinary,
+        LpMaximize,
+        LpProblem,
+        LpStatus,
+        LpVariable,
+        lpSum,
+    )
 
     n = len(candidates)
     role_bounds = _STRATEGY_ROLE_BOUNDS[strategy]

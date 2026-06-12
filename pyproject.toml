@@ -44,6 +44,12 @@ dev = [
     "pip-audit>=2.7.0",
     "bandit>=1.8.0",
 ]
+# Local-only analytics dashboard (scripts/dashboard.py). Not shipped to PyPI
+# users and not needed by CI tests — install with `uv sync --extra analytics`.
+analytics = [
+    "google-cloud-monitoring>=2.0.0",
+    "google-cloud-logging>=3.0.0",
+]
 
 [project.scripts]
 sportiq-mcp = "sportiq.server:main"

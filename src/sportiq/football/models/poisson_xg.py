@@ -10,7 +10,10 @@ attack/defense rates are available, from those directly.
 from __future__ import annotations
 
 import numpy as np
-from scipy.stats import poisson
+
+# scipy is the heaviest import in the tree (~0.4s) and is only needed inside
+# scoreline_matrix(). Deferred to the function body so it stays off the Cloud Run
+# cold-start path — boot only pays for it when a Poisson tool actually runs.
 
 # Tournament-match tuning. WC group games average ~2.6 total goals; each 100 Elo
 # of edge is worth ~0.4 goals of supremacy (calibrated to be sane, not exact).
@@ -63,6 +66,8 @@ def scoreline_matrix(lambda_home: float, lambda_away: float, max_goals: int = _M
     ``matrix[i, j]`` is P(home scores i, away scores j), assuming independent
     Poisson goal counts.
     """
+    from scipy.stats import poisson
+
     goals = np.arange(max_goals + 1)
     home_pmf = poisson.pmf(goals, lambda_home)
     away_pmf = poisson.pmf(goals, lambda_away)
