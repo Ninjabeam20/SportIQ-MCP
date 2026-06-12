@@ -9,13 +9,19 @@ from __future__ import annotations
 
 _PITCH_TYPE_FRIENDLY = {"batting": 0.78, "balanced": 0.55, "bowling": 0.32}
 
+# Measured league T20 par: mean 1st-innings total across all in-window (2018+)
+# Cricsheet IPL matches (n=607). Derived and printed by
+# scripts/build_cricket_priors.py — recheck whenever venues.json is regenerated,
+# or venue reads skew batting/bowling against a stale centre.
+_LEAGUE_PAR_T20 = 178
+
 
 def _avg_factor(avg_first_innings: int) -> float:
     """Normalise first-innings average into a 0..1 batting-friendliness shift.
 
-    A 150 avg → -0.15; a 200 avg → +0.15. Centred at 175 (typical T20 par).
+    Centred at the measured league par; ±25 runs saturates the ±0.125 shift.
     """
-    return max(-0.15, min(0.15, (avg_first_innings - 175) / 200.0))
+    return max(-0.15, min(0.15, (avg_first_innings - _LEAGUE_PAR_T20) / 200.0))
 
 
 def pitch_report(venue_record: dict) -> dict:

@@ -3,8 +3,8 @@
     "name": "Wankhede Stadium",
     "city": "Mumbai",
     "pitch_type": "batting",
-    "avg_first_innings": 178,
-    "avg_chasing": 165,
+    "avg_first_innings": 180,
+    "avg_chasing": 170,
     "boundary_size_m": 64
   },
   "chinnaswamy": {
@@ -12,71 +12,71 @@
     "city": "Bengaluru",
     "pitch_type": "batting",
     "avg_first_innings": 185,
-    "avg_chasing": 172,
+    "avg_chasing": 177,
     "boundary_size_m": 60
   },
   "eden_gardens": {
     "name": "Eden Gardens",
     "city": "Kolkata",
     "pitch_type": "balanced",
-    "avg_first_innings": 168,
-    "avg_chasing": 158,
+    "avg_first_innings": 188,
+    "avg_chasing": 171,
     "boundary_size_m": 68
   },
   "chepauk": {
     "name": "M. A. Chidambaram Stadium",
     "city": "Chennai",
     "pitch_type": "bowling",
-    "avg_first_innings": 160,
-    "avg_chasing": 152,
+    "avg_first_innings": 165,
+    "avg_chasing": 153,
     "boundary_size_m": 67
   },
   "kotla": {
     "name": "Arun Jaitley Stadium",
     "city": "Delhi",
     "pitch_type": "balanced",
-    "avg_first_innings": 172,
-    "avg_chasing": 162,
+    "avg_first_innings": 186,
+    "avg_chasing": 173,
     "boundary_size_m": 65
   },
   "narendra_modi": {
     "name": "Narendra Modi Stadium",
     "city": "Ahmedabad",
     "pitch_type": "balanced",
-    "avg_first_innings": 170,
-    "avg_chasing": 161,
+    "avg_first_innings": 186,
+    "avg_chasing": 166,
     "boundary_size_m": 72
   },
   "punjab_cricket": {
     "name": "Punjab Cricket Association Stadium",
     "city": "Mohali",
     "pitch_type": "batting",
-    "avg_first_innings": 175,
-    "avg_chasing": 168,
+    "avg_first_innings": 183,
+    "avg_chasing": 172,
     "boundary_size_m": 66
   },
   "rajiv_gandhi": {
     "name": "Rajiv Gandhi International Stadium",
     "city": "Hyderabad",
     "pitch_type": "balanced",
-    "avg_first_innings": 167,
-    "avg_chasing": 158,
+    "avg_first_innings": 183,
+    "avg_chasing": 168,
     "boundary_size_m": 68
   },
   "sawai_mansingh": {
     "name": "Sawai Mansingh Stadium",
     "city": "Jaipur",
     "pitch_type": "balanced",
-    "avg_first_innings": 169,
-    "avg_chasing": 159,
+    "avg_first_innings": 182,
+    "avg_chasing": 168,
     "boundary_size_m": 65
   },
   "ekana": {
     "name": "Ekana Cricket Stadium",
     "city": "Lucknow",
     "pitch_type": "bowling",
-    "avg_first_innings": 158,
-    "avg_chasing": 150,
+    "avg_first_innings": 175,
+    "avg_chasing": 166,
     "boundary_size_m": 70
   },
   "dharamshala": {

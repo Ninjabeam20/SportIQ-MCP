@@ -3,7 +3,7 @@ title: Pitch Report
 type: model
 tags: [cricket, pitch, venue]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-06-12
 related: [[cricket-get-pitch-report]], [[cricket-pitch-data-chain]], [[captain-score]]
 ---
 
@@ -31,11 +31,19 @@ A row from `venues.json` (delivered via [[cricket-pitch-data-chain]]). Required 
 
 ```
 base   = {batting: 0.78, balanced: 0.55, bowling: 0.32}[pitch_type]
-shift  = clamp(-0.15..0.15, (avg_first_innings - 175) / 200)
+shift  = clamp(-0.15..0.15, (avg_first_innings - LEAGUE_PAR) / 200)
 result = clamp(0..1, base + shift)
 ```
 
-A high-scoring batting deck (185 avg first innings) lands ~0.83; a low-scoring bowler-friendly track (155) lands ~0.22.
+`LEAGUE_PAR` is the **measured** league T20 par — mean first-innings total across
+all in-window (2018+) Cricsheet IPL matches, derived and printed by
+`scripts/build_cricket_priors.py`. Currently **178** (n=607,
+`_LEAGUE_PAR_T20` in `cricket/models/pitch_report.py`). It replaced a hand-set 175
+on 2026-06-12: the venues.json regeneration ([[cricsheet]]) lifted venue means to
+~180+, so the stale centre read nearly every venue as batting-shifted. Recheck the
+constant against the script's printout whenever venues.json is regenerated.
+
+A high-scoring batting deck (188 avg first innings) lands ~0.83; a low-scoring bowler-friendly track (158) lands ~0.22.
 
 ## Recommendation strings
 
