@@ -58,7 +58,7 @@ def main() -> None:
 
         from sportiq.core.client_info import ClientInfoMiddleware
 
-        mcp.settings.host = "0.0.0.0"  # container must bind all interfaces
+        mcp.settings.host = "0.0.0.0"  # nosec B104  # container must bind all interfaces
         mcp.settings.port = int(os.getenv("PORT", "8080"))
         # DNS rebinding protection blocks Cloud Run host headers; disable it for
         # the remote deployment — Cloud Run's infrastructure handles perimeter security.

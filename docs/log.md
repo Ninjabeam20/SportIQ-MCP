@@ -558,3 +558,10 @@ Candidate rev 00007-xeh smoke: initialize OK, tools=44, **params_described=87/87
 (param-docs shim live), sportiq_health OK, bracket sim OK, pitch report serving
 measured venues (Eden 188 vs 178 par). Traffic flipped to 100%; rollback target =
 00004-z7m. NOT pushed to GitHub yet (push discipline — pending sign-off).
+
+## [2026-06-13] lint | suppress bandit B104 on Cloud Run bind
+`security` CI workflow was red on a pre-existing bandit B104 (hardcoded_bind_all_
+interfaces) at `server.py:61 mcp.settings.host = "0.0.0.0"` — the deliberate Cloud
+Run container bind (present since first deploy, not from the D2/D3a batch). Added
+`# nosec B104` inline suppression; binding all interfaces inside the container is
+required and the perimeter is handled by Cloud Run. `bandit -r src -ll` now exits 0.
