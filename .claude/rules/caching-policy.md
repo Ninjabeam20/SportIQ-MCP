@@ -8,7 +8,8 @@
 | :--- | :--- | :--- |
 | Live cricket scorecard | 30s | 5min (flagged) |
 | F1 live telemetry | 10s | 1min (flagged) |
-| Fixtures / schedule | 6h | 24h |
+| Fixtures / schedule (static) | 6h | 24h |
+| Live-tournament fixtures + results (football WC) | 30min | 24h |
 | Standings / points table | 10min | 1h |
 | Player career stats | 24h | 7d |
 | Squad rosters | 12h | 3d |

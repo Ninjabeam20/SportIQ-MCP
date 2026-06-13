@@ -1,7 +1,7 @@
 """Module-level FallbackChain singletons for all football tools.
 
 Resolution order:
-  fixtures   : api_football -> football_data_org -> static wc2026 (6h / 24h)
+  fixtures   : api_football -> football_data_org -> openfootball -> static wc2026 (30min / 24h)
   standings  : api_football -> football_data_org (10min / 1h)
   groups     : static wc2026 terminator (effectively infinite)
   team_stats : api_football -> football_data_org (24h / 7d)
@@ -30,6 +30,7 @@ from sportiq.football.adapters.football_data_org import (
     FootballDataOrgStandingsAdapter,
     FootballDataOrgTeamStatsAdapter,
 )
+from sportiq.football.adapters.openfootball import OpenFootballFixturesAdapter
 from sportiq.football.adapters.static_seed import (
     StaticSeedFixturesAdapter,
     StaticSeedGroupsAdapter,
@@ -50,22 +51,23 @@ _fd_standings = FootballDataOrgStandingsAdapter()
 _fd_team_stats = FootballDataOrgTeamStatsAdapter()
 _fd_scorers = FootballDataOrgScorersAdapter()
 
+_openfootball_fixtures = OpenFootballFixturesAdapter()
 _seed_groups = StaticSeedGroupsAdapter()
 _seed_fixtures = StaticSeedFixturesAdapter()
 _seed_squad = StaticSeedSquadAdapter()
 _theodds_football = TheOddsFootballAdapter()
 
 # Register one healthcheck per upstream identity (deduped by name).
-for _a in [_af_fixtures, _fd_fixtures, _seed_groups, _theodds_football]:
+for _a in [_af_fixtures, _fd_fixtures, _openfootball_fixtures, _seed_groups, _theodds_football]:
     register_adapter_for_health(_a)
 
 # -- Chain singletons ---------------------------------------------------------
 
 football_fixtures_chain: FallbackChain[dict] = FallbackChain(
     name="football:fixtures",
-    adapters=[_af_fixtures, _fd_fixtures, _seed_fixtures],
+    adapters=[_af_fixtures, _fd_fixtures, _openfootball_fixtures, _seed_fixtures],
     cache_key_fn=lambda **_: "sportiq:football:fixtures:wc2026",
-    fresh_ttl=21600,
+    fresh_ttl=1800,
     stale_ttl=86400,
 )
 

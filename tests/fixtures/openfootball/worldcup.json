@@ -1,0 +1,22 @@
+{
+  "name": "World Cup 2026",
+  "matches": [
+    {
+      "round": "Matchday 1",
+      "date": "2026-06-11",
+      "time": "13:00",
+      "team1": "Mexico",
+      "team2": "South Africa",
+      "score": { "ft": [2, 0], "ht": [1, 0] },
+      "group": "Group A"
+    },
+    {
+      "round": "Matchday 1",
+      "date": "2026-06-13",
+      "time": "16:00",
+      "team1": "Argentina",
+      "team2": "Colombia",
+      "group": "Group B"
+    }
+  ]
+}

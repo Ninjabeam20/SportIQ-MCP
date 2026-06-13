@@ -565,3 +565,17 @@ interfaces) at `server.py:61 mcp.settings.host = "0.0.0.0"` — the deliberate C
 Run container bind (present since first deploy, not from the D2/D3a batch). Added
 `# nosec B104` inline suppression; binding all interfaces inside the container is
 required and the perimeter is handled by Cloud Run. `bandit -r src -ll` now exits 0.
+
+## [2026-06-13] adapter-added | openfootball keyless WC2026 fixtures + scores
+`football_get_fixtures` only ever returned scores-less SCHEDULED fixtures on the
+keyless host: api-football skips (no key), football-data.org `/competitions/WC/matches`
+**403s without a token** (free tier includes the WC but needs a free token — the
+"token-optional" claim was wrong), so the chain fell to the static seed (null scores).
+Added `OpenFootballFixturesAdapter` (`adapters/openfootball.py`) reading openfootball's
+public-domain `2026/worldcup.json` — keyless, no quota, real `score.ft` results. New
+fixtures order: api-football → football-data-org → **openfootball** → static-seed.
+Lowered fixtures `fresh_ttl` 6h → 30min (chain now carries live results). Updated the
+football-data.org token docs/budgets, fixtures-chain + caching-policy, added wiki page.
+Tests: new `tests/adapters/test_openfootball.py` (3) + cassette; TTL assertion updated.
+Committed + canary-deployed 2026-06-13 (see release entry below). Optional host
+`FOOTBALLDATA_KEY` still unset — keyless openfootball fallback carries live scores.

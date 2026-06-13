@@ -128,7 +128,8 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 ### Football
 
 - [[api-football]] — Primary football source; requires APIFOOTBALL_KEY; fixtures, standings, team stats, squads, scorers; 100 req/day.
-- [[football-data-org]] — Free fallback (token optional); fixtures, standings, scorers; 10 req/min, 100/day.
+- [[football-data-org]] — Free fallback; a free token is required for the World Cup (token-less 403s); fixtures, standings, scorers; 10 req/min, 100/day.
+- [[openfootball]] — Keyless public-domain WC 2026 fixtures + real results; no credentials, no quota; hand-updated ~daily so scores can lag.
 
 ### F1
 

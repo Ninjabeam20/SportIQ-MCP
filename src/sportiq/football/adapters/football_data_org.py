@@ -1,9 +1,11 @@
 """football-data.org adapters (v4).
 
-Free tier: 10 req/min, 100/day. Token (FOOTBALLDATA_KEY) is OPTIONAL — the
-public tier works without it (it just rate-limits harder), so the constructor
-never raises on a missing key. Outputs are normalised to the common per-chain
-shapes (see base.py).
+Free tier: 10 req/min, 100/day. A token (FOOTBALLDATA_KEY) is required for the
+World Cup competition — token-less ``/competitions/WC/matches`` returns HTTP 403
+(the free tier includes the WC, but only once you register a free token). The
+constructor still never raises on a missing key: without one the adapter simply
+403s and the chain walks past it to the keyless openfootball / static-seed
+fallbacks. Outputs are normalised to the common per-chain shapes (see base.py).
 """
 from __future__ import annotations
 
@@ -16,7 +18,8 @@ _FOOTBALLDATA_BUDGET = Budget(source="football_data_org", per_minute=10, per_day
 
 
 def _headers() -> dict:
-    # Token is optional; send it only when present.
+    # Send the token when present. The WC competition 403s without it, so a
+    # missing key means this adapter fails and the chain falls through.
     return {"X-Auth-Token": settings.footballdata_key} if settings.footballdata_key else {}
 
 

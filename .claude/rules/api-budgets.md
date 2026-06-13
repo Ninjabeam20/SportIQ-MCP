@@ -11,7 +11,8 @@ Free-tier limits per source. NEVER bypass cache to "make sure data is fresh." Bu
 | OpenF1 | None published | Free + public. Still cache aggressively; latency dominates. |
 | Jolpica (Ergast successor) | None published | Free + public. Snapshot per session. |
 | API-Football | 100 req/day (free tier) | Token via `APIFOOTBALL_KEY`. Premium = $19/mo for 7.5k/day. |
-| football-data.org | 10 req/min, 100/day (free tier) | Token-less for free, but watch the per-minute cap. |
+| football-data.org | 10 req/min, 100/day (free tier) | Free token via `FOOTBALLDATA_KEY` **required for the World Cup** (token-less `/competitions/WC/*` returns 403). Watch the per-minute cap. |
+| openfootball | None (public-domain GitHub JSON) | Keyless, no quota. WC 2026 fixtures + real results, hand-updated ~daily (scores lag). Keyless fallback above the static seed. |
 | The Odds API | 500 req/month (free tier) | Token via `THEODDS_KEY`. Shared across cricket + football (one `theodds` source). Billed markets × regions: both adapters use a single region (`regions=uk`) = 1 credit/request, so `per_day=16` ≈ 480/month (under cap). No per-month unit in `Budget`, so gated at the ~16/day slice; on exhaustion the chain serves stale odds (24h ceiling). Paid plans from $30/mo. |
 
 ## Enforcement

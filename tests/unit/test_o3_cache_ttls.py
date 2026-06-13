@@ -64,7 +64,9 @@ def test_f1_stints_ttls():
 
 
 def test_football_fixtures_ttls():
-    assert football_fixtures_chain.fresh_ttl == 21600
+    # 30min fresh: the chain now carries live WC results (openfootball + keyed
+    # football-data.org), so it refreshes far sooner than a static schedule.
+    assert football_fixtures_chain.fresh_ttl == 1800
     assert football_fixtures_chain.stale_ttl == 86400
 
 

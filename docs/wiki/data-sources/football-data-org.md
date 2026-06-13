@@ -3,19 +3,23 @@ title: football-data.org
 type: data-source
 tags: [football, fixtures, standings, scorers]
 sources: []
-last_updated: 2026-05-29
-related: [[football-fixtures-chain]], [[football-standings-chain]], [[football-scorers-chain]], [[api-football]]
+last_updated: 2026-06-13
+related: [[football-fixtures-chain]], [[football-standings-chain]], [[football-scorers-chain]], [[api-football]], [[openfootball]]
 ---
 
 # football-data.org
 
-Free fallback source (v4) for World Cup fixtures, standings and scorers. Token-optional.
+Free fallback source (v4) for World Cup fixtures, standings and scorers. The free tier includes the
+World Cup, but a (free) token is required to reach it.
 
 ## Base URL
 `https://api.football-data.org/v4`
 
 ## Credentials
-`FOOTBALLDATA_KEY` (header `X-Auth-Token`) is **optional** — the public tier works without it. The constructor never raises on a missing token.
+`FOOTBALLDATA_KEY` (header `X-Auth-Token`) is **required for the World Cup competition** — token-less
+`/competitions/WC/matches` returns **HTTP 403**. The token is free (register at football-data.org). The
+constructor still never raises on a missing token: without one the adapter simply 403s and the chain
+walks past it to the keyless [[openfootball]] / [[static-seed]] fallbacks.
 
 ## Free-tier limits
 10 req/min, 100/day (`football_data_org` budget: per_minute=10, per_day=100).
