@@ -577,5 +577,20 @@ fixtures order: api-football → football-data-org → **openfootball** → stat
 Lowered fixtures `fresh_ttl` 6h → 30min (chain now carries live results). Updated the
 football-data.org token docs/budgets, fixtures-chain + caching-policy, added wiki page.
 Tests: new `tests/adapters/test_openfootball.py` (3) + cassette; TTL assertion updated.
-Committed + canary-deployed 2026-06-13 (see release entry below). Optional host
-`FOOTBALLDATA_KEY` still unset — keyless openfootball fallback carries live scores.
+Committed + canary-deployed 2026-06-13 (see release entry below). The Cloud Run
+host DOES have `FOOTBALLDATA_KEY` set, so football-data-org wins there and serves
+fresh real scores; openfootball is the dormant keyless fallback that activates for
+keyless installs of the package (the BYO-keys default).
+
+## [2026-06-13] release | openfootball + bandit fix canary-deployed → rev 00009-qos at 100%
+Pushed `4856ec9` (openfootball fixtures adapter) — sweeps up `598bc30` (bandit
+B104 nosec). 658 tests green, ruff clean before push. Canary pattern:
+`gcloud run deploy --source . --no-traffic --tag candidate` built rev
+`sportiq-mcp-00009-qos` at 0%, smoke-tested on the tagged URL via real MCP protocol
+(initialize non-empty serverInfo → middleware regression clear; tools=44,
+params_described=87/87; sportiq_health OK; `football_get_fixtures` → 50 fixtures,
+4 FINISHED with real goals, e.g. Mexico 2-0 South Africa, source=football_data_org
+since the host key is set). Flipped to 100% (`update-traffic --to-latest`); main
+URL re-verified serving 00009-qos. Previous revision `sportiq-mcp-00007-xeh`
+retained — rollback: `gcloud run services update-traffic sportiq-mcp --region
+us-central1 --to-revisions=sportiq-mcp-00007-xeh=100`.
