@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Oswald, Space_Mono } from "next/font/google";
 import "./globals.css";
 
