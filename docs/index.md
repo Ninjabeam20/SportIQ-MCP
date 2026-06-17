@@ -68,6 +68,8 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[elo]] — Elo win-expectation + rating update; seeds the Poisson engine and the knockout shootout.
 - [[group-sim]] — 4-team round-robin Monte Carlo with FIFA tiebreakers; p_advance sums to 2.
 - [[bracket-sim]] — Full 48-team tournament Monte Carlo (groups + best-thirds + 32-team knockout).
+- [[results-state]] — Joins live fixtures onto team codes; partitions each group into completed/remaining; backs derived standings.
+- [[live-conditioning]] — Locks completed results into the sims (eliminated teams → 0) + opt-in in-tournament Elo nudge.
 - [[value-bet]] — De-vig bookmaker odds (multiplicative) and flag outcomes where model_prob beats market by an edge.
 - [[parlay-builder]] — `build_accumulator()` pure function: edge filter, dedup, combined odds under independence assumption.
 

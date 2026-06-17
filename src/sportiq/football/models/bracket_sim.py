@@ -17,6 +17,7 @@ import numpy as np
 from sportiq.football.models.elo import expected_score
 from sportiq.football.models.group_sim import simulate_group_once
 from sportiq.football.models.poisson_xg import lambdas_from_elo
+from sportiq.football.models.results_state import ResultsState
 
 _STAGES = ["R32", "R16", "QF", "SF", "Final", "Winner"]
 # Round labels for the 5 knockout reductions starting from 32 qualifiers.
@@ -31,11 +32,13 @@ def _draw_qualifiers(
     rng: np.random.Generator,
     groups: dict[str, list[str]],
     ratings: dict[str, float],
+    results: ResultsState | None = None,
 ) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
     """Simulate all 12 groups. Return (winners, runners, best_thirds_by_group).
 
     ``winners``/``runners`` map every group letter to a team. ``best_thirds_by_group``
     maps only the 8 best third-placed groups (by points -> gd -> gf -> random) to their team.
+    When ``results`` is supplied, each group's played matches are locked in.
     """
     winners: dict[str, str] = {}
     runners: dict[str, str] = {}
@@ -45,7 +48,8 @@ def _draw_qualifiers(
             raise ValueError(
                 f"Group {letter} must have exactly 4 teams (WC 2026 format); got {len(teams)}."
             )
-        standings = simulate_group_once(rng, teams, ratings)
+        known = results.groups.get(letter) if results else None
+        standings = simulate_group_once(rng, teams, ratings, known)
         winners[letter] = standings[0]["team"]
         runners[letter] = standings[1]["team"]
         third = dict(standings[2])
@@ -114,16 +118,22 @@ def _simulate_once(
     rng: np.random.Generator,
     groups: dict[str, list[str]],
     ratings: dict[str, float],
+    results: ResultsState | None = None,
+    locked_ko: dict[frozenset[str], str] | None = None,
 ) -> dict[str, int]:
     """One tournament. Returns ``{team: furthest_stage_index}`` for qualifiers."""
-    winners, runners, best_thirds = _draw_qualifiers(rng, groups, ratings)
+    winners, runners, best_thirds = _draw_qualifiers(rng, groups, ratings, results)
     current = _build_r32(winners, runners, best_thirds)
+    locked_ko = locked_ko or {}
 
     reached: dict[str, int] = {team: 0 for team in current}  # 0 == reached R32
     for stage_idx, _round in enumerate(_KO_ROUNDS, start=1):
         nxt = []
         for k in range(0, len(current), 2):
-            winner = _knockout_winner(rng, current[k], current[k + 1], ratings)
+            a, b = current[k], current[k + 1]
+            winner = locked_ko.get(frozenset((a, b)))
+            if winner is None:
+                winner = _knockout_winner(rng, a, b, ratings)
             reached[winner] = stage_idx
             nxt.append(winner)
         current = nxt
@@ -135,6 +145,7 @@ def simulate_tournament(
     ratings: dict[str, float],
     n_iter: int = 10000,
     seed: int | None = None,
+    results: ResultsState | None = None,
 ) -> dict:
     """Monte Carlo the whole tournament. Returns per-team round probabilities.
 
@@ -143,6 +154,10 @@ def simulate_tournament(
         ratings: ``{team_code: elo}`` for every team in ``groups``.
         n_iter: iterations (10k gives stable ±2% probabilities).
         seed: RNG seed for reproducibility.
+        results: optional live :class:`ResultsState`. Played group matches are
+            locked (so an eliminated team falls to 0 and a finished group is
+            deterministic); decided knockout ties lock their winner. ``None``
+            simulates the whole tournament from scratch (original behaviour).
 
     Returns:
         ``{"teams": {code: {reach_r32, reach_r16, reach_qf, reach_sf,
@@ -152,9 +167,12 @@ def simulate_tournament(
     rng = np.random.default_rng(seed)
     all_teams = [t for teams in groups.values() for t in teams]
     counts = {t: [0] * len(_STAGES) for t in all_teams}
+    locked_ko = (
+        {frozenset((a, b)): w for (a, b, w) in results.knockout} if results else {}
+    )
 
     for _ in range(n_iter):
-        reached = _simulate_once(rng, groups, ratings)
+        reached = _simulate_once(rng, groups, ratings, results, locked_ko)
         for team, furthest in reached.items():
             for idx in range(furthest + 1):  # cumulative: reaching SF implies reaching R32..SF
                 counts[team][idx] += 1

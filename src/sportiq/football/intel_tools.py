@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 
+from sportiq.config import settings
 from sportiq.core.errors import AllSourcesFailedError
 from sportiq.core.parlay import build_accumulator
 from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta
@@ -18,12 +19,16 @@ from sportiq.football.chains import (
 )
 from sportiq.football.models import poisson_xg
 from sportiq.football.models.bracket_sim import simulate_tournament
+from sportiq.football.models.elo_live import nudge_ratings
 from sportiq.football.models.form_trends import compute_form_trends
 from sportiq.football.models.group_sim import simulate_group as _simulate_group
+from sportiq.football.models.results_state import ResultsState, build_results_state
 from sportiq.football.models.value_bet import find_value
 
 _MAX_ITERATIONS = 20000
 _MIN_ITERATIONS = 100
+
+_NO_LIVE_NOTE = "Live results unavailable; simulated from the pre-tournament seed."
 
 
 async def _groups_payload() -> dict:
@@ -33,6 +38,63 @@ async def _groups_payload() -> dict:
 
 def _clamp_iterations(iterations: int) -> int:
     return max(_MIN_ITERATIONS, min(_MAX_ITERATIONS, iterations))
+
+
+async def _fetch_live_state(groups_value: dict) -> tuple[ResultsState | None, object | None]:
+    """Fetch live fixtures and map them onto this draw.
+
+    Returns ``(state, fixtures_result)``, or ``(None, None)`` if no fixture
+    source is available (callers then fall back to the from-scratch sim).
+    """
+    try:
+        fixtures_result = await football_fixtures_chain.fetch()
+    except AllSourcesFailedError:
+        return None, None
+    state = build_results_state(
+        fixtures_result.value.get("fixtures", []),
+        groups_value.get("groups", {}),
+        groups_value.get("teams", {}),
+    )
+    return state, fixtures_result
+
+
+def _conditioned_ratings(base_ratings: dict, state: ResultsState | None) -> dict:
+    """Apply the opt-in in-tournament Elo nudge when enabled and results exist."""
+    if settings.football_live_elo and state is not None:
+        return nudge_ratings(base_ratings, state.completed_chrono)
+    return base_ratings
+
+
+async def _maybe_nudge_single(groups_value: dict, ratings: dict) -> tuple[dict, bool]:
+    """For single-match tools: nudge ratings from live results when enabled.
+
+    Returns ``(ratings, live_elo_applied)``. No conditioning structure is needed
+    here — these tools score one matchup, so only the rating shift matters.
+    """
+    if not settings.football_live_elo:
+        return ratings, False
+    state, _ = await _fetch_live_state(groups_value)
+    if state is None:
+        return ratings, False
+    return nudge_ratings(ratings, state.completed_chrono), True
+
+
+def _sim_meta(groups_result, fixtures_result, state: ResultsState | None) -> dict:
+    """Build the meta envelope for a conditioned simulation tool."""
+    sources = [groups_result] + ([fixtures_result] if fixtures_result is not None else [])
+    meta: dict = {
+        "source": groups_result.source,
+        "estimated": True,
+        "conditioned_matches": state.matched if state else 0,
+        **staleness_meta(*sources),
+    }
+    if state and state.dropped:
+        meta["fixtures_dropped"] = state.dropped
+    if settings.football_live_elo and state is not None:
+        meta["live_elo"] = True
+    if state is None:
+        meta["note"] = _NO_LIVE_NOTE
+    return meta
 
 
 async def football_xg_model(home_team: str, away_team: str, neutral: bool = True) -> Envelope:
@@ -61,10 +123,14 @@ async def football_xg_model(home_team: str, away_team: str, neutral: bool = True
     ratings = result.value.get("ratings", {})
     if home not in ratings or away not in ratings:
         return error_envelope(code="NOT_FOUND", message="Unknown team code; see football_get_groups.")
+    ratings, live_elo = await _maybe_nudge_single(result.value, ratings)
 
     home_adv = 0.0 if neutral else 60.0
     lam_h, lam_a = poisson_xg.lambdas_from_elo(ratings[home], ratings[away], home_adv)
     outcome = poisson_xg.outcome_probabilities(lam_h, lam_a)
+    meta = {"source": result.source, "estimated": True, **staleness_meta(result)}
+    if live_elo:
+        meta["live_elo"] = True
     return {
         "data": {
             "home_team": home,
@@ -73,7 +139,7 @@ async def football_xg_model(home_team: str, away_team: str, neutral: bool = True
             "expected_away_goals": round(lam_a, 3),
             **outcome,
         },
-        "meta": {"source": result.source, "estimated": True, **staleness_meta(result)},
+        "meta": meta,
     }
 
 
@@ -103,6 +169,7 @@ async def football_match_predictor(home_team: str, away_team: str, neutral: bool
     ratings = result.value.get("ratings", {})
     if home not in ratings or away not in ratings:
         return error_envelope(code="NOT_FOUND", message="Unknown team code; see football_get_groups.")
+    ratings, live_elo = await _maybe_nudge_single(result.value, ratings)
 
     home_adv = 0.0 if neutral else 60.0
     lam_h, lam_a = poisson_xg.lambdas_from_elo(ratings[home], ratings[away], home_adv)
@@ -114,6 +181,9 @@ async def football_match_predictor(home_team: str, away_team: str, neutral: bool
         winner = away
     else:
         winner = "DRAW"
+    meta = {"source": result.source, "estimated": True, **staleness_meta(result)}
+    if live_elo:
+        meta["live_elo"] = True
     return {
         "data": {
             "home_team": home,
@@ -122,7 +192,7 @@ async def football_match_predictor(home_team: str, away_team: str, neutral: bool
             "predicted_winner": winner,
             **outcome,
         },
-        "meta": {"source": result.source, "estimated": True, **staleness_meta(result)},
+        "meta": meta,
     }
 
 
@@ -136,7 +206,7 @@ async def football_simulate_group(group: str, iterations: int = 5000) -> Envelop
     Returns:
         data.teams: {code: {p_first, p_second, p_third, p_fourth, p_advance, avg_points}}.
         data.iterations: iterations actually run.
-        meta.estimated: true.
+        meta.estimated: true. meta.conditioned_matches: completed matches locked in.
     """
     try:
         result = await _groups_payload()
@@ -144,16 +214,19 @@ async def football_simulate_group(group: str, iterations: int = 5000) -> Envelop
         return error_envelope(code="ALL_SOURCES_FAILED", message="Could not load draw.", sources_tried=e.attempts)
 
     groups = result.value.get("groups", {})
-    ratings = result.value.get("ratings", {})
     key = group.upper()
     if key not in groups:
         return error_envelope(code="NOT_FOUND", message=f"Unknown group {group!r}; groups are A-L.")
 
-    sim = _simulate_group(groups[key], ratings, n_iter=_clamp_iterations(iterations))
-    return {
-        "data": {"group": key, **sim},
-        "meta": {"source": result.source, "estimated": True, **staleness_meta(result)},
-    }
+    state, fixtures_result = await _fetch_live_state(result.value)
+    ratings = _conditioned_ratings(result.value.get("ratings", {}), state)
+    known = state.groups.get(key) if state else None
+
+    sim = _simulate_group(groups[key], ratings, n_iter=_clamp_iterations(iterations), known=known)
+    meta = _sim_meta(result, fixtures_result, state)
+    if state:  # group-tool count should reflect only this group's locked matches
+        meta["conditioned_matches"] = len(known.completed) if known else 0
+    return {"data": {"group": key, **sim}, "meta": meta}
 
 
 async def football_simulate_bracket(iterations: int = 10000, seed: int | None = None) -> Envelope:
@@ -172,7 +245,8 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
             sorted by win probability descending.
         data.champion: most likely winner.
         data.iterations: iterations run.
-        meta.estimated: true.
+        meta.estimated: true. meta.conditioned_matches: completed matches locked in
+            (played group results fixed, decided knockout ties locked).
 
     Example:
         football_simulate_bracket()
@@ -184,12 +258,12 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
         return error_envelope(code="ALL_SOURCES_FAILED", message="Could not load draw.", sources_tried=e.attempts)
 
     groups = result.value.get("groups", {})
-    ratings = result.value.get("ratings", {})
-    sim = simulate_tournament(groups, ratings, n_iter=_clamp_iterations(iterations), seed=seed)
-    return {
-        "data": sim,
-        "meta": {"source": result.source, "estimated": True, **staleness_meta(result)},
-    }
+    state, fixtures_result = await _fetch_live_state(result.value)
+    ratings = _conditioned_ratings(result.value.get("ratings", {}), state)
+    sim = simulate_tournament(
+        groups, ratings, n_iter=_clamp_iterations(iterations), seed=seed, results=state
+    )
+    return {"data": sim, "meta": _sim_meta(result, fixtures_result, state)}
 
 
 async def football_knockout_path(team: str, iterations: int = 10000, seed: int | None = None) -> Envelope:
@@ -214,16 +288,17 @@ async def football_knockout_path(team: str, iterations: int = 10000, seed: int |
         return error_envelope(code="ALL_SOURCES_FAILED", message="Could not load draw.", sources_tried=e.attempts)
 
     groups = result.value.get("groups", {})
-    ratings = result.value.get("ratings", {})
-    if code not in ratings:
+    base_ratings = result.value.get("ratings", {})
+    if code not in base_ratings:
         return error_envelope(code="NOT_FOUND", message="Unknown team code; see football_get_groups.")
 
-    sim = simulate_tournament(groups, ratings, n_iter=_clamp_iterations(iterations), seed=seed)
+    state, fixtures_result = await _fetch_live_state(result.value)
+    ratings = _conditioned_ratings(base_ratings, state)
+    sim = simulate_tournament(
+        groups, ratings, n_iter=_clamp_iterations(iterations), seed=seed, results=state
+    )
     row = sim["teams"].get(code, {})
-    return {
-        "data": {"team": code, **row},
-        "meta": {"source": result.source, "estimated": True, **staleness_meta(result)},
-    }
+    return {"data": {"team": code, **row}, "meta": _sim_meta(result, fixtures_result, state)}
 
 
 async def football_find_value_bets(team: str | None = None, min_edge: float = 0.05) -> Envelope:

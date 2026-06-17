@@ -2,7 +2,7 @@
 
 Resolution order:
   fixtures   : api_football -> football_data_org -> openfootball -> static wc2026 (30min / 24h)
-  standings  : api_football -> football_data_org (10min / 1h)
+  standings  : api_football -> football_data_org -> derived (keyless) (10min / 1h)
   groups     : static wc2026 terminator (effectively infinite)
   team_stats : api_football -> football_data_org (24h / 7d)
   squad      : api_football -> static seed (12h / 3d)
@@ -24,6 +24,7 @@ from sportiq.football.adapters.api_football import (
     APIFootballStandingsAdapter,
     APIFootballTeamStatsAdapter,
 )
+from sportiq.football.adapters.derived_standings import DerivedStandingsAdapter
 from sportiq.football.adapters.football_data_org import (
     FootballDataOrgFixturesAdapter,
     FootballDataOrgScorersAdapter,
@@ -52,6 +53,7 @@ _fd_team_stats = FootballDataOrgTeamStatsAdapter()
 _fd_scorers = FootballDataOrgScorersAdapter()
 
 _openfootball_fixtures = OpenFootballFixturesAdapter()
+_derived_standings = DerivedStandingsAdapter()
 _seed_groups = StaticSeedGroupsAdapter()
 _seed_fixtures = StaticSeedFixturesAdapter()
 _seed_squad = StaticSeedSquadAdapter()
@@ -73,7 +75,7 @@ football_fixtures_chain: FallbackChain[dict] = FallbackChain(
 
 football_standings_chain: FallbackChain[dict] = FallbackChain(
     name="football:standings",
-    adapters=[_af_standings, _fd_standings],
+    adapters=[_af_standings, _fd_standings, _derived_standings],
     cache_key_fn=lambda **_: "sportiq:football:standings:wc2026",
     fresh_ttl=600,
     stale_ttl=3600,

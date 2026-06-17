@@ -18,6 +18,7 @@ from sportiq.core.instructions import register_instructions_resource
 from sportiq.core.logging import configure_logging
 from sportiq.core.param_docs import apply_param_descriptions
 from sportiq.core.prompts import register_prompts
+from sportiq.core.tool_telemetry import instrument_tools
 from sportiq.cricket.tools import register_cricket_tools
 from sportiq.f1.tools import register_f1_tools
 from sportiq.football.tools import register_football_tools
@@ -43,6 +44,11 @@ register_cross_sport_tools(mcp)
 # After ALL registrations: surface docstring Args descriptions in tool schemas
 # (FastMCP only schemas type hints; clients/directories score param descriptions).
 apply_param_descriptions(mcp)
+# Wrap each tool to emit a per-call `tool_call` telemetry event (success,
+# latency, error code, calling client). Must run after every register_* call so
+# the whole registry is wrapped; order vs apply_param_descriptions is irrelevant
+# (that one only edits schemas, this one only swaps fn).
+instrument_tools(mcp)
 
 
 def main() -> None:

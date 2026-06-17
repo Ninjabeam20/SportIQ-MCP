@@ -1,5 +1,5 @@
 """S.5a — Assert structlog processor redacts secrets from all log events."""
-from sportiq.core.logging import _redact_event_processor
+from sportiq.core.logging import _gcp_severity_processor, _redact_event_processor
 
 
 def test_redact_processor_scrubs_key_in_url():
@@ -56,3 +56,13 @@ def test_redact_processor_scrubs_known_credential_value(monkeypatch):
     }
     result = _redact_event_processor(None, "info", event)
     assert "LIVE_KEY_ABCDEF" not in result["url"]
+
+
+def test_gcp_severity_maps_level_to_cloud_logging_severity():
+    assert _gcp_severity_processor(None, "error", {"level": "error"})["severity"] == "ERROR"
+    assert _gcp_severity_processor(None, "warning", {"level": "warning"})["severity"] == "WARNING"
+    assert _gcp_severity_processor(None, "info", {"level": "info"})["severity"] == "INFO"
+
+
+def test_gcp_severity_noop_when_no_level():
+    assert "severity" not in _gcp_severity_processor(None, "info", {"event": "x"})

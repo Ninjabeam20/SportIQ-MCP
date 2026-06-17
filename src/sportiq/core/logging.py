@@ -17,6 +17,30 @@ def _redact_event_processor(logger: object, method: str, event_dict: dict) -> di
     return event_dict
 
 
+# structlog level -> Cloud Logging severity. Cloud Logging keys severity-based
+# filtering, alerting and Error Reporting off the `severity` field, not the
+# `level` field `add_log_level` emits — so a failed tool logged at `error` is
+# invisible to Error Reporting until we map it across.
+_GCP_SEVERITY = {
+    "critical": "CRITICAL",
+    "exception": "ERROR",
+    "error": "ERROR",
+    "warning": "WARNING",
+    "warn": "WARNING",
+    "info": "INFO",
+    "debug": "DEBUG",
+    "notset": "DEFAULT",
+}
+
+
+def _gcp_severity_processor(logger: object, method: str, event_dict: dict) -> dict:
+    """Mirror structlog's `level` into Cloud Logging's `severity` field."""
+    level = event_dict.get("level")
+    if level:
+        event_dict["severity"] = _GCP_SEVERITY.get(level, level.upper())
+    return event_dict
+
+
 def configure_logging() -> None:
     """Configure structlog. Pretty in dev (default), JSON in prod."""
     level = getattr(logging, settings.sportiq_log_level.upper(), logging.INFO)
@@ -30,6 +54,9 @@ def configure_logging() -> None:
     ]
 
     if settings.sportiq_log_format == "json":
+        # GCP-only: add `severity` so Cloud Logging/Error Reporting see error
+        # levels. Skipped for the pretty dev renderer (would be console noise).
+        processors.append(_gcp_severity_processor)
         processors.append(structlog.processors.JSONRenderer())
     else:
         processors.append(structlog.dev.ConsoleRenderer(colors=True))

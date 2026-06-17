@@ -594,3 +594,90 @@ since the host key is set). Flipped to 100% (`update-traffic --to-latest`); main
 URL re-verified serving 00009-qos. Previous revision `sportiq-mcp-00007-xeh`
 retained — rollback: `gcloud run services update-traffic sportiq-mcp --region
 us-central1 --to-revisions=sportiq-mcp-00007-xeh=100`.
+
+## [2026-06-13] fix | prod JSON logging → analytics AI-client panel now populates
+Diagnosed the empty "AI client" dashboard panel: `ClientInfoMiddleware` was
+emitting `mcp_request` events fine, but prod ran the ANSI `ConsoleRenderer`
+(structlog "pretty") so Cloud Logging stored each line as opaque `textPayload`,
+and `scripts/dashboard.py` filters on `jsonPayload.event="mcp_request"` — zero
+matches. Root cause: `sportiq_log_format` defaults to `"pretty"` and the Cloud
+Run service never set `SPORTIQ_LOG_FORMAT=json` (only `FOOTBALLDATA_KEY` was set).
+Fix (both belt + suspenders): (1) `config.py` now defaults the format to `json`
+when `K_SERVICE` is present (Cloud Run always sets it), explicit env still wins —
+durable across future redeploys; +3 unit tests. (2) `gcloud run services update
+--update-env-vars SPORTIQ_LOG_FORMAT=json` (used `--update-` not `--set-` to keep
+`FOOTBALLDATA_KEY`) → rev `sportiq-mcp-00008-ptl` at 100% (same image digest as
+00009-qos, env-only change). Verified: `curl /mcp` → `jsonPayload.event=mcp_request`
+now present. 671 tests green. NOTE on traffic quality: of the 300 most-recent
+remote `mcp_request` lines, ~247 are `client_name=None` (browsers/crawlers) and the
+named ones are mostly directory probes/scanners (smithery-probe, agent-tools.cloud,
+mcp-rugpull-research); only ~12 `claude-code` + ~8 `Anthropic/ClaudeAI` are
+plausibly human, and those are reconnects not distinct users. stdio/PyPI users
+(254 installs) never reach Cloud Run. No monetizable usage signal yet.
+
+## [2026-06-16] feat | live result conditioning for WC football sims + keyless standings + opt-in Elo nudge
+The football intelligence layer was blind to the in-progress World Cup: every
+sim/predictor ran off the pre-tournament `elo_seed.json` (frozen 2026-05-29) and
+`football_simulate_bracket` re-simulated all 12 groups from scratch, so
+eliminated teams still showed title chances and probabilities never moved.
+Shipped three workstreams on one foundation:
+- **W0 `models/results_state.py`** — pure name→code join (normalize + alias map,
+  drop-and-count unmatched) that partitions each group into completed/remaining
+  pairings + decided knockout ties + a chronological completed list; plus
+  `derived_standings()`.
+- **W1 conditioning** — `simulate_group_once(known=)`, `simulate_group(known=)`,
+  and `simulate_tournament(results=)` lock played matches at real scores and only
+  sample the remainder (knockout ties lock their winner). Backward-compatible:
+  `None` → original from-scratch behaviour. Eliminated teams fall to 0 naturally.
+- **W2a keyless standings** — `adapters/derived_standings.py` computes the table
+  from keyless openfootball fixtures; appended to `football_standings_chain` so
+  `football_get_standings` works with zero API keys.
+- **W3 opt-in Elo nudge** — `models/elo_live.py:nudge_ratings` walks the frozen
+  seed forward from completed matches; gated behind `SPORTIQ_FOOTBALL_LIVE_ELO`
+  (default off), never rewrites the seed (respects D1).
+Tools (`football_simulate_group/bracket/knockout_path`) now fetch fixtures
+alongside the draw, surface `meta.conditioned_matches`/`fixtures_dropped`, and
+degrade to from-scratch with a `meta.note` when no fixture source is available;
+`football_match_predictor`/`football_xg_model` apply the nudge when enabled
+(`meta.live_elo`). Known limitation: same-group knockout ties read as the group
+fixture (cross-group ties — the vast majority — classify correctly). 683 tests
+green (+~20 new), ruff clean. Wiki: [[live-conditioning]] + [[results-state]].
+Local-only working changes; NOT yet committed or deployed.
+
+## [2026-06-16] fix | conditioning silently ignored api-football finished matches
+Post-build review of the live-conditioning feature found a latent silent bug:
+`results_state._is_finished` keyed off `status == "FINISHED"`, but only
+football-data.org and openfootball emit that string. api-football — which is
+FIRST in `football_fixtures_chain` — sets `status` to `fixture.status.short`
+("FT", "AET", "PEN"). So with `APIFOOTBALL_KEY` set, conditioning would see zero
+finished matches and silently no-op (no error, just frozen-seed behaviour). Fixed
+with a `_FINISHED_STATUSES` set {FINISHED, FT, AET, PEN, AWD, WO}; kept the
+status gate (not "scores present" alone) so an in-play match's live score is never
+locked as final. +2 regression tests (FT/AET counts as finished; IN_PLAY does
+not). Also removed a dead `completed_match_count` property. 685 tests green, ruff
+clean. Local-only; not committed/deployed. Open follow-ups (not bugs):
+`football_find_value_bets` isn't nudged under `SPORTIQ_FOOTBALL_LIVE_ELO`;
+score `int()` parsing not defensively wrapped.
+
+## [2026-06-16] feat | per-tool telemetry + dashboard analytics (goods & bads)
+Added the per-tool-call signal Cloud Run's HTTP metrics can't give. MCP failures
+return HTTP 200 (error in the JSON envelope), so the 2xx panel can't tell success
+from failure, which tool ran, how long *it* took, or who called it. New
+`core/tool_telemetry.py` `instrument_tools(mcp)` wraps every async tool at startup
+(same `_tool_manager._tools` registry walk as `apply_param_descriptions`, zero
+tool-file edits — `Tool.run` calls `self.fn` via a cached arg model, so swapping
+`fn` is safe) and emits one `tool_call` event per call: tool, success,
+outcome (ok|error|exception), error code, latency_ms, source, is_stale. Wired in
+`server.py` after `apply_param_descriptions`. `ClientInfoMiddleware` now binds
+`client_name`/`user_agent` to structlog contextvars per `/mcp` request so each
+`tool_call` is attributed; a bounded `session_id → clientInfo.name` LRU + a
+non-buffering send-tee bridge the clean name (initialize body) to the session id
+(initialize response header). `core/logging.py` maps level → Cloud Logging
+`severity` (JSON/prod only) so failures hit Error Reporting. `scripts/dashboard.py`
+gains `collect_tool_stats()` (queries `jsonPayload.event="tool_call"`) + template
+panels: calls by tool, error rate by tool (+ codes), latency avg/p99 by tool,
+calls by client, client-by-tool matrix, ok-vs-failed/day, ok/failed tiles. Q4
+"which users" answered as per-client + per-tool (server is anonymous by design;
+no per-user identity, no IP). All free: tiny JSON log lines under Cloud Logging's
+free tier — no BigQuery/Pub/Sub/OpenTelemetry (zero-spend + frozen-stack). 694
+tests green (+9), ruff clean. Local-only; not committed/deployed.

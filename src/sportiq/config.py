@@ -1,8 +1,20 @@
+import os
 from pathlib import Path
 from typing import Literal
 
 from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _default_log_format() -> Literal["pretty", "json"]:
+    """Default to JSON logs on Cloud Run, pretty locally.
+
+    Cloud Run always sets ``K_SERVICE``. Emitting JSON there lets Cloud Logging
+    parse each line into ``jsonPayload`` (so the analytics dashboard can filter on
+    ``jsonPayload.event``); the ANSI ConsoleRenderer would land as opaque
+    ``textPayload``. An explicit ``SPORTIQ_LOG_FORMAT`` env var still overrides this.
+    """
+    return "json" if os.getenv("K_SERVICE") else "pretty"
 
 
 class Settings(BaseSettings):
@@ -27,14 +39,24 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("SPORTIQ_ENABLE_NDTV", "enable_ndtv_scraper"),
     )
 
+    # Opt-in: walk the frozen football Elo seed forward from completed WC matches
+    # so unplayed-match probabilities and the single-match predictors reflect form.
+    # Off by default — does not re-tune the seed lineage (see D1 finding).
+    football_live_elo: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("SPORTIQ_FOOTBALL_LIVE_ELO", "football_live_elo"),
+    )
+
     redis_url: str | None = None
 
     sportiq_log_level: str = "INFO"
-    sportiq_log_format: Literal["pretty", "json"] = "pretty"
+    sportiq_log_format: Literal["pretty", "json"] = Field(default_factory=_default_log_format)
 
     diskcache_dir: Path = Path.home() / ".cache" / "sportiq"
 
-    @field_validator("enable_cricbuzz_scraper", "enable_ndtv_scraper", mode="before")
+    @field_validator(
+        "enable_cricbuzz_scraper", "enable_ndtv_scraper", "football_live_elo", mode="before"
+    )
     @classmethod
     def _blank_toggle_is_off(cls, v: object) -> object:
         """Treat a present-but-blank env toggle (`SPORTIQ_ENABLE_NDTV=`) as off.
