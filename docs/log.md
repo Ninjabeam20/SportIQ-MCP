@@ -698,3 +698,18 @@ Previous revision `sportiq-mcp-00009-qos` retained — rollback:
 `gcloud run services update-traffic sportiq-mcp --region us-central1
 --to-revisions=sportiq-mcp-00009-qos=100`. tool_call telemetry now emits in prod
 → the dashboard's per-tool panels will populate as traffic arrives.
+
+## [2026-06-17] release | enabled SPORTIQ_FOOTBALL_LIVE_ELO on Cloud Run → rev 00014-naj at 100%
+Env-only change (no code/push): `gcloud run services update sportiq-mcp
+--update-env-vars SPORTIQ_FOOTBALL_LIVE_ELO=1 --no-traffic --tag candidate` built
+rev `sportiq-mcp-00014-naj` at 0%. Used `--update-env-vars` (NOT --set-env-vars) so
+all existing secrets (FOOTBALLDATA_KEY etc.) are preserved; `.env` never uploaded;
+service env vars never dumped to terminal (no key exposure). Candidate smoke on the
+tagged URL: football_get_fixtures source=football_data_org (proves key intact),
+football_simulate_bracket/group live_elo=True + cond=6 no error, football_match_predictor
+(ARG vs BRA → home_win 0.457, sane) + football_xg_model live_elo=True no error — the
+previously-dormant elo_live.nudge_ratings path runs clean in prod. Flipped to 100%
+(update-traffic --to-latest); main URL re-verified live_elo=True. Rollback:
+`gcloud run services update-traffic sportiq-mcp --region us-central1
+--to-revisions=sportiq-mcp-00012-det=100`. Note: football_find_value_bets still NOT
+nudged (known follow-up). The single-match predictors + sims now reflect live form.
