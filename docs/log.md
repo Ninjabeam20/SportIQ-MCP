@@ -681,3 +681,20 @@ calls by client, client-by-tool matrix, ok-vs-failed/day, ok/failed tiles. Q4
 no per-user identity, no IP). All free: tiny JSON log lines under Cloud Logging's
 free tier — no BigQuery/Pub/Sub/OpenTelemetry (zero-spend + frozen-stack). 694
 tests green (+9), ruff clean. Local-only; not committed/deployed.
+
+## [2026-06-17] release | live conditioning + telemetry canary-deployed → rev 00012-det at 100%
+Pushed `00d94a7` (live WC result conditioning + per-tool telemetry) + `ef76434`
+(local dashboard tooling) to origin/main. 694 tests green, ruff clean, server
+boots with 44 tools before push. Canary pattern:
+`gcloud run deploy --source . --no-traffic --tag candidate` built rev
+`sportiq-mcp-00012-det` at 0%, smoke-tested on the tagged URL via real MCP
+protocol (initialize non-empty serverInfo `1.28.0` → middleware clear; tools=44;
+sportiq_health OK; `football_get_fixtures` source=football_data_org;
+**conditioning live** — `football_simulate_group` cond=1 / `football_simulate_bracket`
+cond=6, fixtures_dropped=14 (documented name-join misses, degrades gracefully),
+live_elo=None since SPORTIQ_FOOTBALL_LIVE_ELO is unset on the host). Flipped to
+100% (`update-traffic --to-latest`); main URL re-verified serving 00012-det.
+Previous revision `sportiq-mcp-00009-qos` retained — rollback:
+`gcloud run services update-traffic sportiq-mcp --region us-central1
+--to-revisions=sportiq-mcp-00009-qos=100`. tool_call telemetry now emits in prod
+→ the dashboard's per-tool panels will populate as traffic arrives.
