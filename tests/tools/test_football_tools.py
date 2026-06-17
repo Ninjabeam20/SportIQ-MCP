@@ -231,6 +231,21 @@ async def test_simulate_bracket_degrades_when_fixtures_unavailable():
     assert "note" in result["meta"]
 
 
+async def test_simulate_bracket_degrades_when_results_unparseable():
+    """A malformed finished fixture (non-numeric goals) -> from-scratch, not an error."""
+    from sportiq.football import intel_tools
+
+    bad = _fin("Argentina", "Colombia", "x", 1, "A")  # non-numeric goals -> int() raises
+    with patch("sportiq.football.intel_tools.football_groups_chain") as gmock, \
+         patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock:
+        gmock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        fmock.fetch = AsyncMock(return_value=_fr({"fixtures": [bad]}))
+        result = await intel_tools.football_simulate_bracket(iterations=800, seed=1)
+    assert "error" not in result
+    assert result["meta"]["conditioned_matches"] == 0
+    assert "note" in result["meta"]
+
+
 async def test_simulate_group_meta_counts_conditioned_matches():
     from sportiq.football import intel_tools
 

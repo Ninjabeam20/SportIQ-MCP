@@ -50,11 +50,16 @@ async def _fetch_live_state(groups_value: dict) -> tuple[ResultsState | None, ob
         fixtures_result = await football_fixtures_chain.fetch()
     except AllSourcesFailedError:
         return None, None
-    state = build_results_state(
-        fixtures_result.value.get("fixtures", []),
-        groups_value.get("groups", {}),
-        groups_value.get("teams", {}),
-    )
+    try:
+        state = build_results_state(
+            fixtures_result.value.get("fixtures", []),
+            groups_value.get("groups", {}),
+            groups_value.get("teams", {}),
+        )
+    except Exception:
+        # A drifted upstream shape (e.g. non-numeric goals) must not crash the
+        # tool — degrade to the from-scratch sim, same as no fixture source.
+        return None, None
     return state, fixtures_result
 
 
