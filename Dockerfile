@@ -9,11 +9,22 @@ RUN apt-get update \
 
 WORKDIR /app
 
-# Install the package from source so the image includes the streamable-HTTP entrypoint
-# (and the F1 extra). Build context is the repo root.
+# --- Dependency layer (cached) ---------------------------------------------
+# Install all third-party deps against a STUB package so this heavy layer
+# (scipy/numpy/pandas/fastf1, all compiled) is keyed only on pyproject.toml +
+# README. Source-only edits no longer invalidate it — that was the old
+# Dockerfile's bug: `COPY src` sat above `pip install`, so every code change
+# forced a full from-scratch dependency reinstall.
 COPY pyproject.toml README.md ./
+RUN mkdir -p src/sportiq \
+    && : > src/sportiq/__init__.py \
+    && pip install --no-cache-dir ".[f1]"
+
+# --- Source layer (fast) ----------------------------------------------------
+# Copy the real source and reinstall ONLY the project package (--no-deps), so
+# this step never touches the cached dependency layer above.
 COPY src ./src
-RUN pip install --no-cache-dir ".[f1]"
+RUN pip install --no-cache-dir --no-deps --force-reinstall .
 
 # Serve over HTTP. Cloud Run/Fly/Render inject $PORT; default to 8080 locally.
 ENV SPORTIQ_TRANSPORT=http \

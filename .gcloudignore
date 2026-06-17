@@ -1,0 +1,18 @@
+# Controls what `gcloud builds submit` / `gcloud run deploy --source` uploads as
+# build context. Once this file exists, gcloud STOPS honoring .gitignore unless
+# we re-include it — so inherit it first to keep .env and every secret out.
+#!include:.gitignore
+
+# Build-context trimming. The Dockerfile only needs pyproject.toml, README.md,
+# and src/ — everything below is dead weight for the image build (and the
+# ~50MB of demo media under docs/assets/ is the main offender).
+.git
+.github
+tests
+evals
+docs
+launch
+mcpb
+scripts
+*.local.md
+.DS_Store

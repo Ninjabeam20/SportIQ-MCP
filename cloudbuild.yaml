@@ -1,0 +1,29 @@
+# Kaniko build with remote layer caching in Artifact Registry.
+#
+# Why Kaniko: a plain `gcloud run deploy --source` build runs on a clean VM with
+# no Docker layer cache, so it rebuilds every layer (incl. the ~5-min compiled
+# dependency install) on every deploy. Kaniko persists layer cache in Artifact
+# Registry and reuses it across builds — combined with the split Dockerfile
+# (cached deps layer + fast source layer), source-only deploys skip the heavy
+# install and finish in ~1 minute.
+#
+# Usage:
+#   gcloud builds submit --config cloudbuild.yaml --substitutions=_TAG=<git-sha> .
+#   gcloud run deploy sportiq-mcp \
+#     --image us-central1-docker.pkg.dev/sportiq-mcp-prod/cloud-run-source-deploy/sportiq-mcp:<git-sha> \
+#     --region us-central1
+
+substitutions:
+  _IMAGE: us-central1-docker.pkg.dev/sportiq-mcp-prod/cloud-run-source-deploy/sportiq-mcp
+  _TAG: latest
+
+steps:
+  - name: gcr.io/kaniko-project/executor:latest
+    args:
+      - --destination=${_IMAGE}:${_TAG}
+      - --destination=${_IMAGE}:latest
+      - --cache=true
+      - --cache-ttl=336h   # 14 days; deps layer survives across deploys
+
+options:
+  logging: CLOUD_LOGGING_ONLY
