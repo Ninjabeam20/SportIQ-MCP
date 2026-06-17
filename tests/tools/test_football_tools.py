@@ -308,6 +308,41 @@ async def test_find_value_bets_propagates_odds_staleness():
     assert result["meta"]["is_stale"] is True
 
 
+async def test_find_value_bets_applies_live_elo_when_enabled(monkeypatch):
+    from sportiq.football import intel_tools
+
+    # With the opt-in flag on, value bets must nudge the seed from live results
+    # (same path as football_match_predictor) and flag it in meta.
+    monkeypatch.setattr(intel_tools.settings, "football_live_elo", True)
+    event = _odds_event("Argentina", "Brazil", home=10.0, draw=4.0, away=1.4)
+    with (
+        patch("sportiq.football.intel_tools.football_odds_chain") as mock_odds,
+        patch("sportiq.football.intel_tools.football_groups_chain") as mock_groups,
+        patch("sportiq.football.intel_tools.football_fixtures_chain") as mock_fx,
+    ):
+        mock_odds.fetch = AsyncMock(return_value=_fr({"events": [event]}, source="theodds"))
+        mock_groups.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        mock_fx.fetch = AsyncMock(return_value=_fr({"fixtures": _GROUP_A_ARG_OUT}))
+        result = await intel_tools.football_find_value_bets(min_edge=0.05)
+    assert result["meta"]["live_elo"] is True
+    assert result["data"]["events_analysed"] == 1
+
+
+async def test_find_value_bets_no_live_elo_key_when_disabled():
+    from sportiq.football import intel_tools
+
+    # Flag off (test default): no fixtures fetch, no live_elo meta key.
+    event = _odds_event("Argentina", "Brazil", home=10.0, draw=4.0, away=1.4)
+    with (
+        patch("sportiq.football.intel_tools.football_odds_chain") as mock_odds,
+        patch("sportiq.football.intel_tools.football_groups_chain") as mock_groups,
+    ):
+        mock_odds.fetch = AsyncMock(return_value=_fr({"events": [event]}, source="theodds"))
+        mock_groups.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        result = await intel_tools.football_find_value_bets(min_edge=0.05)
+    assert "live_elo" not in result["meta"]
+
+
 async def test_find_value_bets_invalid_min_edge():
     from sportiq.football import intel_tools
 

@@ -346,6 +346,9 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
     odds_result, groups_result = odds_r, groups_r
 
     ratings = groups_result.value.get("ratings", {})
+    # Opt-in: nudge the seed forward from live results so value bets compare the
+    # market against the same in-tournament form as football_match_predictor.
+    ratings, live_elo = await _maybe_nudge_single(groups_result.value, ratings)
     # Odds carry full team names; ratings are keyed by code. Map name -> code from
     # the same draw payload (reusing the seed, not re-deriving any ratings/xG).
     name_to_code = {
@@ -381,17 +384,20 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
                 )
 
     value_bets.sort(key=lambda p: p["edge"], reverse=True)
+    meta = {
+        "source": odds_result.source,
+        "estimated": True,
+        **staleness_meta(odds_result),
+    }
+    if live_elo:
+        meta["live_elo"] = True
     return {
         "data": {
             "value_bets": value_bets,
             "min_edge": min_edge,
             "events_analysed": analysed,
         },
-        "meta": {
-            "source": odds_result.source,
-            "estimated": True,
-            **staleness_meta(odds_result),
-        },
+        "meta": meta,
     }
 
 
