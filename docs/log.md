@@ -4,6 +4,10 @@ Append-only. Grep with `grep "^## \[" docs/log.md`.
 
 Operations: `ingest` · `decision` · `lint` · `release` · `tool-added` · `adapter-added` · `finding-filed` · `cache-cleared` · `phase-complete` · `ci` · `fix`.
 
+## [2026-06-17] fix | football_find_value_bets live Elo nudge (rev 00011-dcc at 100%)
+
+`football_find_value_bets` now routes through `_maybe_nudge_single` (same helper as `football_match_predictor` / `football_xg_model`) so value bets compare market odds against in-tournament Elo when `SPORTIQ_FOOTBALL_LIVE_ELO=1`. Surfaces `meta.live_elo = true` when applied. 2 new tests (696 green). Deployed rev 00011-dcc; traffic migrated to 100%.
+
 ## [2026-06-04] tool-added | cross_sport_build_accumulator
 
 `normalise_pick` helper added to `core/parlay.py` (sport-prefixed `match_id` for cross-sport dedup). `cross_sport_build_accumulator` tool in `server_tools/cross_sport.py`; concurrent football + cricket value-bet fetch via `asyncio.gather`; one sport failure non-fatal. 4 unit tests + 5 tool-layer tests. Wiki: `docs/wiki/tools/cross-sport-accumulator.md`.
