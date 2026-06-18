@@ -80,7 +80,12 @@ async def cross_sport_build_accumulator(legs: int = 3, min_edge: float = 0.05) -
 
 
 def register_cross_sport_tools(mcp) -> None:
-    """Register cross-sport tools on the supplied FastMCP instance."""
+    """Register cross-sport tools on the supplied FastMCP instance.
+
+    The cross-sport accumulator is paid — wrapped in ``gated`` so it requires an
+    active ``SPORTIQ_PRO_KEY`` (V1 honor-system gate).
+    """
+    from sportiq.core.entitlements import gated
     from sportiq.core.tool_meta import READ_ONLY
 
-    mcp.tool(annotations=READ_ONLY)(cross_sport_build_accumulator)
+    mcp.tool(annotations=READ_ONLY)(gated(cross_sport_build_accumulator))

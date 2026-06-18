@@ -717,3 +717,16 @@ previously-dormant elo_live.nudge_ratings path runs clean in prod. Flipped to 10
 `gcloud run services update-traffic sportiq-mcp --region us-central1
 --to-revisions=sportiq-mcp-00012-det=100`. Note: football_find_value_bets still NOT
 nudged (known follow-up). The single-match predictors + sims now reflect live form.
+
+## [2026-06-18] tool-added | pro-gate-v1
+Gated the 24 intel tools behind a non-blank `SPORTIQ_PRO_KEY` (V1 honor-system
+presence check). New `core/entitlements.py` (`PAID_TOOLS`, `get_active_key`,
+`is_pro`, `require_pro`, `gated`); applied at registration as
+`mcp.tool(...)(gated(fn))` across football/f1/cricket intel_tools + cross_sport.
+New error code `SUBSCRIPTION_REQUIRED` (errors.py + exhaustive error-envelope
+rule table). `config.sportiq_pro_key` added with blank→unset validator. Locked
+calls return a `SUBSCRIPTION_REQUIRED` envelope with checkout link; body never
+runs. Free data tools + `sportiq_health` untouched. Decision: ADR
+0011-pro-entitlement-gate. Tests: tests/tools/test_entitlements.py (6, green);
+full suite 703 passed; ruff clean. Checkout URL is a placeholder constant
+(`_UPGRADE`) — swap when the real Polar link exists. NOT pushed/deployed.

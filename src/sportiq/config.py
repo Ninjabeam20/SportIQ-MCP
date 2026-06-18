@@ -47,6 +47,14 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("SPORTIQ_FOOTBALL_LIVE_ELO", "football_live_elo"),
     )
 
+    # V1 pro-entitlement gate (honor-system): any non-blank value unlocks the 24
+    # intel tools. Provider-agnostic — a key from Polar/LS/Paddle/Gumroad all work.
+    # Real validation lands in V2; see docs/wiki/decisions/pro-entitlement-gate.md.
+    sportiq_pro_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("SPORTIQ_PRO_KEY", "sportiq_pro_key"),
+    )
+
     redis_url: str | None = None
 
     sportiq_log_level: str = "INFO"
@@ -68,6 +76,20 @@ class Settings(BaseSettings):
         """
         if isinstance(v, str) and v.strip() == "":
             return False
+        return v
+
+    @field_validator("sportiq_pro_key", mode="before")
+    @classmethod
+    def _blank_key_is_unset(cls, v: object) -> object:
+        """Treat a present-but-blank ``SPORTIQ_PRO_KEY=`` as unset (not a key).
+
+        A blank value left in a client config must not unlock the paid tools.
+        Blank/whitespace → None; everything else passes through. ``get_active_key``
+        re-applies the same guard at runtime so a value set after construction
+        (tests, V2 contextvars) is held to the same rule.
+        """
+        if isinstance(v, str) and v.strip() == "":
+            return None
         return v
 
 

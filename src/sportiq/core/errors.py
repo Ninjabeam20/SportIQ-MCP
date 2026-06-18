@@ -8,6 +8,7 @@ ErrorCode = Literal[
     "INVALID_INPUT",
     "UPSTREAM_TIMEOUT",
     "NOT_FOUND",
+    "SUBSCRIPTION_REQUIRED",
 ]
 
 
@@ -55,6 +56,17 @@ class NotFoundError(SportiqError):
 
 class InvalidInputError(SportiqError):
     code: ErrorCode = "INVALID_INPUT"
+
+
+class SubscriptionRequiredError(SportiqError):
+    """Raised by the entitlement gate when a paid tool is called without a key.
+
+    V1 honor-system gate: any non-blank ``SPORTIQ_PRO_KEY`` unlocks the paid
+    tools. The ``gated`` wrapper catches this and returns a
+    ``SUBSCRIPTION_REQUIRED`` envelope with the checkout-link suggestion.
+    """
+
+    code: ErrorCode = "SUBSCRIPTION_REQUIRED"
 
 
 class MissingCredentialsError(SportiqError):

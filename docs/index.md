@@ -170,3 +170,4 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[0008-football-fallback-strategy]] — Football source ladder + the WC 2026 48-team / 12-group / best-thirds format encoding.
 - [[0009-secret-redaction]] — Redact secrets at the fallback capture point (`core/redact.py:scrub`); query-param keys must never reach `sources_tried` or logs.
 - [[0010-trusted-publishing]] — PyPI Trusted Publishing via OIDC: no long-lived token, GitHub Actions JWT identity proof, one-time PyPI UI setup required.
+- [[0011-pro-entitlement-gate]] — V1 honor-system gate: non-blank `SPORTIQ_PRO_KEY` unlocks the 24 intel tools via `core/entitlements.py:gated`; data tools stay free; V2 adds real Polar validation.
