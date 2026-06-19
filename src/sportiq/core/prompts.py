@@ -27,11 +27,11 @@ def _clean(value: str, name: str) -> str:
 
 def register_prompts(mcp: FastMCP) -> None:
     @mcp.prompt(
-        title="Dream11 Team Builder",
-        description="Build an optimal Dream11 XI for an IPL match.",
+        title="Fantasy XI Builder",
+        description="Build an optimal fantasy XI for an IPL match.",
     )
     def dream11_team_builder(team_a: str, team_b: str, venue: str) -> list[dict]:
-        """Build an optimal Dream11 XI for an IPL match.
+        """Build an optimal fantasy XI for an IPL match.
 
         Args:
             team_a: First team code or name (e.g. "MI", "CSK").
@@ -45,7 +45,7 @@ def register_prompts(mcp: FastMCP) -> None:
             {
                 "role": "user",
                 "content": (
-                    f"Build the optimal Dream11 XI for {team_a} vs {team_b} at "
+                    f"Build the optimal fantasy XI for {team_a} vs {team_b} at "
                     f"{venue}. Call cricket_build_dream11_team("
                     f'team_a="{team_a}", team_b="{team_b}", venue="{venue}") '
                     "— one call. Report the 11 players, captain, vice-captain, "
@@ -101,16 +101,16 @@ def register_prompts(mcp: FastMCP) -> None:
         ]
 
     @mcp.prompt(
-        title="Cricket Value Bets",
-        description="Find today's value bets across IPL matches.",
+        title="Cricket Probability Edge",
+        description="Compare model probabilities against the market across IPL matches.",
     )
     def cricket_value_bets() -> list[dict]:
-        """Find today's value bets across IPL matches."""
+        """Compare model probabilities against the market across IPL matches."""
         return [
             {
                 "role": "user",
                 "content": (
-                    "Find today's value bets across IPL matches. Call "
+                    "Compare model probabilities against the market across IPL matches. Call "
                     "cricket_find_value_bets() — one call. Report each match with "
                     "edge > 0 and the model vs market probabilities. (Requires "
                     "THEODDS_KEY; if unset the tool returns a clear error.)"
@@ -193,20 +193,20 @@ def register_prompts(mcp: FastMCP) -> None:
         ]
 
     @mcp.prompt(
-        title="Build an Accumulator",
-        description="Build a cross-sport accumulator from the top value bets.",
+        title="Multi-Match Model",
+        description="Model the joint probability of multiple outcomes across sports.",
     )
     def build_accumulator(legs: int = 3) -> list[dict]:
-        """Build a cross-sport accumulator from the top value bets.
+        """Model the joint probability of multiple outcomes across sports.
 
         Args:
-            legs: Number of legs (selections) in the accumulator. Default 3.
+            legs: Number of legs (selections) in the model. Default 3.
         """
         return [
             {
                 "role": "user",
                 "content": (
-                    f"Build a {legs}-leg accumulator across cricket and football. "
+                    f"Model a {legs}-leg joint probability across cricket and football. "
                     f"Call cross_sport_build_accumulator(legs={legs}) — one call. "
                     "Report the selected legs, each edge, and the combined odds."
                 ),

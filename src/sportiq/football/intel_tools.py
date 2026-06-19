@@ -307,13 +307,13 @@ async def football_knockout_path(team: str, iterations: int = 10000, seed: int |
 
 
 async def football_find_value_bets(team: str | None = None, min_edge: float = 0.05) -> Envelope:
-    """Find +EV ("value") bets: where the model's win probability beats the market.
+    """Surface the largest gaps between the model's win probability and the market.
 
-    De-vigs each bookmaker's 1X2 decimal odds (removes the margin so implied
+    De-vigs each market's 1X2 decimal odds (removes the margin so implied
     probabilities sum to 1) and compares them to this server's own match-outcome
     probabilities — the same Elo/Poisson path ``football_match_predictor`` uses.
     Where the model probability exceeds the de-vigged market probability by at
-    least ``min_edge``, the outcome is flagged as value, with its edge and the
+    least ``min_edge``, the outcome is flagged with its edge and the
     model's fair odds.
 
     Args:
@@ -444,10 +444,10 @@ async def football_form_trends(team: str) -> Envelope:
 
 
 async def football_build_accumulator(legs: int = 3, min_edge: float = 0.05) -> Envelope:
-    """Build a football accumulator from the top value bets across live markets.
+    """Model the joint probability of several match outcomes from the top model-vs-market gaps.
 
     Calls ``football_find_value_bets`` internally to fetch live odds, then selects
-    the best legs for an accumulator bet using the parlay builder model.
+    the strongest legs and combines them under the joint-probability model.
 
     Args:
         legs: Number of legs (2-8). Default 3.

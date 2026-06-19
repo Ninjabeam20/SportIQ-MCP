@@ -16,7 +16,7 @@ MCP server exposing AI-callable tools across FIFA World Cup 2026 football, Formu
 
 ![SportIQ demo — Claude calling football_simulate_bracket for World Cup 2026 title probabilities](docs/assets/demo.gif)
 
-*SportIQ running live in Claude and ChatGPT — Monte Carlo World Cup bracket, F1 pit strategy, and Dream11 optimisation, each backed by a visible MCP tool call. ([full 1-min demo](docs/assets/SportIQ.mp4))*
+*SportIQ running live in Claude and ChatGPT — Monte Carlo World Cup bracket, F1 pit strategy, and lineup optimisation, each backed by a visible MCP tool call. ([full 1-min demo](docs/assets/SportIQ.mp4))*
 
 Three flagship intelligence tools sit on top of raw-data primitives:
 
@@ -45,7 +45,7 @@ Three flagship intelligence tools sit on top of raw-data primitives:
 | `football_get_squad` | National-team squad |
 | `football_get_match_stats` | Team aggregate tournament statistics |
 | `football_get_top_scorers` | Tournament top scorers |
-| `football_get_odds` | Live bookmaker head-to-head odds for upcoming WC 2026 matches |
+| `football_get_odds` | Live market head-to-head odds for upcoming WC 2026 matches |
 
 ### INTEL
 
@@ -57,8 +57,8 @@ Three flagship intelligence tools sit on top of raw-data primitives:
 | `football_simulate_bracket` | **FLAGSHIP** | Monte Carlo the full 48-team WC into per-team round + title probabilities |
 | `football_knockout_path` | INTEL | Round-by-round survival probabilities for one team |
 | `football_form_trends` | INTEL | Rolling form, goal record, and xG trend for a team |
-| `football_find_value_bets` | INTEL | +EV bets where model win prob beats the market |
-| `football_build_accumulator` | INTEL | Accumulator from the top value bets across live markets |
+| `football_find_value_bets` | INTEL | Largest gaps between model win probability and market-implied probability |
+| `football_build_accumulator` | INTEL | Joint probability of several match outcomes under the model |
 
 The 2026 format (48 teams, 12 groups, top 2 + 8 best thirds → 32-team knockout) is encoded in `wc2026.json`. Data sources: [API-Football](https://www.api-football.com) (`APIFOOTBALL_KEY`) → [football-data.org](https://football-data.org) (free, token optional) → bundled `wc2026.json` seed.
 
@@ -100,28 +100,28 @@ Data sources: [OpenF1](https://openf1.org) (free, keyless) → [Jolpica](https:/
 | `cricket_get_points_table` | Series standings / points table |
 | `cricket_get_schedule` | Upcoming fixtures, optionally by series |
 | `cricket_get_squad` | Team roster; always succeeds via static seed fallback |
-| `cricket_get_live_odds` | Live bookmaker head-to-head odds for upcoming/live IPL matches |
+| `cricket_get_live_odds` | Live market head-to-head odds for upcoming/live IPL matches |
 
 ### INTEL
 
 | Tool | What it does |
 | :--- | :--- |
-| `cricket_build_dream11_team` | Optimal Dream11 XI + C/VC under T20 fantasy constraints |
+| `cricket_build_dream11_team` | Optimal fantasy XI + C/VC under T20 role/credit constraints |
 | `cricket_captain_recommendation` | Top-3 captain candidates by projected points |
 | `cricket_differential_picks` | Low-ownership picks with projected upside (ownership estimated) |
 | `cricket_player_form_index` | 0-100 form score from career stats + (future) recent innings |
 | `cricket_get_pitch_report` | Pitch friendliness + recommendation for a venue |
 | `cricket_head_to_head` | Compare two teams head-to-head using squad form and player stats |
 | `cricket_player_matchup` | Head-to-head matchup between two players by role and career stats |
-| `cricket_find_value_bets` | Screen upcoming IPL odds for +EV ("value") bets (requires `THEODDS_KEY`) |
+| `cricket_find_value_bets` | Compare model probabilities against market-implied IPL odds (requires `THEODDS_KEY`) |
 
-The Dream11 solver uses CBC via PuLP. On macOS arm64 install with `brew install cbc`; the binary bundled with PuLP is x86-only and won't run on Apple Silicon.
+The lineup solver uses CBC via PuLP. On macOS arm64 install with `brew install cbc`; the binary bundled with PuLP is x86-only and won't run on Apple Silicon.
 
 ## Cross-sport tools
 
 | Tool | Type | Description |
 |------|------|-------------|
-| `cross_sport_build_accumulator` | INTEL | Accumulator mixing football and cricket value bets |
+| `cross_sport_build_accumulator` | INTEL | Joint multi-match model across football and cricket |
 
 ## Diagnostics
 
@@ -145,6 +145,21 @@ Copy `.env.example` to `.env` and fill in keys.
 
 `.mcp.json` also wires three external [RapidAPI Hub](https://rapidapi.com) MCP servers (Sportspage Feeds, Football Prediction, Live Sports Odds) via `mcp-remote`. Because `.mcp.json` is committed, the API key is a placeholder — replace each `<RAPIDAPI_KEY>` in `.mcp.json` with your real RapidAPI key locally to enable them. They run as separate MCP servers and do not affect the in-process `sportiq` tools.
 
+## SportIQ Pro
+
+The raw-data tools and `sportiq_health` are free and need no key. The **intelligence
+tools** — everything in the INTEL sections above, including the three flagships — require
+a **SportIQ Pro** key.
+
+Get one by sponsoring the project at **[github.com/sponsors/Ninjabeam20](https://github.com/sponsors/Ninjabeam20)**
+— $10/mo, or a one-time $49 for lifetime access (first 50 backers). Your key arrives in the
+sponsorship welcome message; set it as `SPORTIQ_PRO_KEY` in your client config (see
+[Claude Desktop config](#claude-desktop-config)) and restart to unlock the intelligence tools.
+
+Want to try them before sponsoring? The intelligence tools are open on the
+[public hosted instance](#use-the-hosted-sportiq--no-install--works-on-claudeai-web--chatgpt) —
+a free trial, no install or key needed.
+
 ## Install
 
 ```bash
@@ -167,6 +182,7 @@ uv run python -m sportiq.server
       "command": "uvx",
       "args": ["sportiq-mcp"],
       "env": {
+        "SPORTIQ_PRO_KEY": "sq_your_pro_key",
         "CRICAPI_KEY": "your_cricapi_key",
         "APIFOOTBALL_KEY": "your_apifootball_key",
         "THEODDS_KEY": "your_theodds_key"
@@ -177,8 +193,9 @@ uv run python -m sportiq.server
 ```
 
 All env vars are optional — the server boots and serves seed/free-source data
-without any keys. Add a key to unlock the source it gates (e.g. `THEODDS_KEY`
-for the value-bet tools). F1 and most football tools use free, keyless sources.
+without any keys. Add `SPORTIQ_PRO_KEY` (from a [sponsorship](https://github.com/sponsors/Ninjabeam20))
+to unlock the intelligence tools, or a data-source key to unlock the source it gates
+(e.g. `THEODDS_KEY`). F1 and most football tools use free, keyless sources.
 
 ## Use the hosted SportIQ (no install — works on claude.ai web & ChatGPT)
 
@@ -190,7 +207,7 @@ https://sportiq-mcp-329580761892.us-central1.run.app/mcp
 ```
 
 The hosted instance runs **without any API keys**, so the keyless tools work out of the
-box: World Cup bracket/group simulations, F1 strategy & tyre models, Dream11 optimisation,
+box: World Cup bracket/group simulations, F1 strategy & tyre models, lineup optimisation,
 match predictions, standings, and schedules. Live-score and live-odds tools (which need
 rate-limited paid keys) are off on the shared instance — self-host with your own keys if you
 need those (see below).
@@ -257,8 +274,9 @@ odds tools come online too.
 
 | Var | Unlocks | Free tier |
 |-----|---------|-----------|
+| `SPORTIQ_PRO_KEY` | The 24 SportIQ Pro intelligence tools — [sponsor to get a key](https://github.com/sponsors/Ninjabeam20) | — |
 | `APIFOOTBALL_KEY` | Live football fixtures / standings / squads / scorers | 100 req/day |
-| `THEODDS_KEY` | Bookmaker odds (football + cricket value bets) | 500 req/month |
+| `THEODDS_KEY` | Market odds (football + cricket probability tools) | 500 req/month |
 | `FOOTBALLDATA_KEY` | football-data.org fallback (token optional) | 10 req/min |
 | `CRICAPI_KEY` | Live cricket scores / scorecards / schedules / squads | 100 req/day |
 | `RAPIDAPI_KEY` | Paid Cricbuzz fallback (player career stats) | plan-dependent |

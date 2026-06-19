@@ -96,7 +96,7 @@ async def cricket_build_dream11_team(
     venue: str | None = None,
     strategy: str = "balanced",
 ) -> Envelope:
-    """Recommend an optimal Dream11 XI + captain + vice-captain for one fixture.
+    """Recommend an optimal fantasy XI + captain + vice-captain for one fixture.
 
     Args:
         match_id: CricAPI match identifier; resolves team_a/team_b/venue automatically.
@@ -111,7 +111,7 @@ async def cricket_build_dream11_team(
         data.vice_captain: name of the chosen VC.
         data.total_credits: sum of credits used (<= 100).
         data.total_projected_points: fantasy points including C x2 and VC x1.5 boosts.
-        meta.estimated: true — projections are model output, not Dream11 oracle.
+        meta.estimated: true — projections are model output, not a fantasy oracle.
 
     Example:
         cricket_build_dream11_team(team_a="MI", team_b="CSK", venue="wankhede")
@@ -518,14 +518,14 @@ async def cricket_find_value_bets(
     team: str | None = None,
     min_edge: float = 0.05,
 ) -> Envelope:
-    """Screen upcoming IPL odds events for +EV ("value") bets. Requires THEODDS_KEY.
+    """Compare model probabilities against market-implied IPL odds. Requires THEODDS_KEY.
 
     NOTE: cricket has no calibrated team-strength model wired yet (unlike the
     football Elo/Poisson path), so this tool currently returns an EMPTY
-    ``value_bets`` list — scoring value against a neutral 50/50 prior would flag
-    every market underdog as +EV, which is misleading for a betting tool. It
+    ``value_bets`` list — scoring an edge against a neutral 50/50 prior would flag
+    every market underdog, which would be misleading. It
     still reports how many events were screened so callers know odds were
-    available. For raw de-vigged prices use ``cricket_get_live_odds``. Real value
+    available. For raw de-vigged prices use ``cricket_get_live_odds``. Real edge
     detection lands when a cricket win model is wired (see cricket_head_to_head).
 
     Args:

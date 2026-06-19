@@ -730,3 +730,12 @@ runs. Free data tools + `sportiq_health` untouched. Decision: ADR
 0011-pro-entitlement-gate. Tests: tests/tools/test_entitlements.py (6, green);
 full suite 703 passed; ruff clean. Checkout URL is a placeholder constant
 (`_UPGRADE`) — swap when the real Polar link exists. NOT pushed/deployed.
+
+## [2026-06-20] release | 0.2.2 — GitHub Sponsors support + analytics wording
+Pointed the Pro upgrade link at the project's GitHub Sponsors page; added
+`.github/FUNDING.yml` (repo Sponsor button) and `BACKERS.md`. Documented
+`SPORTIQ_PRO_KEY` setup in the README. Made tool descriptions, MCP prompts,
+`instructions.md`, `manifest.json`, and `docs/index.md` use consistent
+statistical/analytics wording (tool names unchanged — non-breaking). Bumped
+0.2.1 → 0.2.2. Full suite green, ruff clean. PyPI 0.2.1 stays available as the
+prior (un-gated) build; Cloud Run host unchanged (free).

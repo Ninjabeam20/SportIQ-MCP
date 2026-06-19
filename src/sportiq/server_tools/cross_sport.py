@@ -10,7 +10,7 @@ from sportiq.football.intel_tools import football_find_value_bets
 
 
 async def cross_sport_build_accumulator(legs: int = 3, min_edge: float = 0.05) -> Envelope:
-    """Build an accumulator mixing football and cricket value bets.
+    """Model the joint probability of multiple outcomes across football and cricket.
 
     Args:
         legs: Total legs across both sports (2-8). Default 3.

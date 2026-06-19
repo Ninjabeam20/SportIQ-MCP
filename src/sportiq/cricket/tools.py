@@ -178,7 +178,7 @@ async def cricket_get_squad(team: str, series_id: str | None = None) -> Envelope
 
 
 async def cricket_get_live_odds(team: str | None = None) -> Envelope:
-    """Return live bookmaker head-to-head odds for upcoming/live IPL matches.
+    """Return live market head-to-head odds for upcoming/live IPL matches.
 
     Sourced from The Odds API (requires THEODDS_KEY). Without a key the call
     returns a clean ALL_SOURCES_FAILED envelope rather than crashing.

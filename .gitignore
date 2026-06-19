@@ -79,6 +79,21 @@ plan.md
 docs/hot.md
 LEARNING-GUIDE.md
 
+# Completed/archived planning docs — moved out of the root once their work shipped.
+# Local-only; never commit. Anything inside is finished history, not live work.
+done/
+
+# Monetization — strategy docs + the LIVE Pro key ledger. NEVER commit (repo is
+# public; sponsor-ledger.md holds the working SPORTIQ_PRO_KEY — committing it
+# would unlock Pro for everyone for free).
+sponsor-ledger.md
+monetization-paths.md
+monetization-progress.md
+reframe.md
+v1.md
+v2.md
+v3.md
+
 # OS
 .DS_Store
 Thumbs.db

@@ -175,7 +175,7 @@ async def football_get_top_scorers() -> Envelope:
 
 
 async def football_get_odds(team: str | None = None) -> Envelope:
-    """Return live bookmaker head-to-head odds for upcoming World Cup 2026 matches.
+    """Return live market head-to-head odds for upcoming World Cup 2026 matches.
 
     Sourced from The Odds API (requires THEODDS_KEY). Without a key the call
     returns a clean ALL_SOURCES_FAILED envelope rather than crashing.

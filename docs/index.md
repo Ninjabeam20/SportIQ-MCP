@@ -17,10 +17,10 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[football-simulate-group]] — Monte Carlo one group into per-team qualification probabilities.
 - [[football-simulate-bracket]] — **Flagship**: Monte Carlo the full 48-team WC into per-team round + title probabilities.
 - [[football-knockout-path]] — Round-by-round survival probabilities for one team.
-- [[football-get-odds]] — Live bookmaker h2h odds for WC 2026 matches; optional team-name filter.
-- [[football-find-value-bets]] — +EV "value" bets: de-vigged bookmaker odds vs the match model's probabilities (edge %).
+- [[football-get-odds]] — Live market h2h odds for WC 2026 matches; optional team-name filter.
+- [[football-find-value-bets]] — Largest gaps between de-vigged market odds and the match model's probabilities (edge %).
 - [[football-form-trends]] — Rolling form string, W/D/L record, goals, and xG trajectory for a national team.
-- [[football-build-accumulator]] — Accumulator builder: selects top value-bet legs and computes combined odds, combined edge, and risk flag.
+- [[football-build-accumulator]] — Joint multi-match model: selects top model-vs-market edge legs and computes combined odds, combined edge, and risk flag.
 
 ### F1
 
@@ -45,19 +45,19 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[cricket-get-points-table]] — Returns the points table / standings for a cricket series.
 - [[cricket-get-schedule]] — Returns upcoming match schedule, optionally filtered by series.
 - [[cricket-get-squad]] — Returns squad roster for a cricket team; always succeeds via static_seed fallback.
-- [[cricket-build-dream11-team]] — **Flagship**: optimal Dream11 XI + C/VC via PuLP ILP.
+- [[cricket-build-dream11-team]] — **Flagship**: optimal fantasy XI + C/VC via PuLP ILP.
 - [[cricket-captain-recommendation]] — Top-3 captain candidates by projected fantasy points.
 - [[cricket-differential-picks]] — Low-ownership picks with positive projected upside (ownership estimated).
 - [[cricket-player-form-index]] — 0-100 form score derived from player stats chain.
 - [[cricket-get-pitch-report]] — Pitch-friendliness summary + recommendation for a venue.
-- [[cricket-get-live-odds]] — Live bookmaker h2h odds for IPL matches; optional team-name filter.
-- [[cricket-find-value-bets]] — +EV "value" bets: de-vigged bookmaker odds vs the heuristic win model (form + H2H + venue).
+- [[cricket-get-live-odds]] — Live market h2h odds for IPL matches; optional team-name filter.
+- [[cricket-find-value-bets]] — Largest gaps between de-vigged market odds and the heuristic win model (form + H2H + venue).
 - [[cricket-head-to-head]] — Head-to-head team comparison using squad form edges + win-probability estimate.
 - [[cricket-player-matchup]] — Analyse the head-to-head matchup between two players by role and career stats.
 
 ### Cross-sport
 
-- [[cross-sport-accumulator]] — Cross-sport accumulator: combines football + cricket value picks into a single multi-leg acca; one sport failure is non-fatal.
+- [[cross-sport-accumulator]] — Cross-sport joint model: combines football + cricket edge picks into a single multi-leg model; one sport failure is non-fatal.
 
 ## Models
 
@@ -70,7 +70,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[bracket-sim]] — Full 48-team tournament Monte Carlo (groups + best-thirds + 32-team knockout).
 - [[results-state]] — Joins live fixtures onto team codes; partitions each group into completed/remaining; backs derived standings.
 - [[live-conditioning]] — Locks completed results into the sims (eliminated teams → 0) + opt-in in-tournament Elo nudge.
-- [[value-bet]] — De-vig bookmaker odds (multiplicative) and flag outcomes where model_prob beats market by an edge.
+- [[value-bet]] — De-vig market odds (multiplicative) and flag outcomes where model_prob beats market by an edge.
 - [[parlay-builder]] — `build_accumulator()` pure function: edge filter, dedup, combined odds under independence assumption.
 
 ### F1
@@ -151,7 +151,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 ### Odds
 
-- [[the-odds-api]] — Live bookmaker h2h odds for IPL + WC 2026; requires THEODDS_KEY; 500 req/month shared.
+- [[the-odds-api]] — Live market h2h odds for IPL + WC 2026; requires THEODDS_KEY; 500 req/month shared.
 
 ## Findings
 
@@ -161,7 +161,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 ## Decisions (ADRs)
 
 - [[0001-fastmcp-over-raw-mcp]] — Why FastMCP decorators instead of the lower-level MCP SDK.
-- [[0002-pulp-over-ortools]] — PuLP solver chosen over OR-Tools for Dream11 ILP at 11-player scale.
+- [[0002-pulp-over-ortools]] — PuLP solver chosen over OR-Tools for fantasy-XI ILP at 11-player scale.
 - [[0003-redis-with-diskcache-fallback]] — Cache backend auto-degrades to diskcache; local dev never assumes Redis.
 - [[0004-uvx-distribution]] — Ship via `uvx`; `[project.scripts]` wires `sportiq-mcp = "sportiq.server:main"`.
 - [[0005-fallback-chain-pattern]] — Every tool routes through a `FallbackChain[T]`; adapters are pluggable.

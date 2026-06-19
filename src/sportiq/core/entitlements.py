@@ -20,9 +20,10 @@ from sportiq.config import settings
 from sportiq.core.errors import SubscriptionRequiredError
 from sportiq.core.tool_response import error_envelope
 
-# Placeholder until the real Polar checkout link exists — swap this one string.
-# V1 functions fully without it.
-_UPGRADE = "https://polar.sh/sportiq/"
+# GitHub Sponsors is the primary monetization path. This is the upgrade link
+# shown in the lock message; the gate is provider-agnostic (any non-blank key
+# unlocks), so swapping this one string is all a provider change needs.
+_UPGRADE = "https://github.com/sponsors/Ninjabeam20"
 
 # The 24 paid tools — everything in the 4 intel/cross-sport modules. The ~19 raw
 # data tools in */tools.py and sportiq_health stay free. Locked 2026-06-18.

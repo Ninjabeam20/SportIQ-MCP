@@ -11,8 +11,8 @@ efficiently, and how to interpret every response.
 |--------|-------|-----------|
 | **Football** | 15 tools | FIFA WC 2026 — groups, fixtures, odds, Monte Carlo bracket |
 | **F1** | 13 tools | OpenF1 telemetry, tyre deg, pit strategy, pace comparison |
-| **Cricket** | 14 tools | IPL live scores, squads, odds, Dream11, value bets |
-| **Cross-sport** | 1 tool | Mixed football + cricket accumulator |
+| **Cricket** | 14 tools | IPL live scores, squads, odds, fantasy XI, probability edge |
+| **Cross-sport** | 1 tool | Joint multi-match model across football + cricket |
 | **Core** | 1 tool | Health / quota status |
 
 ---
@@ -22,7 +22,7 @@ efficiently, and how to interpret every response.
 These are the most common user intents. Follow the call sequence exactly — do not add
 extra informational calls unless the user explicitly asks for them.
 
-### "Best Dream11 team for MI vs CSK"
+### "Best fantasy XI for MI vs CSK"
 1. `cricket_build_dream11_team(team_a="MI", team_b="CSK", venue="wankhede")`
    — 1 call. Returns 11 players + captain + VC + total credits.
 
@@ -31,7 +31,7 @@ extra informational calls unless the user explicitly asks for them.
 2. `cricket_captain_recommendation(match_id=<id>)`
    — 2 calls.
 
-### "Give me value bets for today's cricket"
+### "Compare model vs market for today's cricket"
 1. `cricket_find_value_bets()` — 1 call. Returns matches with edge > 0.
 
 ### "Who will win the World Cup 2026?"
@@ -52,8 +52,8 @@ extra informational calls unless the user explicitly asks for them.
 2. `f1_head_to_head_pace(session_key=<key>, driver_a=1, driver_b=16)`
    — 2 calls.
 
-### "Build me an accumulator"
-1. `cross_sport_build_accumulator()` — 1 call. Picks top value bets across cricket + football.
+### "Build me a multi-match model"
+1. `cross_sport_build_accumulator()` — 1 call. Combines the top model-vs-market edges across cricket + football.
 
 ### "How healthy is the server / how much quota is left?"
 1. `sportiq_health()` — 1 call. Shows cache backend, adapter status, per-source quota.
@@ -129,7 +129,7 @@ tell the user to set the appropriate key:
 |-----|-----------|
 | `CRICAPI_KEY` | Live cricket scores, schedules, squads |
 | `APIFOOTBALL_KEY` | Football fixtures and standings |
-| `THEODDS_KEY` | Live bookmaker odds (cricket + football) |
+| `THEODDS_KEY` | Live market odds (cricket + football) |
 
 Tools that use only static seeds or OpenF1 (which is public/free) work without any key.
 

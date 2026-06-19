@@ -2,9 +2,9 @@
   "manifest_version": "0.2",
   "name": "sportiq-mcp",
   "display_name": "SportIQ",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "44 AI sports tools for FIFA World Cup 2026 football, Formula 1, and IPL cricket.",
-  "long_description": "SportIQ turns any MCP-compatible AI into a sports analyst, tipster, and fantasy strategist. Ask in plain English to simulate the World Cup 2026 bracket (Monte Carlo + Poisson xG), model F1 pit strategy from live tyre-degradation data, build optimal Dream11 teams with an ILP solver, compare bookmaker odds, and surface value bets across football, F1, and cricket. Launches via `uvx`, so it requires the `uv` toolchain (https://docs.astral.sh/uv/) on the host.",
+  "long_description": "SportIQ turns any MCP-compatible AI into a sports-analytics engine. Ask in plain English to simulate the World Cup 2026 bracket (Monte Carlo + Poisson xG), model F1 pit strategy from live tyre-degradation data, build an optimal fantasy XI with an ILP solver, and compare model probabilities against market-implied odds across football, F1, and cricket. Launches via `uvx`, so it requires the `uv` toolchain (https://docs.astral.sh/uv/) on the host.",
   "author": {
     "name": "Utkarsh Gupta",
     "email": "utkarshgupta885@gmail.com",
@@ -25,9 +25,7 @@
     "formula-1",
     "cricket",
     "ipl",
-    "dream11",
     "fantasy",
-    "betting",
     "odds",
     "monte-carlo"
   ],
@@ -51,11 +49,11 @@
     },
     {
       "name": "cricket_build_dream11_team",
-      "description": "PuLP ILP solver for an optimal Dream11 XI under all constraints."
+      "description": "PuLP ILP solver for an optimal fantasy XI under all constraints."
     },
     {
       "name": "football_find_value_bets",
-      "description": "Surface positive-expected-value bets from live bookmaker odds."
+      "description": "Surface the largest gaps between model and market-implied probabilities."
     }
   ],
   "compatibility": {
