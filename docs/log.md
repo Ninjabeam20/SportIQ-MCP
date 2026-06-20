@@ -786,3 +786,14 @@ provider keys (`theodds_key`, `apifootball_key`, `footballdata_key`) wired via
 `${user_config.*}`. All optional + sensitive; blank → treated as unset. Operator
 provider keys are NOT baked into the bundle (distributable file, no local gate);
 they live only in the hosted Cloud Run env. Repacked → `dist/sportiq-mcp-0.2.3.mcpb`.
+
+## [2026-06-20] deploy | operator-funded odds live + THEODDS_KEY (rev 00023-kay)
+Deployed commit `8c1fef4` via the canary pattern: `gcloud builds submit` (52s) → deploy
+`--no-traffic --tag v2c` adding `THEODDS_KEY` (read from .env, existing env preserved via
+`--update-env-vars`) → smoke-tested the tagged canary → shifted 100%. Verified on the
+production URL: `football_get_odds` / `cricket_get_live_odds` return `SUBSCRIPTION_REQUIRED`
+with no key and real data via `/u/<key>/mcp`; `football_find_value_bets` now returns value
+bets (was `ALL_SOURCES_FAILED` — theodds had no key); `sportiq_health` shows `theodds ok:true`.
+APIFOOTBALL_KEY deliberately NOT added (football already works via existing FOOTBALLDATA_KEY +
+keyless openfootball; adding it would let free users burn another metered quota). Rollback
+target: rev `00021-zuj`. Commit unpushed pending sign-off; PyPI 0.2.3 not yet released.
