@@ -1,4 +1,4 @@
-"""Pro-entitlement gate for the 24 intelligence tools.
+"""Pro-entitlement gate for the 26 paid tools (24 intel + 2 operator-funded odds).
 
 Resolves the active key (per-request contextvar on the hosted ``/mcp``, else the
 ``SPORTIQ_PRO_KEY`` env var) and validates it via ``core/license.validate_key``:
@@ -34,8 +34,11 @@ _UPGRADE = "https://github.com/sponsors/Ninjabeam20"
 # key field — the key rides in the URL). Local installs set SPORTIQ_PRO_KEY.
 _HOSTED = "https://sportiq-mcp-329580761892.us-central1.run.app"
 
-# The 24 paid tools — everything in the 4 intel/cross-sport modules. The ~19 raw
-# data tools in */tools.py and sportiq_health stay free. Locked 2026-06-18.
+# The 26 paid tools — the 24 intel/cross-sport tools plus the 2 odds tools that
+# burn the operator-funded `THEODDS_KEY` (gated so free users can't drain the
+# metered 500/mo quota). The remaining raw data tools in */tools.py (keyless or
+# keyless-fallback) and sportiq_health stay free. Locked 2026-06-18, odds added
+# 2026-06-20.
 PAID_TOOLS: frozenset[str] = frozenset(
     {
         # football/intel_tools.py (8)
@@ -66,6 +69,9 @@ PAID_TOOLS: frozenset[str] = frozenset(
         "cricket_player_matchup",
         # server_tools/cross_sport.py (1)
         "cross_sport_build_accumulator",
+        # raw-data odds tools — operator-funded theodds, gated to protect quota (2)
+        "football_get_odds",
+        "cricket_get_live_odds",
     }
 )
 

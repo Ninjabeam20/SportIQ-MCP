@@ -205,6 +205,7 @@ async def football_get_odds(team: str | None = None) -> Envelope:
 
 def register_football_tools(mcp) -> None:
     """Register all football tools on the supplied FastMCP instance."""
+    from sportiq.core.entitlements import gated
     from sportiq.core.tool_meta import READ_ONLY
     from sportiq.football.intel_tools import register_football_intel_tools
 
@@ -214,5 +215,6 @@ def register_football_tools(mcp) -> None:
     mcp.tool(annotations=READ_ONLY)(football_get_squad)
     mcp.tool(annotations=READ_ONLY)(football_get_match_stats)
     mcp.tool(annotations=READ_ONLY)(football_get_top_scorers)
-    mcp.tool(annotations=READ_ONLY)(football_get_odds)
+    # Paid: burns the operator-funded THEODDS_KEY — gated to protect the quota.
+    mcp.tool(annotations=READ_ONLY)(gated(football_get_odds))
     register_football_intel_tools(mcp)

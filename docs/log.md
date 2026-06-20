@@ -766,3 +766,23 @@ Added a "SportIQ Pro — hosted enforcement (V2a)" section to cloud.md: the
 SPORTIQ_VALID_KEYS / SPORTIQ_FREE_TOOLS env vars, how a key reaches the host
 (URL path `…/u/<key>/mcp` or Bearer header), the canary deploy runbook, and
 rollback. Key-free; design reference stays in ADR 0011.
+
+## [2026-06-20] feat | gate operator-funded odds tools (PAID_TOOLS 24→26)
+Strategy shift: the operator funds the data-provider keys on the host so Pro
+prompts return real data, instead of BYO-key per user. Guard rail: tools that
+burn a metered operator key must be Pro-gated so free users can't drain the
+quota. Promoted `football_get_odds` + `cricket_get_live_odds` (both theodds-
+backed, 500/mo) from free to PAID — added to `PAID_TOOLS` and wrapped in
+`gated()` at registration. Keyless football/F1 data + the bracket stay free as
+the funnel. CricAPI-backed cricket-live tools left free for now (no operator
+key set, nothing to protect). 716 tests green, ruff clean. The `gated`-set lock
+test (`gated == PAID_TOOLS`) auto-covers the new members.
+
+## [2026-06-20] feat | .mcpb user_config for local key entry (v0.2.3)
+Added a `user_config` block to `mcpb/manifest.json` so the Claude Desktop
+Configure dialog finally exposes key fields (it had none → no way to enter a
+Pro key locally). Fields: `pro_key` → `SPORTIQ_PRO_KEY`, plus optional BYO
+provider keys (`theodds_key`, `apifootball_key`, `footballdata_key`) wired via
+`${user_config.*}`. All optional + sensitive; blank → treated as unset. Operator
+provider keys are NOT baked into the bundle (distributable file, no local gate);
+they live only in the hosted Cloud Run env. Repacked → `dist/sportiq-mcp-0.2.3.mcpb`.

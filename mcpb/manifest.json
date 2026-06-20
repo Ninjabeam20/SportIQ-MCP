@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "sportiq-mcp",
   "display_name": "SportIQ",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "44 AI sports tools for FIFA World Cup 2026 football, Formula 1, and IPL cricket.",
   "long_description": "SportIQ turns any MCP-compatible AI into a sports-analytics engine. Ask in plain English to simulate the World Cup 2026 bracket (Monte Carlo + Poisson xG), model F1 pit strategy from live tyre-degradation data, build an optimal fantasy XI with an ILP solver, and compare model probabilities against market-implied odds across football, F1, and cricket. Launches via `uvx`, so it requires the `uv` toolchain (https://docs.astral.sh/uv/) on the host.",
   "author": {
@@ -29,13 +29,48 @@
     "odds",
     "monte-carlo"
   ],
+  "user_config": {
+    "pro_key": {
+      "type": "string",
+      "title": "SportIQ Pro key",
+      "description": "Your SportIQ Pro key from the GitHub Sponsors welcome message. Unlocks the intelligence tools (predictions, simulations, Dream11, value bets). Leave blank to use the free data tools only.",
+      "sensitive": true,
+      "required": false
+    },
+    "theodds_key": {
+      "type": "string",
+      "title": "The Odds API key (optional)",
+      "description": "Optional. Your own the-odds-api.com key to enable live odds locally (football + cricket). Free tier = 500 requests/month. Leave blank if you don't need odds.",
+      "sensitive": true,
+      "required": false
+    },
+    "apifootball_key": {
+      "type": "string",
+      "title": "API-Football key (optional)",
+      "description": "Optional. Your own api-football.com key for richer football data. Football works without it via keyless sources; this just upgrades the source.",
+      "sensitive": true,
+      "required": false
+    },
+    "footballdata_key": {
+      "type": "string",
+      "title": "football-data.org key (optional)",
+      "description": "Optional. Your own football-data.org token. Football works without it via keyless sources; this just adds a fallback source.",
+      "sensitive": true,
+      "required": false
+    }
+  },
   "server": {
     "type": "python",
     "entry_point": "server/main.py",
     "mcp_config": {
       "command": "uvx",
       "args": ["sportiq-mcp"],
-      "env": {}
+      "env": {
+        "SPORTIQ_PRO_KEY": "${user_config.pro_key}",
+        "THEODDS_KEY": "${user_config.theodds_key}",
+        "APIFOOTBALL_KEY": "${user_config.apifootball_key}",
+        "FOOTBALLDATA_KEY": "${user_config.footballdata_key}"
+      }
     }
   },
   "tools": [

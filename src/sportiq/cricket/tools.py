@@ -210,6 +210,7 @@ async def cricket_get_live_odds(team: str | None = None) -> Envelope:
 
 def register_cricket_tools(mcp) -> None:
     """Register every cricket tool on the supplied FastMCP instance."""
+    from sportiq.core.entitlements import gated
     from sportiq.core.tool_meta import READ_ONLY
     from sportiq.cricket.intel_tools import register_cricket_intel_tools
 
@@ -218,5 +219,6 @@ def register_cricket_tools(mcp) -> None:
     mcp.tool(annotations=READ_ONLY)(cricket_get_points_table)
     mcp.tool(annotations=READ_ONLY)(cricket_get_schedule)
     mcp.tool(annotations=READ_ONLY)(cricket_get_squad)
-    mcp.tool(annotations=READ_ONLY)(cricket_get_live_odds)
+    # Paid: burns the operator-funded THEODDS_KEY — gated to protect the quota.
+    mcp.tool(annotations=READ_ONLY)(gated(cricket_get_live_odds))
     register_cricket_intel_tools(mcp)
