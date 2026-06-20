@@ -797,3 +797,10 @@ bets (was `ALL_SOURCES_FAILED` — theodds had no key); `sportiq_health` shows `
 APIFOOTBALL_KEY deliberately NOT added (football already works via existing FOOTBALLDATA_KEY +
 keyless openfootball; adding it would let free users burn another metered quota). Rollback
 target: rev `00021-zuj`. Commit unpushed pending sign-off; PyPI 0.2.3 not yet released.
+
+## [2026-06-20] release | v0.2.3 to PyPI
+Tagged `v0.2.3` (release.yml → OIDC Trusted Publishing). Contents since v0.2.2: V2a per-request
+Pro-key enforcement (`SPORTIQ_VALID_KEYS` + ProKeyMiddleware), `SPORTIQ_FREE_TOOLS` override, and
+the V2c odds gating — `football_get_odds` + `cricket_get_live_odds` are now PAID (PAID_TOOLS 24→26).
+No breaking API changes for free data tools beyond odds moving to Pro. uv build + push --tags;
+CI publishes. The `.mcpb` (v0.2.3) tracks separately (release artifact, not on PyPI).
