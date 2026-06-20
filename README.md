@@ -215,15 +215,16 @@ https://sportiq-mcp-329580761892.us-central1.run.app/mcp
 ```
 
 The hosted instance runs **without any API keys**, so the free tools work out of the box:
-standings, schedules, squads, fixtures, and the data tools. Live-score and live-odds tools
-(which need rate-limited paid keys) are off on the shared instance — self-host with your own
-keys if you need those (see below).
+standings, schedules, squads, fixtures, and the data tools — plus the **World Cup 2026 bracket
+simulation** (`football_simulate_bracket`, the 10,000-iteration Monte Carlo) is open here as a
+free showcase. Live-score and live-odds tools (which need rate-limited paid keys) are off on
+the shared instance — self-host with your own keys if you need those (see below).
 
-**To unlock the Pro intelligence tools here** (bracket/group simulations, F1 strategy & tyre
-models, lineup optimisation, match predictions), add the **personal connector link from your
-[sponsorship](https://github.com/sponsors/Ninjabeam20) welcome email** instead of the plain
-URL — same steps below, but paste your `…/u/<your-key>/mcp` link. The plain `…/mcp` URL gives
-you the free tools to try first.
+**To unlock the rest of the Pro intelligence tools here** (group simulations, knockout paths,
+match predictions, F1 strategy & tyre models, lineup optimisation), add the **personal
+connector link from your [sponsorship](https://github.com/sponsors/Ninjabeam20) welcome email**
+instead of the plain URL — same steps below, but paste your `…/u/<your-key>/mcp` link. Run the
+free bracket sim first to see what the models do.
 
 ### Add to Claude (easiest)
 

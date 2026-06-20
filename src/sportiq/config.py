@@ -65,6 +65,16 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("SPORTIQ_VALID_KEYS", "sportiq_valid_keys"),
     )
 
+    # Hosted-demo hook: comma-separated tool names to keep FREE even though they
+    # are in PAID_TOOLS. The host sets this (e.g. `football_simulate_bracket`) to
+    # keep one flagship open as the World Cup discovery funnel; unset on PyPI so
+    # local installs stay fully gated. Per-surface gating with one env var — no
+    # code fork, no change to PAID_TOOLS.
+    sportiq_free_tools: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("SPORTIQ_FREE_TOOLS", "sportiq_free_tools"),
+    )
+
     redis_url: str | None = None
 
     sportiq_log_level: str = "INFO"
@@ -88,7 +98,9 @@ class Settings(BaseSettings):
             return False
         return v
 
-    @field_validator("sportiq_pro_key", "sportiq_valid_keys", mode="before")
+    @field_validator(
+        "sportiq_pro_key", "sportiq_valid_keys", "sportiq_free_tools", mode="before"
+    )
     @classmethod
     def _blank_key_is_unset(cls, v: object) -> object:
         """Treat a present-but-blank key var (``SPORTIQ_PRO_KEY=`` /

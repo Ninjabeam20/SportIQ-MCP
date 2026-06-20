@@ -102,6 +102,23 @@ async def test_invalid_key_message_differs_from_missing_key(monkeypatch):
         reset_request_key(token)
 
 
+# -- hosted-demo free override (SPORTIQ_FREE_TOOLS) ----------------------------
+
+
+async def test_free_override_opens_a_paid_tool_without_key(monkeypatch):
+    """A tool named in SPORTIQ_FREE_TOOLS runs even with no key (hosted hook)."""
+    monkeypatch.setattr(config_module.settings, "sportiq_free_tools", "_ok_tool")
+    result = await gated(_ok_tool)()
+    assert result == {"data": {"ran": True}, "meta": {}}
+
+
+async def test_free_override_only_affects_named_tool(monkeypatch):
+    """A free-override for one tool does not unlock a different gated tool."""
+    monkeypatch.setattr(config_module.settings, "sportiq_free_tools", "some_other_tool")
+    result = await gated(_ok_tool)()
+    assert result["error"]["code"] == "SUBSCRIPTION_REQUIRED"
+
+
 # -- free stays free -----------------------------------------------------------
 
 

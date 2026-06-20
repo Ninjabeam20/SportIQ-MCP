@@ -107,6 +107,21 @@ def get_active_key() -> str | None:
     return key if key and key.strip() else None
 
 
+@functools.lru_cache(maxsize=8)
+def _parse_free(raw: str | None) -> frozenset[str]:
+    """Parse ``SPORTIQ_FREE_TOOLS`` into a set of tool names. Cached on the raw
+    string so the gate hot path does no work after the first parse."""
+    if not raw:
+        return frozenset()
+    return frozenset(t.strip() for t in raw.split(",") if t.strip())
+
+
+def _free_override() -> frozenset[str]:
+    """Tool names the operator has forced FREE (hosted-demo hook). Members skip
+    the gate even though they are in ``PAID_TOOLS``. Unset (PyPI) → empty."""
+    return _parse_free(settings.sportiq_free_tools)
+
+
 def is_pro() -> bool:
     """True when a present pro key is also a *valid* key.
 
@@ -147,6 +162,9 @@ def gated(
 
     @functools.wraps(fn)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        # Operator-forced free tool (hosted-demo hook) → skip the gate entirely.
+        if fn.__name__ in _free_override():
+            return await fn(*args, **kwargs)
         try:
             require_pro()
         except SubscriptionRequiredError as e:
