@@ -81,12 +81,12 @@ export default function Quickstart() {
           </div>
         </div>
         
-        <div className="grid sm:grid-cols-2 gap-4 text-sm text-white/60">
+        <div className="grid sm:grid-cols-2 gap-4 text-sm">
           <div className="glass-panel-light p-4 rounded-xl">
-            <p className="text-charcoal-text"><strong>No keys?</strong> It still runs on free seed + public-source data.</p>
+            <p className="text-white/90"><strong className="text-white">No keys?</strong> It still runs on free seed + public-source data.</p>
           </div>
           <div className="glass-panel-light p-4 rounded-xl">
-            <p className="text-charcoal-text"><strong>No install?</strong> Add the hosted server as a custom connector: <code className="bg-black/5 px-1 py-0.5 rounded text-xs font-mono">…run.app/mcp</code></p>
+            <p className="text-white/90"><strong className="text-white">No install?</strong> Add the hosted server as a custom connector — every tool, including the Pro intelligence layer, is <strong className="text-white">free right now</strong>: <code className="bg-white/10 text-white px-1 py-0.5 rounded text-xs font-mono">…run.app/mcp</code></p>
           </div>
         </div>
       </div>

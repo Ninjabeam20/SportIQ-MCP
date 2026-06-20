@@ -77,12 +77,12 @@ export default function RootLayout({
                 },
                 {
                   "@type": "Offer",
-                  price: "12",
+                  price: "5",
                   priceCurrency: "USD",
                 },
                 {
                   "@type": "Offer",
-                  price: "79",
+                  price: "10",
                   priceCurrency: "USD",
                 },
                 {
@@ -130,7 +130,7 @@ export default function RootLayout({
                   name: "How do I unlock Pro?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Purchase a license, get your sq_ key via email, and paste it into your MCP config.",
+                    text: "Sponsor SportIQ on GitHub at the Pro ($10/mo) or Lifetime ($49 one-time) tier. Your Pro key arrives instantly in the sponsorship welcome message — paste it into your MCP config as SPORTIQ_PRO_KEY to unlock all 24 intelligence tools.",
                   },
                 },
                 {

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Link from "next/link";
 
 export default function HowItWorks() {
   return (
@@ -24,9 +24,9 @@ export default function HowItWorks() {
             <div className="hidden md:block absolute top-6 left-[-20%] w-[40%] h-px bg-white/10" />
             <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center font-oswald text-2xl mx-auto mb-6 text-white">2</div>
             <div className="hidden md:block absolute top-6 right-[-20%] w-[40%] h-px bg-white/10" />
-            <h3 className="font-oswald text-xl uppercase tracking-tight mb-3">Buy Pro</h3>
-            <p className="text-sm text-white/60">checkout on Polar &rarr;</p>
-            <p className="text-sm text-white/60 mt-2">get your sq_ key by email</p>
+            <h3 className="font-oswald text-xl uppercase tracking-tight mb-3">Sponsor Pro</h3>
+            <p className="text-sm text-white/60">on GitHub Sponsors &rarr;</p>
+            <p className="text-sm text-white/60 mt-2">Pro key in your welcome message</p>
           </div>
 
           {/* Step 3 */}
@@ -38,30 +38,17 @@ export default function HowItWorks() {
           </div>
         </div>
 
-        {/* Screenshot Strip */}
-        <div className="relative max-w-6xl mx-auto">
-          <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#3c597d] to-transparent z-10" />
-          <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#3c597d] to-transparent z-10" />
-          
-          <div className="flex gap-4 overflow-x-auto hide-scrollbar snap-x pb-8 pt-4 px-8">
-            {[1, 2, 3, 4].map((step) => (
-              <div key={step} className="flex-none w-[80vw] sm:w-[600px] snap-center">
-                <div className="relative aspect-[3/2] w-full rounded-xl overflow-hidden glass-panel border-white/20 shadow-2xl">
-                  {/* Fallback box if image missing */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                    <span className="font-mono text-white/30 text-sm">step-{step}.png</span>
-                  </div>
-                  {/* <Image 
-                    src={`/step-${step}.png`} 
-                    alt={`Connection step ${step}`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 80vw, 600px"
-                  /> */}
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Full guide link */}
+        <div className="text-center">
+          <Link
+            href="/setup"
+            className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-action-blue border border-action-blue rounded-full hover:bg-action-blue hover:text-white transition-colors"
+          >
+            Full setup guide &rarr;
+          </Link>
+          <p className="mt-4 text-sm text-white/40">
+            Screenshots, per-client steps &amp; the exact config to paste.
+          </p>
         </div>
       </div>
     </section>

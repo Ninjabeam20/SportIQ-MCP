@@ -145,7 +145,7 @@ Order top→bottom. Each block: wireframe + copy + components + motion.
 ┌──────────────────────────────────────────────────────────────┐
 │                                                                │
 │   TURN ANY AI INTO YOUR        ┌─ frosted console ──────────┐  │
-│   PERSONAL SPORTS ANALYST      │ > Simulate the World Cup    │  │
+│   PERSONAL BETTING AND SPORTS ANALYST      │ > Simulate the World Cup    │  │
 │   ── (Oswald, huge) ──         │   2026 bracket 10,000×…     │  │
 │                                │ ───────────────────────────│  │
 │   Monte Carlo World Cup sims,  │  🏆 Brazil      18.4% ▇▇▇▇  │  │

@@ -40,9 +40,9 @@ export default function ComparisonTable() {
               
               <div className="mb-8">
                 <h3 className="font-oswald text-2xl uppercase tracking-tight text-action-blue mb-2">SportIQ Pro</h3>
-                <p className="text-white/60 text-sm">The full intelligence layer (~22 tools)</p>
+                <p className="text-white/60 text-sm">The full intelligence layer (24 tools)</p>
               </div>
-              
+
               <ul className="space-y-6">
                 <li className="flex items-start gap-4 text-white">
                   <span className="text-action-blue mt-1">✦</span>
@@ -54,7 +54,11 @@ export default function ComparisonTable() {
                 </li>
                 <li className="flex items-start gap-4 text-white">
                   <span className="text-action-blue mt-1">✦</span>
-                  <span className="font-medium">Dream11 optimizer + value bets</span>
+                  <span className="font-medium">Dream11 optimizer (constraint solver)</span>
+                </li>
+                <li className="flex items-start gap-4 text-white">
+                  <span className="text-action-blue mt-1">✦</span>
+                  <span className="font-medium">+EV value bets — model probability vs the bookmaker line</span>
                 </li>
               </ul>
             </div>

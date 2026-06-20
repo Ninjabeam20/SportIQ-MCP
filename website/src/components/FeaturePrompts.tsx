@@ -5,9 +5,10 @@ import { useState, useEffect } from "react";
 const PROMPTS = [
   "Simulate the World Cup 2026 bracket 10,000 times — who actually lifts the trophy?",
   "Find me the best value bets in this weekend's fixtures based on real bookmaker odds.",
-  "Build me the optimal Dream11 team for tonight's IPL match under the credit cap.",
+  "Where is the market wrong? Show me the biggest model-vs-bookmaker probability edges tonight.",
   "What's the smartest pit-stop strategy if it rains at the next Grand Prix?",
   "Compare these two F1 drivers' race pace and tell me who's quicker.",
+  "Build me the optimal Dream11 team for tonight's IPL match under the credit cap.",
 ];
 
 export default function FeaturePrompts() {
@@ -60,6 +61,10 @@ export default function FeaturePrompts() {
             ))}
           </div>
         </div>
+
+        <p className="mt-6 text-xs text-white/40">
+          Betting outputs surface probabilities and value — not guarantees. Not financial advice; bet responsibly.
+        </p>
       </div>
     </section>
   );

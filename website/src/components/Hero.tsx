@@ -37,10 +37,10 @@ export default function Hero() {
         <div className="flex flex-col gap-8">
           <div className="space-y-6">
             <h1 className="font-oswald text-5xl sm:text-6xl lg:text-[5rem] leading-[0.9] font-bold text-white uppercase tracking-tight">
-              Turn any AI into your personal sports analyst
+              Turn any AI into your personal Betting and sports analyst
             </h1>
             <p className="text-xl text-white/80 max-w-xl leading-relaxed">
-              Monte Carlo World Cup sims, F1 pit strategy & Dream11 optimization — inside your AI assistant.
+              Monte Carlo World Cup sims, F1 pit strategy, Dream11 optimization & +EV value bets — inside your AI assistant.
             </p>
           </div>
 
