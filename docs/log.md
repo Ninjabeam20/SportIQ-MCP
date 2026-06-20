@@ -760,3 +760,9 @@ existing env preserved via `--update-env-vars`. Verified on the production URL: 
 gated intel tool returns `SUBSCRIPTION_REQUIRED` with no key, the bracket sim runs
 free, and a valid `/u/<key>/mcp` connector link unlocks the intel tools. Rollback
 target: rev `00019-web`.
+
+## [2026-06-20] docs | V2a hosted-enforcement ops guide
+Added a "SportIQ Pro — hosted enforcement (V2a)" section to cloud.md: the
+SPORTIQ_VALID_KEYS / SPORTIQ_FREE_TOOLS env vars, how a key reaches the host
+(URL path `…/u/<key>/mcp` or Bearer header), the canary deploy runbook, and
+rollback. Key-free; design reference stays in ADR 0011.
