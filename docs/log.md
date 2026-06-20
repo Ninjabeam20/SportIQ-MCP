@@ -750,3 +750,13 @@ against the `SPORTIQ_VALID_KEYS` set; unset → V1 presence check) and
 (distinct message for an unrecognised key). `config.py` gains `SPORTIQ_VALID_KEYS`.
 Local installs unchanged (no valid-key set → presence mode). +13 tests; 716 pass,
 ruff clean. Not yet deployed (host still serves the un-gated free trial).
+
+## [2026-06-20] deploy | V2a hosted enforcement live (rev 00021-zuj)
+Deployed the V2a revision (image `24bbf43`) to Cloud Run via the canary pattern:
+built, deployed `--no-traffic --tag v2a`, smoke-tested gating on the live revision,
+then shifted 100%. `SPORTIQ_VALID_KEYS` (per-request key validation) and
+`SPORTIQ_FREE_TOOLS=football_simulate_bracket` (flagship kept open) set as env vars;
+existing env preserved via `--update-env-vars`. Verified on the production URL: a
+gated intel tool returns `SUBSCRIPTION_REQUIRED` with no key, the bracket sim runs
+free, and a valid `/u/<key>/mcp` connector link unlocks the intel tools. Rollback
+target: rev `00019-web`.
