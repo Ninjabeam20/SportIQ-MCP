@@ -461,6 +461,99 @@ def collect_pypi() -> dict[str, Any]:
 
 
 # --------------------------------------------------------------------------- #
+# Collector 6 — GitHub Sponsors (who / what tier / recurring vs one-time)
+# --------------------------------------------------------------------------- #
+_SPONSORS_QUERY = """
+query {
+  viewer {
+    monthlyEstimatedSponsorsIncomeInCents
+    sponsorshipsAsMaintainer(
+      first: 100, includePrivate: true, activeOnly: true,
+      orderBy: {field: CREATED_AT, direction: DESC}
+    ) {
+      totalCount
+      nodes {
+        createdAt
+        isOneTimePayment
+        sponsorEntity {
+          __typename
+          ... on User { login name }
+          ... on Organization { login name }
+        }
+        tier { name monthlyPriceInDollars isOneTime }
+      }
+    }
+  }
+}
+"""
+
+
+def collect_sponsors() -> dict[str, Any]:
+    """GitHub Sponsors — sponsor count, each sponsor's tier + price, recurring vs
+    one-time, join date, and estimated monthly income.
+
+    NOTE on "what each sponsor is using": that is intentionally NOT here. Every
+    sponsor connects with the same shared Tier-0 key (``/u/<key>/mcp``), so the
+    server cannot attribute a tool call to a person — aggregate tool usage lives
+    in the Tools panels. Per-sponsor attribution requires the V2b per-user keys
+    (mint a unique key per sponsorship via the GitHub webhook). Until then this
+    panel covers identity + billing only.
+    """
+    token = os.getenv("GITHUB_TOKEN")
+    if not token:
+        return {"has_token": False, "count": 0, "mrr_usd": 0, "sponsors": [], "tier_counts": {}}
+
+    r = httpx.post(
+        "https://api.github.com/graphql",
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+        json={"query": _SPONSORS_QUERY},
+        timeout=20.0,
+    )
+    r.raise_for_status()
+    body = r.json()
+    if body.get("errors"):
+        # Most common cause: the token lacks the `read:user` / sponsors scope.
+        raise RuntimeError(body["errors"][0].get("message", "GraphQL error"))
+
+    viewer = body["data"]["viewer"]
+    sm = viewer["sponsorshipsAsMaintainer"]
+    sponsors: list[dict[str, Any]] = []
+    tier_counts: dict[str, int] = {}
+    recurring_mrr = 0
+    for node in sm.get("nodes", []):
+        ent = node.get("sponsorEntity") or {}
+        tier = node.get("tier") or {}
+        price = tier.get("monthlyPriceInDollars") or 0
+        one_time = bool(node.get("isOneTimePayment"))
+        tier_name = tier.get("name") or "—"
+        login = ent.get("login") or "private"
+        sponsors.append(
+            {
+                "login": login,
+                "name": ent.get("name") or login,
+                "type": ent.get("__typename", "User"),
+                "tier": tier_name,
+                "price_usd": price,
+                "one_time": one_time,
+                "since": (node.get("createdAt") or "")[:10],
+            }
+        )
+        tier_counts[tier_name] = tier_counts.get(tier_name, 0) + 1
+        if not one_time:
+            recurring_mrr += price
+
+    cents = viewer.get("monthlyEstimatedSponsorsIncomeInCents") or 0
+    return {
+        "has_token": True,
+        "count": sm.get("totalCount", 0),
+        "mrr_usd": recurring_mrr,
+        "est_monthly_income_usd": round(cents / 100, 2),
+        "tier_counts": tier_counts,
+        "sponsors": sponsors,
+    }
+
+
+# --------------------------------------------------------------------------- #
 # Render
 # --------------------------------------------------------------------------- #
 def render(payload: dict[str, Any]) -> None:
@@ -478,6 +571,7 @@ def main() -> None:
         "tool_stats": _collect("tool_stats", collect_tool_stats),
         "ai_clients": _collect("ai_clients", collect_ai_clients),
         "github": _collect("github", collect_github),
+        "sponsors": _collect("sponsors", collect_sponsors),
         "pypi": _collect("pypi", collect_pypi, max_cache_hours=12),
     }
     for name, result in payload.items():

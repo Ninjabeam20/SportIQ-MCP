@@ -63,8 +63,10 @@ function tile(n, label){
 }
 
 // --- Tiles -------------------------------------------------------------
-const cr = DATA.cloud_run, gh = DATA.github, pp = DATA.pypi, ai = DATA.ai_clients, ts = DATA.tool_stats || {};
+const cr = DATA.cloud_run, gh = DATA.github, pp = DATA.pypi, ai = DATA.ai_clients, ts = DATA.tool_stats || {}, sp = DATA.sponsors || {};
 const nfmt = n => (n ?? 0).toLocaleString?.() ?? (n ?? '—');
+tile(nfmt(sp.count), 'sponsors');
+tile('$' + nfmt(sp.mrr_usd), 'recurring / mo');
 tile((cr.total_requests ?? '—').toLocaleString?.() ?? cr.total_requests ?? '—', 'requests (30d)');
 tile(nfmt(ts.total_ok), 'tool calls ok (30d)');
 tile(nfmt(ts.total_error), 'tool calls failed (30d)');
@@ -249,6 +251,48 @@ const noToolData = !toolsArr.length && !(ts.success_over_time?.days || []).lengt
 
   if (!gh.has_token) {
     c.innerHTML += `<div class="note">Daily views/clones omitted (no GITHUB_TOKEN). Add a repo-scoped token to enable.</div>`;
+  }
+}
+
+// --- GitHub Sponsors: who / tier / recurring vs one-time ---------------
+{
+  const c = card('Sponsors', sp);
+  if (!sp.has_token) {
+    c.innerHTML += `<div class="note">No GITHUB_TOKEN set — add one with the sponsors / read:user scope to populate this panel.</div>`;
+  } else {
+    const inc = sp.est_monthly_income_usd ?? sp.mrr_usd ?? 0;
+    c.innerHTML += `<div class="note">${nfmt(sp.count)} active · $${nfmt(sp.mrr_usd)}/mo recurring · ~$${nfmt(inc)}/mo est. income</div>`;
+    const tc = sp.tier_counts || {};
+    const tiers = Object.keys(tc);
+    if (tiers.length) {
+      c.innerHTML += `<div class="note" style="margin-top:10px;color:var(--fg)">By tier</div>`;
+      const cv = document.createElement('canvas'); c.appendChild(cv);
+      new Chart(cv, { type:'bar', data:{ labels:tiers,
+        datasets:[{ label:'sponsors', data: tiers.map(t => tc[t]),
+          backgroundColor:'#bc8cff' }] },
+        options:{ responsive:true, plugins:{ legend:{ display:false } },
+          scales:{ x:{ ticks:{ color:'#8b949e' } }, y:{ ticks:{ color:'#8b949e' }, beginAtZero:true } } } });
+    }
+    const rows = sp.sponsors || [];
+    if (rows.length) {
+      const esc = s => String(s ?? '').replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+      const trs = rows.map(s => `<tr>
+        <td style="padding:4px 8px"><a href="https://github.com/${esc(s.login)}" style="color:var(--accent);text-decoration:none">${esc(s.name)}</a></td>
+        <td style="padding:4px 8px">${esc(s.tier)}</td>
+        <td style="padding:4px 8px;text-align:right">$${nfmt(s.price_usd)}</td>
+        <td style="padding:4px 8px">${s.one_time ? 'one-time' : 'monthly'}</td>
+        <td style="padding:4px 8px;color:var(--muted)">${esc(s.since)}</td>
+      </tr>`).join('');
+      c.innerHTML += `<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:12px">
+        <thead><tr style="color:var(--muted);text-align:left">
+          <th style="padding:4px 8px">Sponsor</th><th style="padding:4px 8px">Tier</th>
+          <th style="padding:4px 8px;text-align:right">$/mo</th><th style="padding:4px 8px">Billing</th>
+          <th style="padding:4px 8px">Since</th>
+        </tr></thead><tbody>${trs}</tbody></table>`;
+    } else {
+      c.innerHTML += `<div class="note" style="margin-top:10px">No active sponsors yet.</div>`;
+    }
+    c.innerHTML += `<div class="note" style="margin-top:12px">Per-sponsor tool usage isn't available — all sponsors share the Tier-0 key, so calls can't be attributed to a person (see the Tools panels for aggregate usage). Needs V2b per-user keys.</div>`;
   }
 }
 </script>
