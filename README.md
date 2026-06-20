@@ -152,13 +152,21 @@ tools** — everything in the INTEL sections above, including the three flagship
 a **SportIQ Pro** key.
 
 Get one by sponsoring the project at **[github.com/sponsors/Ninjabeam20](https://github.com/sponsors/Ninjabeam20)**
-— $10/mo, or a one-time $49 for lifetime access (first 50 backers). Your key arrives in the
-sponsorship welcome message; set it as `SPORTIQ_PRO_KEY` in your client config (see
-[Claude Desktop config](#claude-desktop-config)) and restart to unlock the intelligence tools.
+— $10/mo, or a one-time $49 for lifetime access (first 50 backers). **Your sponsorship
+welcome email contains two things: your Pro key and your personal connector link.** Which
+one you use depends on how you run SportIQ:
 
-Want to try them before sponsoring? The intelligence tools are open on the
-[public hosted instance](#use-the-hosted-sportiq--no-install--works-on-claudeai-web--chatgpt) —
-a free trial, no install or key needed.
+| How you run SportIQ | What to enter | Where |
+| :--- | :--- | :--- |
+| **PyPI / `uvx` / Claude Desktop config / IDEs** (local install) | Enter your **key** normally as the `SPORTIQ_PRO_KEY` env var | [Claude Desktop config](#claude-desktop-config) |
+| **claude.ai (web), ChatGPT, or Claude Desktop** (no install) | Add your **personal connector link** as a custom connector | [Use the hosted SportIQ](#use-the-hosted-sportiq--no-install--works-on-claudeai-web--chatgpt) |
+
+> **Important — to use Pro in Claude or ChatGPT you must add the connector link from your
+> welcome email.** It looks like
+> `https://sportiq-mcp-329580761892.us-central1.run.app/u/<your-key>/mcp` (your key is built
+> into the link). Add it as a custom connector with **No authentication** — there is no
+> separate "enter your key" box in claude.ai or ChatGPT, so the key travels inside the link.
+> The plain `…/mcp` URL (without your key) only exposes the free tools.
 
 ## Install
 
@@ -206,18 +214,25 @@ connector and SportIQ shows up in your AI's tool list — nothing to install:
 https://sportiq-mcp-329580761892.us-central1.run.app/mcp
 ```
 
-The hosted instance runs **without any API keys**, so the keyless tools work out of the
-box: World Cup bracket/group simulations, F1 strategy & tyre models, lineup optimisation,
-match predictions, standings, and schedules. Live-score and live-odds tools (which need
-rate-limited paid keys) are off on the shared instance — self-host with your own keys if you
-need those (see below).
+The hosted instance runs **without any API keys**, so the free tools work out of the box:
+standings, schedules, squads, fixtures, and the data tools. Live-score and live-odds tools
+(which need rate-limited paid keys) are off on the shared instance — self-host with your own
+keys if you need those (see below).
+
+**To unlock the Pro intelligence tools here** (bracket/group simulations, F1 strategy & tyre
+models, lineup optimisation, match predictions), add the **personal connector link from your
+[sponsorship](https://github.com/sponsors/Ninjabeam20) welcome email** instead of the plain
+URL — same steps below, but paste your `…/u/<your-key>/mcp` link. The plain `…/mcp` URL gives
+you the free tools to try first.
 
 ### Add to Claude (easiest)
 
 1. **claude.ai (web):** Settings → **Connectors** → **Add custom connector**.
-2. Name it `SportIQ` and paste the URL above. Save — the tools appear immediately.
+2. Name it `SportIQ` and paste the URL. For free tools, paste the plain `…/mcp` URL above; for
+   **Pro**, paste your **personal `…/u/<your-key>/mcp` link from your welcome email** and pick
+   **No authentication**. Save — the tools appear immediately.
 3. **Claude Desktop:** same path (Settings → Connectors → Add custom connector), or use the
-   `uvx` config below to run it locally.
+   `uvx` config below to run it locally with your key as `SPORTIQ_PRO_KEY`.
 
 ### Add to ChatGPT
 
@@ -226,8 +241,10 @@ ChatGPT needs Developer Mode turned on first:
 1. **Settings → Apps & Connectors → Advanced settings → enable Developer mode.**
 2. In **Settings**, make sure **"use connected apps"** (the connectors/tools toggle) is enabled
    so the model is allowed to call them.
-3. Back in **Apps & Connectors → Create / Add app (MCP)** → paste the URL above, give it the
-   name `SportIQ`, and connect.
+3. Back in **Apps & Connectors → Create / Add app (MCP)** → paste the URL, give it the name
+   `SportIQ`, select **No authentication**, and connect. For free tools use the plain `…/mcp`
+   URL above; for **Pro**, paste your **personal `…/u/<your-key>/mcp` link from your welcome
+   email** (the key rides inside the link — ChatGPT has no separate key field).
 4. Once it shows **Connected**, start a chat and ask something like *"Use SportIQ to simulate
    the World Cup 2026 bracket"* — ChatGPT will call the tools.
 

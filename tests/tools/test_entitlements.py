@@ -7,10 +7,20 @@ default state here is "locked"; unlocked tests set the one var.
 """
 from __future__ import annotations
 
+import pytest
 from mcp.server.fastmcp import FastMCP
 
 from sportiq import config as config_module
-from sportiq.core.entitlements import PAID_TOOLS, gated, get_active_key, is_pro
+from sportiq.core.entitlements import (
+    PAID_TOOLS,
+    gated,
+    get_active_key,
+    is_pro,
+    require_pro,
+    reset_request_key,
+    set_request_key,
+)
+from sportiq.core.errors import SubscriptionRequiredError
 from sportiq.football.intel_tools import football_xg_model
 from sportiq.football.tools import football_get_groups
 
@@ -51,6 +61,45 @@ async def test_blank_key_is_treated_as_locked(monkeypatch):
     monkeypatch.setattr(config_module.settings, "sportiq_pro_key", "   ")
     assert is_pro() is False
     assert get_active_key() is None
+
+
+# -- V2a hosted enforcement (SPORTIQ_VALID_KEYS configured) --------------------
+
+
+async def test_request_key_unlocks_when_valid_and_enforced(monkeypatch):
+    """Host enforcing a valid-key set: a per-request key in the set unlocks."""
+    monkeypatch.setattr(config_module.settings, "sportiq_valid_keys", "sq_good")
+    token = set_request_key("sq_good")
+    try:
+        assert is_pro() is True
+        require_pro()  # does not raise
+        assert get_active_key() == "sq_good"
+    finally:
+        reset_request_key(token)
+
+
+async def test_request_key_locks_when_invalid_and_enforced(monkeypatch):
+    """Host enforcing a valid-key set: an unknown per-request key is rejected."""
+    monkeypatch.setattr(config_module.settings, "sportiq_valid_keys", "sq_good")
+    token = set_request_key("sq_bad")
+    try:
+        assert is_pro() is False
+        result = await gated(_ok_tool)()
+        assert result["error"]["code"] == "SUBSCRIPTION_REQUIRED"
+    finally:
+        reset_request_key(token)
+
+
+async def test_invalid_key_message_differs_from_missing_key(monkeypatch):
+    """An unrecognised key gets a distinct message from a missing key."""
+    monkeypatch.setattr(config_module.settings, "sportiq_valid_keys", "sq_good")
+    token = set_request_key("sq_bad")
+    try:
+        with pytest.raises(SubscriptionRequiredError) as exc:
+            require_pro()
+        assert "not recognised" in str(exc.value)
+    finally:
+        reset_request_key(token)
 
 
 # -- free stays free -----------------------------------------------------------

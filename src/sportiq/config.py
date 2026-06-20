@@ -55,6 +55,16 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("SPORTIQ_PRO_KEY", "sportiq_pro_key"),
     )
 
+    # V2a hosted enforcement: comma-separated set of valid Pro keys. Set as a
+    # Cloud Run secret on the host → the gate validates the per-request key
+    # against this set instead of the V1 presence check. Unset (local stdio/uvx)
+    # → presence check only (local is uncrackable open-source anyway). V2b swaps
+    # this for a keystore filled by the GitHub sponsorship webhook.
+    sportiq_valid_keys: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("SPORTIQ_VALID_KEYS", "sportiq_valid_keys"),
+    )
+
     redis_url: str | None = None
 
     sportiq_log_level: str = "INFO"
@@ -78,10 +88,11 @@ class Settings(BaseSettings):
             return False
         return v
 
-    @field_validator("sportiq_pro_key", mode="before")
+    @field_validator("sportiq_pro_key", "sportiq_valid_keys", mode="before")
     @classmethod
     def _blank_key_is_unset(cls, v: object) -> object:
-        """Treat a present-but-blank ``SPORTIQ_PRO_KEY=`` as unset (not a key).
+        """Treat a present-but-blank key var (``SPORTIQ_PRO_KEY=`` /
+        ``SPORTIQ_VALID_KEYS=``) as unset (not a key / not configured).
 
         A blank value left in a client config must not unlock the paid tools.
         Blank/whitespace → None; everything else passes through. ``get_active_key``

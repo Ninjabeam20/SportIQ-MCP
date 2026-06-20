@@ -739,3 +739,14 @@ Pointed the Pro upgrade link at the project's GitHub Sponsors page; added
 statistical/analytics wording (tool names unchanged — non-breaking). Bumped
 0.2.1 → 0.2.2. Full suite green, ruff clean. PyPI 0.2.1 stays available as the
 prior (un-gated) build; Cloud Run host unchanged (free).
+
+## [2026-06-20] feature | Pro gate V2a — hosted per-request key validation
+Added server-side key enforcement for the hosted `/mcp`. New `core/license.py`
+(`LicenseValidator` Protocol + `SharedKeyValidator`: validates a per-request key
+against the `SPORTIQ_VALID_KEYS` set; unset → V1 presence check) and
+`core/pro_middleware.py` (`ProKeyMiddleware`, pure ASGI — extracts the key from a
+`/u/<key>/mcp` path or `Authorization: Bearer` header into a request contextvar).
+`get_active_key` now resolves contextvar → env; `require_pro` validates the key
+(distinct message for an unrecognised key). `config.py` gains `SPORTIQ_VALID_KEYS`.
+Local installs unchanged (no valid-key set → presence mode). +13 tests; 716 pass,
+ruff clean. Not yet deployed (host still serves the un-gated free trial).

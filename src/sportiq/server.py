@@ -63,6 +63,7 @@ def main() -> None:
         import uvicorn
 
         from sportiq.core.client_info import ClientInfoMiddleware
+        from sportiq.core.pro_middleware import ProKeyMiddleware
 
         mcp.settings.host = "0.0.0.0"  # nosec B104  # container must bind all interfaces
         mcp.settings.port = int(os.getenv("PORT", "8080"))
@@ -77,6 +78,10 @@ def main() -> None:
         # middleware. Host/port/security settings above are read by the app build.
         app = mcp.streamable_http_app()
         app.add_middleware(ClientInfoMiddleware)
+        # Added after ClientInfoMiddleware → outermost → runs first, so it can
+        # rewrite a `/u/<key>/mcp` path to `/mcp` (and bind the per-request key)
+        # before any downstream middleware/routing sees the request. Pure ASGI.
+        app.add_middleware(ProKeyMiddleware)
         uvicorn.run(
             app,
             host=mcp.settings.host,
