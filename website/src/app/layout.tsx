@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Oswald, Space_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const inter = Inter({
@@ -148,6 +149,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} ${oswald.variable} ${spaceMono.variable} font-inter bg-sky-canvas text-cloud-white antialiased`}>
         {children}
+        <Analytics />
       </body>
     </html>
   );
