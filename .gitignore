@@ -114,3 +114,16 @@ datasets/
 # Read-only personal monitoring; never committed.
 .dashboard_cache/
 dashboard.html
+
+# Local dev/process artifacts — repo is public; these expose calibration
+# methodology, the ops log, and in-progress planning. Kept local only.
+# docs/log.md, dev.md, scripts/dashboard_template.html were committed before and
+# are untracked via `git rm --cached` (working copies stay on disk; past versions
+# remain in git history).
+new_dataset.md
+website.md
+scripts/backtest_*.py
+scripts/calibrate_*.py
+docs/log.md
+dev.md
+scripts/dashboard_template.html
