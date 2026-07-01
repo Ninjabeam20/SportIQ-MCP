@@ -40,9 +40,6 @@ def no_live_credentials(monkeypatch: pytest.MonkeyPatch):
         "footballdata_key",
         "rapidapi_key",
         "theodds_key",
-        "sportiq_pro_key",
-        "sportiq_valid_keys",
-        "sportiq_free_tools",
     ):
         monkeypatch.setattr(config_module.settings, cred, None)
     monkeypatch.setattr(config_module.settings, "enable_cricbuzz_scraper", False)

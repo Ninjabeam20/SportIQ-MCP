@@ -636,19 +636,14 @@ async def cricket_player_matchup(player_a: str, player_b: str) -> Envelope:
 
 
 def register_cricket_intel_tools(mcp) -> None:
-    """Register the eight INTEL tools on the supplied FastMCP instance.
-
-    Every cricket intel tool is paid — wrapped in ``gated`` so it requires an
-    active ``SPORTIQ_PRO_KEY`` (V1 honor-system gate).
-    """
-    from sportiq.core.entitlements import gated
+    """Register the eight INTEL tools on the supplied FastMCP instance."""
     from sportiq.core.tool_meta import READ_ONLY
 
-    mcp.tool(annotations=READ_ONLY)(gated(cricket_build_dream11_team))
-    mcp.tool(annotations=READ_ONLY)(gated(cricket_captain_recommendation))
-    mcp.tool(annotations=READ_ONLY)(gated(cricket_differential_picks))
-    mcp.tool(annotations=READ_ONLY)(gated(cricket_player_form_index))
-    mcp.tool(annotations=READ_ONLY)(gated(cricket_get_pitch_report))
-    mcp.tool(annotations=READ_ONLY)(gated(cricket_find_value_bets))
-    mcp.tool(annotations=READ_ONLY)(gated(cricket_head_to_head))
-    mcp.tool(annotations=READ_ONLY)(gated(cricket_player_matchup))
+    mcp.tool(annotations=READ_ONLY)(cricket_build_dream11_team)
+    mcp.tool(annotations=READ_ONLY)(cricket_captain_recommendation)
+    mcp.tool(annotations=READ_ONLY)(cricket_differential_picks)
+    mcp.tool(annotations=READ_ONLY)(cricket_player_form_index)
+    mcp.tool(annotations=READ_ONLY)(cricket_get_pitch_report)
+    mcp.tool(annotations=READ_ONLY)(cricket_find_value_bets)
+    mcp.tool(annotations=READ_ONLY)(cricket_head_to_head)
+    mcp.tool(annotations=READ_ONLY)(cricket_player_matchup)

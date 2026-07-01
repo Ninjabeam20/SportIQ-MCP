@@ -20,7 +20,7 @@ MCP server that turns any AI assistant into a sports analyst across **FIFA World
   <a href="https://sport-iq-sports-analysis.vercel.app"><img src="https://img.shields.io/badge/%F0%9F%8C%90_Website-Visit-2563EB?style=for-the-badge" alt="Website"></a>
 </p>
 
-> **Sponsor at $10/mo and you get a SportIQ Pro key** that unlocks all the paid intelligence tools (the three flagships + everything in the INTEL columns below). One-time **$49 lifetime** for the first 50 backers.
+> **Every tool is free** — the three flagships and everything in the INTEL columns below, no key, no account. If SportIQ is useful to you, [sponsor the project](https://github.com/sponsors/Ninjabeam20) to support ongoing development. It's a donation, not a paywall — nothing is locked behind it.
 
 ## What it does
 
@@ -32,8 +32,8 @@ Raw-data tools are table stakes; the intelligence layer is the product. Three fl
 
 ### Tools (44 total)
 
-| Sport | RAW (free) | INTEL (Pro) |
-|-------|------------|-------------|
+| Sport | RAW data | INTEL |
+|-------|----------|-------|
 | **Football** (WC 2026) | groups, fixtures, standings, squad, match stats, top scorers, odds | xg_model, match_predictor, simulate_group, **simulate_bracket**, knockout_path, form_trends, find_value_bets, build_accumulator |
 | **F1** | sessions, drivers, lap_times, standings, race_results, weather | tyre_degradation, undercut_window, head_to_head_pace, weather_strategy_impact, qualifying_analysis, race_pace_compare, **predict_pit_strategy** |
 | **Cricket** (IPL) | live_matches, scorecard, points_table, schedule, squad, live_odds | **build_dream11_team**, captain_recommendation, differential_picks, player_form_index, pitch_report, head_to_head, player_matchup, find_value_bets |
@@ -63,7 +63,7 @@ https://sportiq-mcp-329580761892.us-central1.run.app/mcp
 - **claude.ai (web):** Settings → Connectors → Add custom connector → paste URL → Save.
 - **ChatGPT:** Settings → Apps & Connectors → enable **Developer mode** → Create app (MCP) → paste URL → No authentication → Connect.
 
-Free tools work out of the box — standings, schedules, squads, fixtures, plus the **WC 2026 bracket simulation** (`football_simulate_bracket`) as a free showcase. To unlock the rest of the Pro intelligence tools here, paste the **personal `…/u/<your-key>/mcp` connector link from your sponsorship welcome email** instead of the plain URL.
+All 44 tools work out of the box on the plain URL above — data tools *and* the full intelligence layer (bracket simulation, pit strategy, Dream11, value bets). No key, no account, nothing to unlock.
 
 > First request after idle takes ~5–10s (the server scales to zero, so it wakes up); fast after that.
 
@@ -85,7 +85,6 @@ uv sync && uv run python -m sportiq.server
       "command": "uvx",
       "args": ["sportiq-mcp"],
       "env": {
-        "SPORTIQ_PRO_KEY": "sq_your_pro_key",
         "CRICAPI_KEY": "your_cricapi_key",
         "APIFOOTBALL_KEY": "your_apifootball_key",
         "THEODDS_KEY": "your_theodds_key"
@@ -95,11 +94,10 @@ uv sync && uv run python -m sportiq.server
 }
 ```
 
-All env vars are optional — the server boots and serves seed/free-source data with no keys. Add `SPORTIQ_PRO_KEY` (from a [sponsorship](https://github.com/sponsors/Ninjabeam20)) to unlock the intelligence tools, or a data-source key to unlock the source it gates.
+Every tool works with no keys — the server boots and serves seed/free-source data, and the whole intelligence layer runs locally. Data-source keys are optional and only upgrade the *source* a tool reads from (fresher/live data); they never unlock tools.
 
 | Var | Unlocks | Free tier |
 |-----|---------|-----------|
-| `SPORTIQ_PRO_KEY` | The 24 Pro intelligence tools — [sponsor to get a key](https://github.com/sponsors/Ninjabeam20) | — |
 | `APIFOOTBALL_KEY` | Live football fixtures / standings / squads / scorers | 100 req/day |
 | `THEODDS_KEY` | Market odds (football + cricket probability tools) | 500 req/month |
 | `FOOTBALLDATA_KEY` | football-data.org fallback (token optional) | 10 req/min |
@@ -115,14 +113,11 @@ All env vars are optional — the server boots and serves seed/free-source data 
 
 Set `SPORTIQ_TRANSPORT=http` and the server serves the MCP endpoint at `/mcp` (binds `0.0.0.0:$PORT`). A ready-to-build `Dockerfile` is included; see **[`cloud.md`](cloud.md)** for a Google Cloud Run deploy (free tier). With your own keys set, the live-score and odds tools come online too.
 
-## SportIQ Pro
+## Support SportIQ
 
-Raw-data tools and `sportiq_health` are free and need no key. The **intelligence tools** (everything in the INTEL columns, including the three flagships) require a **SportIQ Pro** key.
+Every tool is free and open source — the raw-data tools, `sportiq_health`, and the full intelligence layer (the three flagships + everything in the INTEL columns). No key, no account, nothing gated.
 
-**Sponsor at [github.com/sponsors/Ninjabeam20](https://github.com/sponsors/Ninjabeam20) — $10/mo (or one-time $49 lifetime, first 50 backers) — and your welcome email delivers your Pro key.** It contains two things:
-
-- a Pro **key** → for local installs, set it as the `SPORTIQ_PRO_KEY` env var;
-- a personal **connector link** → for claude.ai / ChatGPT, add it as a custom connector with **No authentication** (the key rides inside the link).
+If SportIQ saves you time, **[sponsor the project at github.com/sponsors/Ninjabeam20](https://github.com/sponsors/Ninjabeam20)** to help fund hosting and ongoing development. It's a voluntary donation — you get the same fully-unlocked server either way.
 
 ## Is it safe?
 

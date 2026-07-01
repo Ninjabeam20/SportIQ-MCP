@@ -3,13 +3,26 @@ title: Pro-entitlement gate (V1 presence check + V2a hosted enforcement)
 type: decision
 tags: [monetization, entitlements, gating]
 sources: [chat, v1.md, v2.md]
-last_updated: 2026-06-20
+last_updated: 2026-07-01
 related: [[error-envelope]], [[fastmcp-patterns]]
 ---
 
 # ADR 0011 — Pro-entitlement gate (V1 presence check + V2a hosted enforcement)
 
-## Decision
+> **REVERSED 2026-07-01 — the paywall was removed; SportIQ is now fully free.**
+> The gate below (V1 presence check + V2a hosted enforcement) shipped ~2026-06-20
+> and in ~10 days produced $0 MRR / 0 sponsors while `SUBSCRIPTION_REQUIRED`
+> rejections drove a ~41% tool-call failure rate. All gate code was deleted from
+> `main` for the free `0.3.0` edition: the 26 `gated()` wrappers, `core/entitlements.py`,
+> `core/license.py`, `core/pro_middleware.py`, the `sportiq_pro_key`/`sportiq_valid_keys`/
+> `sportiq_free_tools` config fields, and the `SUBSCRIPTION_REQUIRED` error code. GitHub
+> Sponsors stays live as a pure optional donation (no key, nothing unlocks). The paid
+> edition is preserved and fully reconstructable from tag **`v0.2.3`** (PyPI `0.2.3`,
+> Cloud Run rev `00023-kay`). This ADR is kept as the historical record of the
+> monetization attempt; everything below describes the removed design. See the
+> 2026-07-01 `docs/log.md` entries.
+
+## Decision (removed 2026-07-01)
 
 Gate the 24 intelligence tools behind a non-blank `SPORTIQ_PRO_KEY`. The ~19 raw
 data tools and `sportiq_health` stay free. V1 is an **honor-system presence

@@ -486,19 +486,14 @@ async def football_build_accumulator(legs: int = 3, min_edge: float = 0.05) -> E
 
 
 def register_football_intel_tools(mcp) -> None:
-    """Register the football INTEL tools on the supplied FastMCP instance.
-
-    Every football intel tool is paid — wrapped in ``gated`` so it requires an
-    active ``SPORTIQ_PRO_KEY`` (V1 honor-system gate).
-    """
-    from sportiq.core.entitlements import gated
+    """Register the football INTEL tools on the supplied FastMCP instance."""
     from sportiq.core.tool_meta import READ_ONLY
 
-    mcp.tool(annotations=READ_ONLY)(gated(football_xg_model))
-    mcp.tool(annotations=READ_ONLY)(gated(football_match_predictor))
-    mcp.tool(annotations=READ_ONLY)(gated(football_simulate_group))
-    mcp.tool(annotations=READ_ONLY)(gated(football_simulate_bracket))
-    mcp.tool(annotations=READ_ONLY)(gated(football_knockout_path))
-    mcp.tool(annotations=READ_ONLY)(gated(football_find_value_bets))
-    mcp.tool(annotations=READ_ONLY)(gated(football_form_trends))
-    mcp.tool(annotations=READ_ONLY)(gated(football_build_accumulator))
+    mcp.tool(annotations=READ_ONLY)(football_xg_model)
+    mcp.tool(annotations=READ_ONLY)(football_match_predictor)
+    mcp.tool(annotations=READ_ONLY)(football_simulate_group)
+    mcp.tool(annotations=READ_ONLY)(football_simulate_bracket)
+    mcp.tool(annotations=READ_ONLY)(football_knockout_path)
+    mcp.tool(annotations=READ_ONLY)(football_find_value_bets)
+    mcp.tool(annotations=READ_ONLY)(football_form_trends)
+    mcp.tool(annotations=READ_ONLY)(football_build_accumulator)

@@ -556,18 +556,13 @@ async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -
 
 
 def register_f1_intel_tools(mcp) -> None:
-    """Register all F1 INTEL tools on the supplied FastMCP instance.
-
-    Every F1 intel tool is paid — wrapped in ``gated`` so it requires an active
-    ``SPORTIQ_PRO_KEY`` (V1 honor-system gate).
-    """
-    from sportiq.core.entitlements import gated
+    """Register all F1 INTEL tools on the supplied FastMCP instance."""
     from sportiq.core.tool_meta import READ_ONLY
 
-    mcp.tool(annotations=READ_ONLY)(gated(f1_tyre_degradation))
-    mcp.tool(annotations=READ_ONLY)(gated(f1_undercut_window))
-    mcp.tool(annotations=READ_ONLY)(gated(f1_head_to_head_pace))
-    mcp.tool(annotations=READ_ONLY)(gated(f1_weather_strategy_impact))
-    mcp.tool(annotations=READ_ONLY)(gated(f1_predict_pit_strategy))
-    mcp.tool(annotations=READ_ONLY)(gated(f1_qualifying_analysis))
-    mcp.tool(annotations=READ_ONLY)(gated(f1_race_pace_compare))
+    mcp.tool(annotations=READ_ONLY)(f1_tyre_degradation)
+    mcp.tool(annotations=READ_ONLY)(f1_undercut_window)
+    mcp.tool(annotations=READ_ONLY)(f1_head_to_head_pace)
+    mcp.tool(annotations=READ_ONLY)(f1_weather_strategy_impact)
+    mcp.tool(annotations=READ_ONLY)(f1_predict_pit_strategy)
+    mcp.tool(annotations=READ_ONLY)(f1_qualifying_analysis)
+    mcp.tool(annotations=READ_ONLY)(f1_race_pace_compare)

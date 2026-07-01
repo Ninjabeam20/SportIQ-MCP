@@ -47,34 +47,6 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("SPORTIQ_FOOTBALL_LIVE_ELO", "football_live_elo"),
     )
 
-    # V1 pro-entitlement gate (honor-system): any non-blank value unlocks the 24
-    # intel tools. Provider-agnostic — a key from Polar/LS/Paddle/Gumroad all work.
-    # Real validation lands in V2; see docs/wiki/decisions/pro-entitlement-gate.md.
-    sportiq_pro_key: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices("SPORTIQ_PRO_KEY", "sportiq_pro_key"),
-    )
-
-    # V2a hosted enforcement: comma-separated set of valid Pro keys. Set as a
-    # Cloud Run secret on the host → the gate validates the per-request key
-    # against this set instead of the V1 presence check. Unset (local stdio/uvx)
-    # → presence check only (local is uncrackable open-source anyway). V2b swaps
-    # this for a keystore filled by the GitHub sponsorship webhook.
-    sportiq_valid_keys: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices("SPORTIQ_VALID_KEYS", "sportiq_valid_keys"),
-    )
-
-    # Hosted-demo hook: comma-separated tool names to keep FREE even though they
-    # are in PAID_TOOLS. The host sets this (e.g. `football_simulate_bracket`) to
-    # keep one flagship open as the World Cup discovery funnel; unset on PyPI so
-    # local installs stay fully gated. Per-surface gating with one env var — no
-    # code fork, no change to PAID_TOOLS.
-    sportiq_free_tools: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices("SPORTIQ_FREE_TOOLS", "sportiq_free_tools"),
-    )
-
     redis_url: str | None = None
 
     sportiq_log_level: str = "INFO"
@@ -96,23 +68,6 @@ class Settings(BaseSettings):
         """
         if isinstance(v, str) and v.strip() == "":
             return False
-        return v
-
-    @field_validator(
-        "sportiq_pro_key", "sportiq_valid_keys", "sportiq_free_tools", mode="before"
-    )
-    @classmethod
-    def _blank_key_is_unset(cls, v: object) -> object:
-        """Treat a present-but-blank key var (``SPORTIQ_PRO_KEY=`` /
-        ``SPORTIQ_VALID_KEYS=``) as unset (not a key / not configured).
-
-        A blank value left in a client config must not unlock the paid tools.
-        Blank/whitespace → None; everything else passes through. ``get_active_key``
-        re-applies the same guard at runtime so a value set after construction
-        (tests, V2 contextvars) is held to the same rule.
-        """
-        if isinstance(v, str) and v.strip() == "":
-            return None
         return v
 
 

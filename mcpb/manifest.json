@@ -30,13 +30,6 @@
     "monte-carlo"
   ],
   "user_config": {
-    "pro_key": {
-      "type": "string",
-      "title": "SportIQ Pro key",
-      "description": "Your SportIQ Pro key from the GitHub Sponsors welcome message. Unlocks the intelligence tools (predictions, simulations, Dream11, value bets). Leave blank to use the free data tools only.",
-      "sensitive": true,
-      "required": false
-    },
     "theodds_key": {
       "type": "string",
       "title": "The Odds API key (optional)",
@@ -66,7 +59,6 @@
       "command": "uvx",
       "args": ["sportiq-mcp"],
       "env": {
-        "SPORTIQ_PRO_KEY": "${user_config.pro_key}",
         "THEODDS_KEY": "${user_config.theodds_key}",
         "APIFOOTBALL_KEY": "${user_config.apifootball_key}",
         "FOOTBALLDATA_KEY": "${user_config.footballdata_key}"
