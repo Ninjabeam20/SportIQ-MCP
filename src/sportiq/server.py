@@ -63,6 +63,7 @@ def main() -> None:
         import uvicorn
 
         from sportiq.core.client_info import ClientInfoMiddleware
+        from sportiq.core.path_compat import LegacyKeyPathMiddleware
 
         mcp.settings.host = "0.0.0.0"  # nosec B104  # container must bind all interfaces
         mcp.settings.port = int(os.getenv("PORT", "8080"))
@@ -77,6 +78,9 @@ def main() -> None:
         # middleware. Host/port/security settings above are read by the app build.
         app = mcp.streamable_http_app()
         app.add_middleware(ClientInfoMiddleware)
+        # Outermost (added last = runs first): legacy /u/<key>/mcp paths are
+        # rewritten to /mcp before client-info logging and MCP routing see them.
+        app.add_middleware(LegacyKeyPathMiddleware)
         uvicorn.run(
             app,
             host=mcp.settings.host,
