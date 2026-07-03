@@ -62,7 +62,7 @@ When you need to understand a domain question (scoring rules, API quirks, model 
 
 ## Common commands
 
-- `uv sync` — install deps
+- `uv sync --extra dev --extra analytics` — install deps. ALWAYS pass both extras: a plain `uv sync` uninstalls them (dev = pytest/ruff, analytics = the GCP libs `scripts/dashboard.py` needs) — this has bitten twice.
 - `uv run pytest` — run all tests (must pass before any commit)
 - `uv run python -m sportiq.server` — local dev server
 - `npx @modelcontextprotocol/inspector uvx --from . sportiq-mcp` — verify MCP schema
