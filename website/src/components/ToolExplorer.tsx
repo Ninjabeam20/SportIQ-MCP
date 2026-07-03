@@ -5,59 +5,58 @@ import { ChevronDown, Star } from "lucide-react";
 
 type Tool = {
   name: string;
-  type: "Free" | "Pro";
   isFlagship?: boolean;
 };
 
 const FOOTBALL_TOOLS: Tool[] = [
-  { name: "football_get_groups", type: "Free" },
-  { name: "football_get_fixtures", type: "Free" },
-  { name: "football_get_standings", type: "Free" },
-  { name: "football_get_squad", type: "Free" },
-  { name: "football_get_match_stats", type: "Free" },
-  { name: "football_get_top_scorers", type: "Free" },
-  { name: "football_get_odds", type: "Free" },
-  { name: "football_xg_model", type: "Pro" },
-  { name: "football_match_predictor", type: "Pro" },
-  { name: "football_simulate_group", type: "Pro" },
-  { name: "football_simulate_bracket", type: "Pro", isFlagship: true },
-  { name: "football_knockout_path", type: "Pro" },
-  { name: "football_form_trends", type: "Pro" },
-  { name: "football_find_value_bets", type: "Pro" },
-  { name: "football_build_accumulator", type: "Pro" },
+  { name: "football_get_groups" },
+  { name: "football_get_fixtures" },
+  { name: "football_get_standings" },
+  { name: "football_get_squad" },
+  { name: "football_get_match_stats" },
+  { name: "football_get_top_scorers" },
+  { name: "football_get_odds" },
+  { name: "football_xg_model" },
+  { name: "football_match_predictor" },
+  { name: "football_simulate_group" },
+  { name: "football_simulate_bracket", isFlagship: true },
+  { name: "football_knockout_path" },
+  { name: "football_form_trends" },
+  { name: "football_find_value_bets" },
+  { name: "football_build_accumulator" },
 ];
 
 const F1_TOOLS: Tool[] = [
-  { name: "f1_get_sessions", type: "Free" },
-  { name: "f1_get_drivers", type: "Free" },
-  { name: "f1_get_lap_times", type: "Free" },
-  { name: "f1_get_standings", type: "Free" },
-  { name: "f1_get_race_results", type: "Free" },
-  { name: "f1_get_weather", type: "Free" },
-  { name: "f1_tyre_degradation", type: "Pro" },
-  { name: "f1_undercut_window", type: "Pro" },
-  { name: "f1_head_to_head_pace", type: "Pro" },
-  { name: "f1_weather_strategy_impact", type: "Pro" },
-  { name: "f1_qualifying_analysis", type: "Pro" },
-  { name: "f1_race_pace_compare", type: "Pro" },
-  { name: "f1_predict_pit_strategy", type: "Pro", isFlagship: true },
+  { name: "f1_get_sessions" },
+  { name: "f1_get_drivers" },
+  { name: "f1_get_lap_times" },
+  { name: "f1_get_standings" },
+  { name: "f1_get_race_results" },
+  { name: "f1_get_weather" },
+  { name: "f1_tyre_degradation" },
+  { name: "f1_undercut_window" },
+  { name: "f1_head_to_head_pace" },
+  { name: "f1_weather_strategy_impact" },
+  { name: "f1_qualifying_analysis" },
+  { name: "f1_race_pace_compare" },
+  { name: "f1_predict_pit_strategy", isFlagship: true },
 ];
 
 const CRICKET_TOOLS: Tool[] = [
-  { name: "cricket_get_live_matches", type: "Free" },
-  { name: "cricket_get_scorecard", type: "Free" },
-  { name: "cricket_get_points_table", type: "Free" },
-  { name: "cricket_get_schedule", type: "Free" },
-  { name: "cricket_get_squad", type: "Free" },
-  { name: "cricket_get_live_odds", type: "Free" },
-  { name: "cricket_build_dream11_team", type: "Pro", isFlagship: true },
-  { name: "cricket_captain_recommendation", type: "Pro" },
-  { name: "cricket_differential_picks", type: "Pro" },
-  { name: "cricket_player_form_index", type: "Pro" },
-  { name: "cricket_get_pitch_report", type: "Pro" },
-  { name: "cricket_head_to_head", type: "Pro" },
-  { name: "cricket_find_value_bets", type: "Pro" },
-  { name: "cricket_player_matchup", type: "Pro" },
+  { name: "cricket_get_live_matches" },
+  { name: "cricket_get_scorecard" },
+  { name: "cricket_get_points_table" },
+  { name: "cricket_get_schedule" },
+  { name: "cricket_get_squad" },
+  { name: "cricket_get_live_odds" },
+  { name: "cricket_build_dream11_team", isFlagship: true },
+  { name: "cricket_captain_recommendation" },
+  { name: "cricket_differential_picks" },
+  { name: "cricket_player_form_index" },
+  { name: "cricket_get_pitch_report" },
+  { name: "cricket_head_to_head" },
+  { name: "cricket_find_value_bets" },
+  { name: "cricket_player_matchup" },
 ];
 
 export default function ToolExplorer() {
@@ -77,7 +76,7 @@ export default function ToolExplorer() {
             44 Tools. Zero Configuration.
           </h2>
           <p className="text-white/70 max-w-xl mx-auto">
-            A complete arsenal of data retrieval and intelligent modeling tools, exposed natively to your AI.
+            A complete arsenal of data retrieval and intelligent modeling tools, exposed natively to your AI. Every one of them is free.
           </p>
         </div>
 
@@ -122,14 +121,8 @@ export default function ToolExplorer() {
                     {tool.isFlagship && <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />}
                     <span className="font-mono text-sm text-white/90">{tool.name}</span>
                   </div>
-                  <span
-                    className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                      tool.type === "Free"
-                        ? "bg-white/10 text-white/80"
-                        : "bg-action-blue/20 text-action-blue border border-action-blue/30"
-                    }`}
-                  >
-                    {tool.type}
+                  <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-white/10 text-white/80">
+                    Free
                   </span>
                 </div>
               ))}

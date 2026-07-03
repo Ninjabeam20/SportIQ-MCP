@@ -24,21 +24,23 @@ export type Tier = {
   badge?: string;
 };
 
-// Single source of truth for pricing. All tiers check out on GitHub Sponsors.
+// Single source of truth for sponsorship tiers. All tiers check out on GitHub
+// Sponsors. Every tool is free for everyone — sponsoring is purely voluntary
+// support, not an unlock.
 export const PRICING: Tier[] = [
   {
     plan: "supporter",
     name: "Supporter",
     price: "$5",
     cadence: "/mo",
-    tagline: "Back the project and keep the free data tools alive.",
+    tagline: "Chip in monthly to help cover hosting and data costs.",
   },
   {
     plan: "pro",
     name: "Pro",
     price: "$10",
     cadence: "/mo",
-    tagline: "Unlock all 24 intelligence tools — sims, value bets & optimizers.",
+    tagline: "Back the project seriously and keep all 44 tools maintained.",
     featured: true,
     badge: "★ Most popular",
   },
@@ -47,6 +49,6 @@ export const PRICING: Tier[] = [
     name: "Lifetime",
     price: "$49",
     cadence: "once",
-    tagline: "Pay once, own it for good. First 50 sponsors only.",
+    tagline: "One-time thank-you that funds the servers for good.",
   },
 ];

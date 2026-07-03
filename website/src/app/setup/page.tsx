@@ -9,7 +9,7 @@ import { LINKS } from "@/config/links";
 export const metadata: Metadata = {
   title: "Set up SportIQ — connect it to Claude, ChatGPT or Cursor",
   description:
-    "Step-by-step setup for SportIQ: add the hosted MCP server as a custom connector in Claude, ChatGPT or Cursor, then paste your Pro key to unlock all 24 intelligence tools.",
+    "Step-by-step setup for SportIQ: add the hosted MCP server as a custom connector in Claude, ChatGPT or Cursor and start asking. All 44 tools are free — no key, no account.",
   alternates: { canonical: "/setup" },
 };
 
@@ -21,13 +21,8 @@ const STEPS = [
   },
   {
     n: 2,
-    title: "Sponsor Pro",
-    body: "Sponsor SportIQ on GitHub at the Pro or Lifetime tier. Your Pro key arrives instantly in the welcome message.",
-  },
-  {
-    n: 3,
-    title: "Paste your key",
-    body: "Drop the key into your config as SPORTIQ_PRO_KEY. All 24 intelligence tools unlock immediately.",
+    title: "Start asking",
+    body: "That's it. All 44 tools — data and full intelligence layer — are live immediately. No key, no account.",
   },
 ];
 
@@ -56,7 +51,7 @@ const CLIENTS = [
     steps: [
       "Make sure uv is installed (pipx install uv).",
       "Run uvx sportiq-mcp, or add the JSON config to claude_desktop_config.json.",
-      "Set your API keys + SPORTIQ_PRO_KEY in the env block.",
+      "Optionally set data-source API keys in the env block.",
     ],
   },
 ];
@@ -75,12 +70,12 @@ export default function SetupPage() {
               Setup guide
             </p>
             <h1 className="font-oswald text-4xl sm:text-5xl uppercase tracking-tight mb-6 text-white">
-              From zero to analyst in 3 steps
+              From zero to analyst in 2 steps
             </h1>
             <p className="text-lg text-white/70 leading-relaxed">
               SportIQ runs as a hosted MCP server. Add it as a custom connector in
-              Claude, ChatGPT or Cursor, sponsor Pro, and paste your key. Two
-              minutes, no build step.
+              Claude, ChatGPT or Cursor and start asking. Two minutes, no build
+              step — and every tool is free.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <a
@@ -89,13 +84,13 @@ export default function SetupPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-action-blue border border-action-blue rounded-full hover:bg-action-blue hover:text-white transition-colors"
               >
-                Sponsor &amp; get a Pro key &rarr;
+                Sponsor the project &rarr;
               </a>
               <Link
                 href="/#pricing"
                 className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-white border border-white/20 rounded-full hover:bg-white/10 transition-colors"
               >
-                See pricing
+                Support tiers
               </Link>
             </div>
           </div>
@@ -104,12 +99,12 @@ export default function SetupPage() {
         {/* 3-step summary */}
         <section className="pb-8">
           <div className="max-w-5xl mx-auto px-4">
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
               {STEPS.map((s) => (
                 <div key={s.n} className="glass-panel rounded-2xl p-6">
                   <div
                     className={`w-12 h-12 rounded-full flex items-center justify-center font-oswald text-2xl mb-5 ${
-                      s.n === 3
+                      s.n === 2
                         ? "bg-action-blue/20 text-action-blue border border-action-blue/30"
                         : "bg-white/10 text-white"
                     }`}
@@ -131,7 +126,7 @@ export default function SetupPage() {
           <div className="max-w-3xl mx-auto px-4">
             <div className="glass-panel rounded-2xl p-6 sm:p-8 text-center">
               <p className="text-sm text-white/60 mb-3">
-                Hosted MCP endpoint — every tool is free right now while in trial:
+                Hosted MCP endpoint — every tool is free:
               </p>
               <code className="block font-mono text-sm sm:text-base text-action-blue break-all bg-black/30 rounded-xl px-4 py-3 border border-white/10">
                 {LINKS.hostedMcp}
@@ -190,7 +185,7 @@ export default function SetupPage() {
                 { n: 1, caption: "Settings → Connectors → Add custom connector" },
                 { n: 2, caption: "Paste the hosted MCP URL and continue" },
                 { n: 3, caption: "Approve the SportIQ tools" },
-                { n: 4, caption: "Paste your Pro key — all 24 tools unlock" },
+                { n: 4, caption: "Start asking — all 44 tools are live" },
               ].map((shot) => (
                 <figure key={shot.n} className="space-y-3">
                   <div className="relative aspect-[3/2] w-full rounded-xl overflow-hidden glass-panel border-white/20 shadow-2xl">
@@ -216,22 +211,18 @@ export default function SetupPage() {
           </div>
         </section>
 
-        {/* Pro key callout */}
+        {/* Support callout */}
         <section className="py-12">
           <div className="max-w-3xl mx-auto px-4">
             <div className="glass-panel rounded-2xl p-6 sm:p-8">
               <h3 className="font-oswald text-xl uppercase tracking-tight mb-3 text-white">
-                Where the Pro key goes
+                Support SportIQ
               </h3>
               <p className="text-sm text-white/70 leading-relaxed mb-4">
-                After you sponsor at the Pro ($10/mo) or Lifetime ($49 one-time)
-                tier, your key arrives in the GitHub Sponsors welcome message. Set
-                it as{" "}
-                <code className="font-mono text-action-blue bg-black/30 px-1.5 py-0.5 rounded text-xs">
-                  SPORTIQ_PRO_KEY
-                </code>{" "}
-                in your MCP config&apos;s env block — that&apos;s the only thing
-                standing between you and the full intelligence layer.
+                SportIQ is free — all 44 tools, no key, no account. If it saves
+                you time, you can sponsor on GitHub to help cover hosting and
+                keep it maintained. Purely voluntary — you get the same
+                fully-unlocked server either way.
               </p>
               <a
                 href={LINKS.sponsors}
@@ -239,7 +230,7 @@ export default function SetupPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-action-blue border border-action-blue rounded-full hover:bg-action-blue hover:text-white transition-colors"
               >
-                Sponsor &amp; unlock &rarr;
+                Sponsor on GitHub &rarr;
               </a>
             </div>
           </div>

@@ -35,12 +35,14 @@ export default function Navbar() {
           >
             Install free
           </a>
-          <Link
-            href="/#pricing"
+          <a
+            href={LINKS.sponsors}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-action-blue border border-action-blue rounded-full hover:bg-action-blue hover:text-white transition-colors"
           >
-            Get Pro &rarr;
-          </Link>
+            Sponsor &rarr;
+          </a>
         </div>
       </div>
     </nav>

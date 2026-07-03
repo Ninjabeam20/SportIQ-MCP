@@ -6,11 +6,11 @@ export default function PricingSection() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="font-oswald text-4xl sm:text-5xl uppercase tracking-tight mb-4">
-            Get SportIQ Pro
+            Support SportIQ
           </h2>
           <p className="text-white/70 max-w-2xl mx-auto">
-            One key unlocks all 24 intelligence tools — Monte Carlo World Cup sims,
-            F1 pit strategy, Dream11 optimizers, and model-vs-market value bets.
+            Every tool is already free — all 44 of them, no key, no account.
+            Sponsoring just keeps the servers running and the project maintained.
           </p>
         </div>
 
@@ -23,8 +23,8 @@ export default function PricingSection() {
         <div className="mt-16 text-center max-w-2xl mx-auto space-y-2">
           <p className="text-sm text-white/60 leading-relaxed">
             Secure checkout via <strong className="text-white/80">GitHub Sponsors</strong>.
-            Sponsor at Pro or Lifetime → your Pro key is in the welcome message →
-            paste it into your config as <code className="font-mono text-action-blue">SPORTIQ_PRO_KEY</code>.
+            Sponsoring is purely voluntary — you get the same fully-unlocked
+            server either way, plus a thank-you in the welcome message.
           </p>
           <p className="text-xs text-white/40">
             Analytics &amp; entertainment only — not financial advice. Bet responsibly.
@@ -69,7 +69,7 @@ function PriceCard({ tier }: { tier: Tier }) {
             : "text-action-blue border border-action-blue hover:bg-action-blue hover:text-white"
         }`}
       >
-        Sponsor &amp; unlock &rarr;
+        Sponsor &rarr;
       </a>
     </div>
   );

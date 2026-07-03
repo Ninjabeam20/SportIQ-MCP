@@ -3,7 +3,9 @@
 import { useEffect, useState, useRef } from "react";
 
 export default function TrustStrip() {
-  const [toolsCount, setToolsCount] = useState(0);
+  // Start at the real total so the static render never shows "0 tools";
+  // the count-up animation takes over once the strip scrolls into view.
+  const [toolsCount, setToolsCount] = useState(44);
   const sectionRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {

@@ -22,8 +22,7 @@ export default function Quickstart() {
       "env": {
         "CRICAPI_KEY": "optional",
         "APIFOOTBALL_KEY": "optional",
-        "THEODDS_KEY": "optional",
-        "SPORTIQ_PRO_KEY": "sq_your_key_here"
+        "THEODDS_KEY": "optional"
       }
     }
   }
@@ -86,7 +85,7 @@ export default function Quickstart() {
             <p className="text-white/90"><strong className="text-white">No keys?</strong> It still runs on free seed + public-source data.</p>
           </div>
           <div className="glass-panel-light p-4 rounded-xl">
-            <p className="text-white/90"><strong className="text-white">No install?</strong> Add the hosted server as a custom connector — every tool, including the Pro intelligence layer, is <strong className="text-white">free right now</strong>: <code className="bg-white/10 text-white px-1 py-0.5 rounded text-xs font-mono">…run.app/mcp</code></p>
+            <p className="text-white/90"><strong className="text-white">No install?</strong> Add the hosted server as a custom connector — every tool, including the full intelligence layer, is <strong className="text-white">free</strong>: <code className="bg-white/10 text-white px-1 py-0.5 rounded text-xs font-mono">…run.app/mcp</code></p>
           </div>
         </div>
       </div>

@@ -123,15 +123,15 @@ export default function RootLayout({
                   name: "Is it free?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Yes, the free layer gives you live scores, fixtures, standings, and basic stats. The Pro layer unlocks intelligent modeling like Monte Carlo bracket simulations and Dream11 optimizers.",
+                    text: "Yes — all 44 tools are free, including the full intelligence layer: Monte Carlo bracket simulations, F1 pit-strategy models, Dream11 optimizers, and value-bet detection. No key or account required.",
                   },
                 },
                 {
                   "@type": "Question",
-                  name: "How do I unlock Pro?",
+                  name: "How can I support SportIQ?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Sponsor SportIQ on GitHub at the Pro ($10/mo) or Lifetime ($49 one-time) tier. Your Pro key arrives instantly in the sponsorship welcome message — paste it into your MCP config as SPORTIQ_PRO_KEY to unlock all 24 intelligence tools.",
+                    text: "Every tool is free, but you can sponsor SportIQ on GitHub — Supporter ($5/mo), Pro ($10/mo), or Lifetime ($49 one-time) — to help cover hosting and keep the project maintained. Purely voluntary; you get the same fully-unlocked server either way.",
                   },
                 },
                 {

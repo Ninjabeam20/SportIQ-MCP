@@ -23,10 +23,10 @@ export default function Footer() {
           </div>
           
           <div>
-            <h4 className="font-inter font-medium text-white mb-4">Get Pro</h4>
+            <h4 className="font-inter font-medium text-white mb-4">Support</h4>
             <ul className="space-y-3">
               <li><a href={LINKS.sponsors} target="_blank" rel="noopener noreferrer" className="text-sm text-white/60 hover:text-white transition-colors">GitHub Sponsors</a></li>
-              <li><a href={LINKS.hostedMcp} target="_blank" rel="noopener noreferrer" className="text-sm text-white/60 hover:text-white transition-colors">Free hosted demo</a></li>
+              <li><a href={LINKS.hostedMcp} target="_blank" rel="noopener noreferrer" className="text-sm text-white/60 hover:text-white transition-colors">Free hosted server</a></li>
             </ul>
           </div>
 
