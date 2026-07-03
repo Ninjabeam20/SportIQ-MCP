@@ -192,15 +192,26 @@ def _fin(home, away, hs, as_, group, date="2026-06-12"):
     }
 
 
-# Group A (ARG/COL/ECU/CIV) fully played with Argentina losing all three.
-_GROUP_A_ARG_OUT = [
-    _fin("Argentina", "Colombia", 0, 1, "A"),
-    _fin("Argentina", "Ecuador", 0, 1, "A"),
-    _fin("Argentina", "Côte d'Ivoire", 0, 1, "A"),
-    _fin("Colombia", "Ecuador", 1, 1, "A"),
-    _fin("Colombia", "Côte d'Ivoire", 1, 1, "A"),
-    _fin("Ecuador", "Côte d'Ivoire", 1, 1, "A"),
-]
+def _arg_group_played_out() -> tuple[str, list[dict]]:
+    """Argentina's group from the shipped seed, fully played, ARG losing all three.
+
+    Derived from wc2026.json (not hardcoded) so regenerating the draw data from
+    live sources cannot silently break these tests.
+    """
+    wc = load_wc2026()
+    letter = next(g for g, codes in wc["groups"].items() if "ARG" in codes)
+    arg = wc["teams"]["ARG"]["name"]
+    others = [wc["teams"][c]["name"] for c in wc["groups"][letter] if c != "ARG"]
+    fixtures = [_fin(arg, name, 0, 1, letter) for name in others]
+    fixtures += [
+        _fin(a, b, 1, 1, letter)
+        for i, a in enumerate(others)
+        for b in others[i + 1 :]
+    ]
+    return letter, fixtures
+
+
+_ARG_GROUP_LETTER, _GROUP_A_ARG_OUT = _arg_group_played_out()
 
 
 async def test_simulate_bracket_conditioned_zeros_eliminated_team():
@@ -253,7 +264,9 @@ async def test_simulate_group_meta_counts_conditioned_matches():
          patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock:
         gmock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
         fmock.fetch = AsyncMock(return_value=_fr({"fixtures": _GROUP_A_ARG_OUT}))
-        result = await intel_tools.football_simulate_group(group="A", iterations=800)
+        result = await intel_tools.football_simulate_group(
+            group=_ARG_GROUP_LETTER, iterations=800
+        )
     assert result["meta"]["conditioned_matches"] == 6
     assert result["data"]["teams"]["ARG"]["p_advance"] == 0.0
 

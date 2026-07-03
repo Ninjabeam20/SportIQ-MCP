@@ -37,6 +37,14 @@ class APIFootballFixturesAdapter:
             params={"league": league, "season": season},
             headers=_headers(),
         )
+        # The free plan silently returns an empty response for seasons it does
+        # not cover (e.g. WC 2026). An empty fixture list must NOT count as a
+        # success — the chain would cache it for 30min and shadow the sources
+        # below that do have the data. Raise so the chain walks on.
+        if not data.get("response"):
+            raise NotFoundError(
+                f"api_football returned no fixtures for league={league} season={season}"
+            )
         fixtures = []
         for item in data.get("response", []):
             teams = item.get("teams", {})

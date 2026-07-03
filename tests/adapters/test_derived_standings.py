@@ -6,14 +6,19 @@ from httpx import Response
 
 from sportiq.football.adapters.derived_standings import DerivedStandingsAdapter
 from sportiq.football.adapters.openfootball import _OPENFOOTBALL_URL
+from sportiq.football.adapters.static_seed import load_wc2026
 
-# Argentina + Colombia are both Group A in the shipped wc2026.json draw.
+# Two teams from the shipped draw's Group A (derived, not hardcoded, so a
+# draw-data regen from live sources cannot silently break this test).
+_WC = load_wc2026()
+_WINNER, _LOSER = (_WC["teams"][c]["name"] for c in _WC["groups"]["A"][:2])
+
 _PAYLOAD = {
     "matches": [
         {
             "date": "2026-06-12",
-            "team1": "Argentina",
-            "team2": "Colombia",
+            "team1": _WINNER,
+            "team2": _LOSER,
             "score": {"ft": [2, 0]},
             "group": "Group A",
         }
@@ -29,7 +34,7 @@ async def test_derived_standings_from_openfootball_results():
     assert out["source"] == "derived_standings"
     group_a = [r for r in out["standings"] if r["group"] == "A"]
     top = group_a[0]
-    assert top["team"] == "Argentina"
+    assert top["team"] == _WINNER
     assert top["points"] == 3
     assert top["played"] == 1
     assert top["goals_diff"] == 2
