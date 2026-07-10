@@ -23,7 +23,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          # Node 24 = npm 11, the same major that generates package-lock.json
+          # locally. npm 10 (Node 20) rejects npm-11 lockfiles that omit
+          # top-level entries for optional wasm transitive deps.
+          node-version: "24"
           cache: npm
           cache-dependency-path: website/package-lock.json
 
