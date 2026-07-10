@@ -19,7 +19,10 @@ jobs:
         # coexist with --skip-editable (strict fails on any skip). Fail-closed
         # for all other transitive deps still applies via non-zero exit on any CVE.
         # CVE-2025-69872: diskcache pickle RCE — acceptable risk (local-only cache).
-        run: uv run pip-audit --skip-editable --ignore-vuln CVE-2025-69872
+        # GHSA-6v7p-g79w-8964: msgpack — fix is 1.2.1 but signalrcore (fastf1's
+        # live-timing client, optional f1 extra) pins msgpack below it; msgpack is
+        # not on the hosted server path. Drop the ignore when signalrcore unpins.
+        run: uv run pip-audit --skip-editable --ignore-vuln CVE-2025-69872 --ignore-vuln GHSA-6v7p-g79w-8964
 
   bandit:
     runs-on: ubuntu-latest
