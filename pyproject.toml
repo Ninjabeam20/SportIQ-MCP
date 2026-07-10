@@ -73,11 +73,13 @@ packages = ["src/sportiq"]
 # file can never ship silently. scripts/check_release_build.py validates every
 # archive member against this same allowlist.
 include = [
-    "src/sportiq/**",
-    "pyproject.toml",
-    "README.md",
-    "LICENSE",
-    "SECURITY.md",
+    # Leading '/' anchors to the repo root (gitignore/pathspec semantics).
+    # Without it, "README.md" would also match website/README.md, etc.
+    "/src/sportiq/**",
+    "/pyproject.toml",
+    "/README.md",
+    "/LICENSE",
+    "/SECURITY.md",
 ]
 
 [tool.ruff]

@@ -146,6 +146,8 @@ uv run python scripts/dashboard.py     # writes dashboard.html and opens it; GIT
 
 > Note: the dashboard's HTML template (`scripts/dashboard_template.html`) is currently local-only maintainer tooling, so a fresh clone can't render it yet.
 
+**Repository layout:** `src/` is the MCP server (published to PyPI, deployed to Cloud Run); `website/` is the Next.js marketing site deployed to Vercel. The two ship independently — `website/` is excluded from the Python package and the backend container.
+
 See `CLAUDE.md` for collaboration rules and `docs/index.md` for the wiki entry point.
 
 ## Data sources & credits

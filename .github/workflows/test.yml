@@ -3,7 +3,9 @@ name: test
 on:
   push:
     branches: [main]
+    paths-ignore: ["website/**"]
   pull_request:
+    paths-ignore: ["website/**"]
 
 jobs:
   test:

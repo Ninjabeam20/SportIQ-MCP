@@ -1,0 +1,40 @@
+name: website
+
+# Only runs for changes under website/. The Python test matrix (test.yml) is
+# gated with the inverse paths-ignore, so the two suites never both run for a
+# single-tree change.
+on:
+  push:
+    branches: [main]
+    paths: ["website/**"]
+  pull_request:
+    paths: ["website/**"]
+
+defaults:
+  run:
+    working-directory: website
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      # Advisory only: the site ships eslint-config-next but no committed eslint
+      # config yet, so `next lint` can't gate the build. `next build` is the gate.
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Build
+        run: npm run build
