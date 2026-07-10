@@ -66,32 +66,18 @@ build-backend = "hatchling.build"
 packages = ["src/sportiq"]
 
 [tool.hatch.build.targets.sdist]
-exclude = [
-    ".env",
-    ".env.*",
-    "docs/raw/",
-    "docs/graphify/",
-    "tests/",
-    "scripts/",
-    "evals/",
-    "*.local.md",
-    "step*.md",
-    "launch.md",
-    "new.md",
-    "remaining*.md",
-    "AUDIT.md",
-    "BACKLOG.md",
-    "changes.md",
-    "plan.md",
-    "*plan*.md",
-    "mcp-builder/",
-    "mcpb/",
-    "dist/",
-    "launch/",
-    "marketing.md",
-    "new_websites.md",
-    "PROJECT.md",
-    "GAPS.md",
+# Allowlist, NOT a blocklist (REL-01). Ship ONLY the source package plus the
+# minimal files PyPI needs. Everything else — tests, scripts, docs, wiki, media,
+# .claude/, .codex/, .agents/, cloud files, mcpb/, planning docs, datasets, and
+# the website/ monorepo dir — is excluded by construction, so a new root-level
+# file can never ship silently. scripts/check_release_build.py validates every
+# archive member against this same allowlist.
+include = [
+    "src/sportiq/**",
+    "pyproject.toml",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md",
 ]
 
 [tool.ruff]
