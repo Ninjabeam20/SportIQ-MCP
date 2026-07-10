@@ -90,6 +90,8 @@ exclude = [
     "launch/",
     "marketing.md",
     "new_websites.md",
+    "PROJECT.md",
+    "GAPS.md",
 ]
 
 [tool.ruff]

@@ -73,7 +73,7 @@ All 44 tools work out of the box on the plain URL above — data tools *and* the
 uvx sportiq-mcp                       # from PyPI
 # or from source:
 git clone https://github.com/Ninjabeam20/SportIQ-MCP && cd sportiq-mcp
-uv sync && uv run python -m sportiq.server
+uv sync --extra dev --extra analytics && uv run python -m sportiq.server
 ```
 
 **Claude Desktop config:**
@@ -132,11 +132,19 @@ Every response carries a `meta.is_stale` flag + data age, so the AI tells you ho
 ## Develop
 
 ```bash
-uv sync --extra dev
+uv sync --extra dev --extra analytics   # always both extras: dev = pytest/ruff, analytics = the dashboard's GCP libs
 uv run pytest
 uv run ruff check .
 npx @modelcontextprotocol/inspector uv run python -m sportiq.server
 ```
+
+**Analytics dashboard** (read-only local usage view — Cloud Run / PyPI / GitHub). Same setup as above, then just run it:
+
+```bash
+uv run python scripts/dashboard.py     # writes dashboard.html and opens it; GITHUB_TOKEN optional (Sponsors panel)
+```
+
+> Note: the dashboard's HTML template (`scripts/dashboard_template.html`) is currently local-only maintainer tooling, so a fresh clone can't render it yet.
 
 See `CLAUDE.md` for collaboration rules and `docs/index.md` for the wiki entry point.
 

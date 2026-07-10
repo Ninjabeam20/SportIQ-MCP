@@ -128,3 +128,13 @@ scripts/calibrate_*.py
 docs/log.md
 dev.md
 scripts/dashboard_template.html
+
+# Codex review artifacts — local-only working notes from the codex audit pass.
+# Never commit (behind-the-scenes review chatter, not live repo docs).
+codex_changes*.md
+codex_suggestions.md
+
+# Oversized demo-media variants — the repo already tracks ~11 MiB of demo media;
+# these regenerated GIF/MOV variants are 14–29 MiB each. Kept local only.
+docs/assets/sportiq_new*.gif
+docs/assets/sportiq_new*.mov

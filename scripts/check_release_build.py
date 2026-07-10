@@ -36,6 +36,8 @@ SENSITIVE_PATTERNS = [
     "new.md",
     "marketing.md",
     "new_websites.md",
+    "PROJECT.md",
+    "GAPS.md",
 ]
 
 

@@ -1,0 +1,41 @@
+[mcp_servers."RapidAPI Hub - Football Prediction"]
+command = "npx"
+args = [
+    "mcp-remote",
+    "https://mcp.rapidapi.com",
+    "--header",
+    "x-api-host: football-prediction-api.p.rapidapi.com",
+    "--header",
+    "x-api-key: <RAPIDAPI_KEY>",
+]
+
+[mcp_servers."RapidAPI Hub - Live Sports Odds"]
+command = "npx"
+args = [
+    "mcp-remote",
+    "https://mcp.rapidapi.com",
+    "--header",
+    "x-api-host: odds.p.rapidapi.com",
+    "--header",
+    "x-api-key: <RAPIDAPI_KEY>",
+]
+
+[mcp_servers."RapidAPI Hub - Sportspage Feeds"]
+command = "npx"
+args = [
+    "mcp-remote",
+    "https://mcp.rapidapi.com",
+    "--header",
+    "x-api-host: sportspage-feeds.p.rapidapi.com",
+    "--header",
+    "x-api-key: <RAPIDAPI_KEY>",
+]
+
+[mcp_servers.sportiq]
+command = "uv"
+args = [
+    "run",
+    "python",
+    "-m",
+    "sportiq.server",
+]

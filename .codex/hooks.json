@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/utkarsh/Documents/Internships_Jobs/sportiq-mcp/.codex/hooks/block-dangerous-bash.sh'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/utkarsh/Documents/Internships_Jobs/sportiq-mcp/.codex/hooks/format-on-save.sh'"
+          }
+        ]
+      }
+    ]
+  }
+}

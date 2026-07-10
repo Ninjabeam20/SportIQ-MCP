@@ -39,12 +39,12 @@ Utkarsh — software engineer building an automated job application pipeline. Fa
 
 ## Hard rules (project-specific)
 
-- Every tool MUST route through a `FallbackChain` (see `.claude/rules/fallback-contract.md`). Never call an adapter directly from a tool.
-- Every tool MUST return the `{data, meta}` envelope on success and the error envelope on failure (see `.claude/rules/error-envelope.md`).
+- Every tool MUST route through a `FallbackChain` (see `.Codex/rules/fallback-contract.md`). Never call an adapter directly from a tool.
+- Every tool MUST return the `{data, meta}` envelope on success and the error envelope on failure (see `.Codex/rules/error-envelope.md`).
 - NEVER call live APIs in tests. Use `respx` cassettes from `tests/fixtures/`.
 - NEVER bypass the cache to "make sure data is fresh." If TTL is wrong, change the TTL.
 - NEVER commit `.env`, `*.local.md`, or `docs/graphify/`.
-- Wiki pages MUST have YAML frontmatter (see `.claude/rules/wiki-conventions.md`).
+- Wiki pages MUST have YAML frontmatter (see `.Codex/rules/wiki-conventions.md`).
 - Append a `## [YYYY-MM-DD] op | subject` entry to `docs/log.md` after every meaningful operation (ingest, decision, lint, release, tool-added, adapter-added, finding-filed).
 - **Local dev assumes `diskcache`, not Redis.** Do not write code, tests, or health checks that require a running Redis daemon. `core/cache.py` auto-detects and downgrades to `diskcache` when `REDIS_URL` is unset or the daemon is unreachable. `diskcache` is a healthy state for local dev — do not flag it as degraded.
 - **`pyproject.toml` MUST declare `[project.scripts] sportiq-mcp = "sportiq.server:main"`** and `server.py` MUST expose a `main()` function that calls `mcp.run()`. This is the uvx contract — do not break it.

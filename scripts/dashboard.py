@@ -4,7 +4,7 @@ Read-only. Pulls aggregate usage from several sources, renders a static
 ``dashboard.html`` with Chart.js (CDN), and opens it in the browser. No server,
 no hosting, no cost. Run on demand::
 
-    uv sync --extra analytics          # one-time: installs the GCP client libs
+    uv sync --extra dev --extra analytics   # standard setup (analytics = the GCP client libs)
     gcloud auth application-default login   # one-time: GCP read access (ADC)
     uv run python scripts/dashboard.py
 
