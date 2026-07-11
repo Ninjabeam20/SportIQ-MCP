@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-The marketing/landing website for **SportIQ**. This repo is the public site only — the SportIQ product itself is a separate hosted MCP server.
+The marketing/landing website for **SportIQ**. This directory (`website/`, inside the sportiq-mcp monorepo) is the public site only — the SportIQ product itself is the MCP server in the rest of the repo. The site ships independently: excluded from the PyPI sdist and the Cloud Run image, built by its own CI workflow (`.github/workflows/website.yml`), and deployed via Vercel with Root Directory = `website`.
 
 **SportIQ** is a hosted **MCP (Model Context Protocol) server** that gives Claude — and any MCP client (ChatGPT, Cursor, etc.) — live sports analytics across **football, F1, and cricket**: live scores, schedules, squads, standings, odds, value-bet detection, fantasy/Dream11 team building, and predictive models (xG, pit strategy, match predictor, Monte Carlo bracket simulation, etc.).
 
@@ -34,9 +34,9 @@ Next.js 15 App Router + React 19 + Tailwind v3 + TypeScript. Import alias `@/` m
 
 ## Conventions that matter
 
-- **All external URLs and pricing live in `src/config/links.ts`** — never hardcode a URL, download link, or price in JSX. Checkout is **GitHub Sponsors** (`LINKS.sponsors`); the `PRICING` array (Supporter $5/mo, Pro $10/mo, Lifetime $49 once) is the single source of truth that `PricingSection.tsx` maps over. Pro unlocks all 24 intelligence tools via a key delivered in the Sponsors welcome message, set locally as `SPORTIQ_PRO_KEY`. Note: the JSON-LD `offers` prices in `layout.tsx` and the "unlock Pro" FAQ answer duplicate these numbers — keep them in sync.
+- **All external URLs and pricing live in `src/config/links.ts`** — never hardcode a URL, download link, or price in JSX. **Everything is free**: all 44 tools, no key, no account, nothing gated. The `PRICING` array (Supporter $5/mo, Pro $10/mo, Lifetime $49 once) is **voluntary GitHub Sponsors tiers** (`LINKS.sponsors`) that `PricingSection.tsx` maps over — the tier names are legacy labels, not unlocks; never reintroduce "Pro unlocks X" copy. Note: the JSON-LD `offers` prices and the "Is it free?" / sponsor FAQ answers in `layout.tsx` duplicate these numbers — keep them in sync.
 - **Styling is the "Air Design System"**: dark canvas + frosted glass + neon accent. Use the custom Tailwind tokens in `tailwind.config.ts` (`sky-canvas`, `action-blue`, `sport-{football,f1,cricket}`, etc.) and the `.glass-panel` / `.glass-panel-light` utilities in `globals.css` rather than ad-hoc colors. Use `font-oswald` for headings (uppercase), `font-inter` for body, `font-mono` for tool names / terminal text.
-- The MCP tool catalog shown in `ToolExplorer.tsx` is a hardcoded list of `Tool` objects (`Free` | `Pro`, optional `isFlagship`) — update it there when the server's tool surface changes.
+- The MCP tool catalog shown in `ToolExplorer.tsx` is a hardcoded list of `Tool` objects (`{ name, isFlagship? }`, grouped per sport — no Free/Pro tags since the free reframe) — update it there when the server's tool surface changes.
 - The site references live betting/odds output. Any betting/odds copy should carry the framing shown in the product: **"Not financial advice — bet responsibly."**
 - Reuse the existing image assets (`logo-full.png`, `logo-mark.png`, the `step-1.png`–`step-4.png` connector walkthrough) as source material rather than regenerating them.
 

@@ -134,6 +134,9 @@ scripts/dashboard_template.html
 codex_changes*.md
 codex_suggestions.md
 
+# Personal interview-prep notes — local only, not project docs.
+interview_explanation.md
+
 # Oversized demo-media variants — the repo already tracks ~11 MiB of demo media;
 # these regenerated GIF/MOV variants are 14–29 MiB each. Kept local only.
 docs/assets/sportiq_new*.gif
