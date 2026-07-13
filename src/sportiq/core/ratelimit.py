@@ -20,23 +20,23 @@ async def has_budget(budget: Budget) -> bool:
 
     The chain calls this before an adapter's fetch() and only :func:`consume`s a
     token after the fetch succeeds, so a failing/missing-key call leaves the
-    counter untouched. (The peek-then-consume gap allows concurrent double-spend;
-    accepted as a documented local-dev limitation.)
+    counter untouched. Consumption is atomic, but the separate peek and fetch can
+    still admit concurrent calls near the ceiling.
     """
     cache = get_cache()
     now = int(time.time())
 
     if budget.per_minute is not None:
         minute_bucket = now // 60
-        entry = await cache.get(f"ratelimit:{budget.source}:minute:{minute_bucket}")
-        used = entry.value if entry else 0
+        used = await cache.get_counter(
+            f"ratelimit:{budget.source}:minute:{minute_bucket}"
+        )
         if used >= budget.per_minute:
             return False
 
     if budget.per_day is not None:
         day_bucket = now // 86400
-        entry = await cache.get(f"ratelimit:{budget.source}:day:{day_bucket}")
-        used = entry.value if entry else 0
+        used = await cache.get_counter(f"ratelimit:{budget.source}:day:{day_bucket}")
         if used >= budget.per_day:
             return False
 
@@ -51,16 +51,12 @@ async def consume(budget: Budget) -> None:
     if budget.per_minute is not None:
         minute_bucket = now // 60
         key = f"ratelimit:{budget.source}:minute:{minute_bucket}"
-        entry = await cache.get(key)
-        used = entry.value if entry else 0
-        await cache.set(key, used + 1, ttl_seconds=120)
+        await cache.incr_counter(key, ttl_seconds=120)
 
     if budget.per_day is not None:
         day_bucket = now // 86400
         key = f"ratelimit:{budget.source}:day:{day_bucket}"
-        entry = await cache.get(key)
-        used = entry.value if entry else 0
-        await cache.set(key, used + 1, ttl_seconds=172800)
+        await cache.incr_counter(key, ttl_seconds=172800)
 
 
 async def remaining(budget: Budget) -> dict[str, int | None]:
@@ -70,12 +66,12 @@ async def remaining(budget: Budget) -> dict[str, int | None]:
 
     if budget.per_minute is not None:
         minute_bucket = now // 60
-        entry = await cache.get(f"ratelimit:{budget.source}:minute:{minute_bucket}")
-        used = entry.value if entry else 0
+        used = await cache.get_counter(
+            f"ratelimit:{budget.source}:minute:{minute_bucket}"
+        )
         out["per_minute"] = max(0, budget.per_minute - used)
     if budget.per_day is not None:
         day_bucket = now // 86400
-        entry = await cache.get(f"ratelimit:{budget.source}:day:{day_bucket}")
-        used = entry.value if entry else 0
+        used = await cache.get_counter(f"ratelimit:{budget.source}:day:{day_bucket}")
         out["per_day"] = max(0, budget.per_day - used)
     return out

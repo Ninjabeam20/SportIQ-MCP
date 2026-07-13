@@ -1,5 +1,7 @@
 """Cache backend selects diskcache when REDIS_URL is unset."""
 
+import asyncio
+
 import pytest
 
 from sportiq.core.cache import get_cache
@@ -25,6 +27,24 @@ async def test_set_then_get_roundtrip():
 async def test_get_returns_none_for_missing_key():
     cache = get_cache()
     assert await cache.get("never-set") is None
+
+
+@pytest.mark.asyncio
+async def test_counter_increment_is_atomic_under_concurrency():
+    cache = get_cache()
+    values = await asyncio.gather(
+        *(cache.incr_counter("counter:atomic", ttl_seconds=60) for _ in range(50))
+    )
+    assert sorted(values) == list(range(1, 51))
+    assert await cache.get_counter("counter:atomic") == 50
+
+
+@pytest.mark.asyncio
+async def test_counter_is_separate_from_wrapped_cache_values():
+    cache = get_cache()
+    await cache.incr_counter("counter:raw", ttl_seconds=60)
+    assert await cache.get_counter("counter:raw") == 1
+    assert await cache.get("counter:raw") is None
 
 
 @pytest.mark.asyncio

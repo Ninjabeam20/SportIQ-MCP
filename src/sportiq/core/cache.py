@@ -91,6 +91,8 @@ class Cache:
         raw = self._disk.get(key)
         if raw is None:
             return None
+        if not isinstance(raw, str):
+            return None
         return _decode(raw)
 
     async def set(self, key: str, value: Any, ttl_seconds: int) -> None:
@@ -102,6 +104,41 @@ class Cache:
             except Exception as e:
                 self._downgrade_to_disk(e)
         self._disk.set(key, encoded, expire=ttl_seconds)
+
+    async def get_counter(self, key: str) -> int:
+        """Return a raw integer counter, separate from wrapped cache entries."""
+        if self.backend == "redis":
+            try:
+                raw = await self._redis.get(key)
+            except Exception as e:
+                self._downgrade_to_disk(e)
+            else:
+                try:
+                    return int(raw) if raw is not None else 0
+                except (TypeError, ValueError):
+                    return 0
+        raw = self._disk.get(key)
+        return int(raw) if isinstance(raw, int) and not isinstance(raw, bool) else 0
+
+    async def incr_counter(self, key: str, ttl_seconds: int) -> int:
+        """Atomically increment a raw counter and set expiry on first write."""
+        if self.backend == "redis":
+            try:
+                value = await self._redis.eval(
+                    "local v=redis.call('INCR',KEYS[1]); "
+                    "if v==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return v",
+                    1,
+                    key,
+                    ttl_seconds,
+                )
+                return int(value)
+            except Exception as e:
+                self._downgrade_to_disk(e)
+        with self._disk.transact():
+            value = self._disk.incr(key, delta=1, default=0)
+            if value == 1:
+                self._disk.expire(key, ttl_seconds)
+        return int(value)
 
     async def healthcheck(self) -> bool:
         try:
@@ -121,10 +158,12 @@ def _encode(value: Any) -> str:
     return json.dumps({"value": value, "stored_at": time.time()})
 
 
-def _decode(raw: str) -> CachedEntry:
+def _decode(raw: str) -> CachedEntry | None:
     import json
 
     payload = json.loads(raw)
+    if not isinstance(payload, dict):
+        return None
     return CachedEntry(value=payload["value"], stored_at=payload["stored_at"])
 
 
