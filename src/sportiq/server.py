@@ -7,12 +7,12 @@ MCP servers on stdio are inherently single-client; 20 concurrent calls is a safe
 ceiling against malformed client bursts without affecting normal single-client usage.
 """
 
-import asyncio
 import os
 
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
+from sportiq.config import settings
 from sportiq.core.health import register_health_tool
 from sportiq.core.instructions import register_instructions_resource
 from sportiq.core.logging import configure_logging
@@ -23,9 +23,6 @@ from sportiq.cricket.tools import register_cricket_tools
 from sportiq.f1.tools import register_f1_tools
 from sportiq.football.tools import register_football_tools
 from sportiq.server_tools.cross_sport import register_cross_sport_tools
-
-# Infrastructure guard — not wired into tools yet; available when fan-out is added.
-_SERVER_SEMAPHORE = asyncio.Semaphore(20)
 
 configure_logging()
 
@@ -64,6 +61,7 @@ def main() -> None:
 
         from sportiq.core.client_info import ClientInfoMiddleware
         from sportiq.core.path_compat import LegacyKeyPathMiddleware
+        from sportiq.core.request_limits import RequestLimitMiddleware
 
         mcp.settings.host = "0.0.0.0"  # nosec B104  # container must bind all interfaces
         mcp.settings.port = int(os.getenv("PORT", "8080"))
@@ -78,6 +76,12 @@ def main() -> None:
         # middleware. Host/port/security settings above are read by the app build.
         app = mcp.streamable_http_app()
         app.add_middleware(ClientInfoMiddleware)
+        app.add_middleware(
+            RequestLimitMiddleware,
+            max_body_bytes=settings.http_max_body_bytes,
+            per_client_per_minute=settings.http_rate_limit_per_minute,
+            global_per_minute=settings.http_global_rate_limit_per_minute,
+        )
         # Outermost (added last = runs first): legacy /u/<key>/mcp paths are
         # rewritten to /mcp before client-info logging and MCP routing see them.
         app.add_middleware(LegacyKeyPathMiddleware)

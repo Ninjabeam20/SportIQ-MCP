@@ -145,3 +145,67 @@ async def test_middleware_captures_session_id_from_initialize_response():
     }
     await _drive(ClientInfoMiddleware(app), scope, json.dumps(_INIT).encode())
     assert client_info._SESSION_CLIENT.get("sess-xyz") == "middleware-e2e"
+
+
+async def test_middleware_bounds_capture_but_forwards_large_body(monkeypatch):
+    captured_lengths: list[int] = []
+    original = client_info._extract_client_info
+
+    def recording_extract(body: bytes):
+        captured_lengths.append(len(body))
+        return original(body)
+
+    monkeypatch.setattr(client_info, "_extract_client_info", recording_extract)
+    forwarded = bytearray()
+
+    async def app(scope, receive, send):
+        while True:
+            message = await receive()
+            forwarded.extend(message.get("body", b""))
+            if not message.get("more_body"):
+                break
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b""})
+
+    body = b"x" * (70 * 1024)
+    messages = [
+        {"type": "http.request", "body": body[:40_000], "more_body": True},
+        {"type": "http.request", "body": body[40_000:], "more_body": False},
+    ]
+
+    async def receive():
+        return messages.pop(0)
+
+    async def send(_message):
+        return None
+
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/mcp",
+        "headers": [(b"user-agent", b"UA")],
+    }
+    await ClientInfoMiddleware(app)(scope, receive, send)
+
+    assert bytes(forwarded) == body
+    assert captured_lengths == [64 * 1024]
+
+
+def test_client_fields_are_sanitized_and_bounded():
+    body = json.dumps(
+        {
+            "method": "initialize",
+            "params": {
+                "clientInfo": {
+                    "name": "  bad\nname" + "x" * 200,
+                    "version": "\t1.0\r",
+                }
+            },
+        }
+    ).encode()
+    info = _extract_client_info(body)
+
+    assert info is not None
+    assert info["name"].startswith("badname")
+    assert len(info["name"]) == 100
+    assert info["version"] == "1.0"

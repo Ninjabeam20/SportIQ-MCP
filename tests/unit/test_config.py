@@ -1,3 +1,5 @@
+import pytest
+from pydantic import ValidationError
 
 
 def test_enable_ndtv_scraper_via_documented_env_var(monkeypatch):
@@ -62,3 +64,30 @@ def test_blank_scraper_toggle_is_off_not_crash(monkeypatch):
     s = Settings()
     assert s.enable_ndtv_scraper is False
     assert s.enable_cricbuzz_scraper is False
+
+
+def test_hosted_abuse_control_defaults():
+    from sportiq.config import Settings
+
+    s = Settings(_env_file=None)
+    assert s.http_max_body_bytes == 1_048_576
+    assert s.http_rate_limit_per_minute == 60
+    assert s.http_global_rate_limit_per_minute == 300
+    assert s.expensive_tool_concurrency == 2
+
+
+@pytest.mark.parametrize(
+    "field",
+    (
+        "http_max_body_bytes",
+        "http_rate_limit_per_minute",
+        "http_global_rate_limit_per_minute",
+        "expensive_tool_concurrency",
+    ),
+)
+@pytest.mark.parametrize("value", (0, -1))
+def test_hosted_abuse_controls_must_be_positive(field, value):
+    from sportiq.config import Settings
+
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, **{field: value})

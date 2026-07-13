@@ -44,6 +44,13 @@ _log = get_logger("client_info")
 # session pinned to one instance and maximises hits.
 _SESSION_CLIENT: OrderedDict[str, str] = OrderedDict()
 _MAX_SESSIONS = 4096
+_MAX_CAPTURE_BYTES = 64 * 1024
+
+
+def _sanitize_field(value: Any, max_length: int) -> str:
+    if not isinstance(value, str):
+        return ""
+    return "".join(char for char in value if char.isprintable()).strip()[:max_length]
 
 
 def _remember_session(session_id: str, name: str | None) -> None:
@@ -75,7 +82,10 @@ def _extract_client_info(body: bytes) -> dict[str, Any] | None:
         return None
     info = (msg.get("params") or {}).get("clientInfo")
     if isinstance(info, dict):
-        return {"name": info.get("name"), "version": info.get("version")}
+        return {
+            "name": _sanitize_field(info.get("name"), 100),
+            "version": _sanitize_field(info.get("version"), 100),
+        }
     return None
 
 
@@ -96,7 +106,7 @@ class ClientInfoMiddleware:
             return
 
         headers = scope.get("headers", [])
-        user_agent = _header(headers, b"user-agent")
+        user_agent = _sanitize_field(_header(headers, b"user-agent"), 300)
         # On a tools/call the session id is already established → look up the
         # clean client name captured at initialize. None on initialize itself
         # (no session yet) and on cache misses; the dashboard then classifies the
@@ -120,7 +130,7 @@ class ClientInfoMiddleware:
                 await self.app(scope, receive, send)
                 return
 
-            chunks: list[bytes] = []
+            captured = bytearray()
             logged = False
             init_name: str | None = None
 
@@ -142,9 +152,11 @@ class ClientInfoMiddleware:
                 # MCP handler reads them. Nothing is consumed ahead of the handler.
                 message = await receive()
                 if message["type"] == "http.request":
-                    chunks.append(message.get("body", b""))
+                    remaining = _MAX_CAPTURE_BYTES - len(captured)
+                    if remaining > 0:
+                        captured.extend(message.get("body", b"")[:remaining])
                     if not message.get("more_body") and not logged:
-                        _emit(b"".join(chunks))
+                        _emit(bytes(captured))
                 return message
 
             async def tee_send(message: dict[str, Any]) -> None:

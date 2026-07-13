@@ -49,6 +49,11 @@ class Settings(BaseSettings):
 
     redis_url: str | None = None
 
+    http_max_body_bytes: int = Field(default=1_048_576, gt=0)
+    http_rate_limit_per_minute: int = Field(default=60, gt=0)
+    http_global_rate_limit_per_minute: int = Field(default=300, gt=0)
+    expensive_tool_concurrency: int = Field(default=2, gt=0)
+
     sportiq_log_level: str = "INFO"
     sportiq_log_format: Literal["pretty", "json"] = Field(default_factory=_default_log_format)
 
