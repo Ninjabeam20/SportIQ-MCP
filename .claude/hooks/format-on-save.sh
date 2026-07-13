@@ -5,18 +5,23 @@
 set -u
 
 # Read hook input from stdin (Claude Code passes a JSON blob).
-input="$(cat || true)"
+input="$(cat)"
 
 # Extract file path with a tiny python helper — no jq dependency.
-file_path="$(python3 - <<'PY' <<<"$input" 2>/dev/null || true
+if ! file_path="$(printf '%s' "$input" | python3 -c '
 import json, sys
 try:
-    data = json.loads(sys.stdin.read())
-    print(data.get("tool_input", {}).get("file_path", ""))
-except Exception:
-    pass
-PY
-)"
+    data = json.load(sys.stdin)
+    path = data["tool_input"]["file_path"]
+    if not isinstance(path, str) or not path.strip():
+        raise ValueError("missing file_path")
+except Exception as exc:
+    print(f"invalid hook input: {exc}", file=sys.stderr)
+    raise SystemExit(2)
+print(path)
+')"; then
+  exit 2
+fi
 
 # Only act on Python files inside this repo.
 case "$file_path" in

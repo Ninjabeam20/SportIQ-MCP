@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "'/Users/utkarsh/Documents/Internships_Jobs/sportiq-mcp/.codex/hooks/block-dangerous-bash.sh'"
+            "command": "./.codex/hooks/block-dangerous-bash.sh"
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "'/Users/utkarsh/Documents/Internships_Jobs/sportiq-mcp/.codex/hooks/format-on-save.sh'"
+            "command": "./.codex/hooks/format-on-save.sh"
           }
         ]
       }
