@@ -436,18 +436,24 @@ async def cricket_head_to_head(team_a: str, team_b: str) -> Envelope:
                win_prob_a, win_prob_b}.
         meta.estimated: true.
     """
-    if not team_a or not team_a.strip():
+    team_a = team_a.strip()
+    team_b = team_b.strip()
+    if not team_a:
         return error_envelope(code="INVALID_INPUT", message="team_a must not be empty.")
-    if not team_b or not team_b.strip():
+    if not team_b:
         return error_envelope(code="INVALID_INPUT", message="team_b must not be empty.")
-    if team_a.strip().lower() == team_b.strip().lower():
+    if len(team_a) > 200 or len(team_b) > 200:
+        return error_envelope(
+            code="INVALID_INPUT", message="team identifiers must not exceed 200 characters."
+        )
+    if team_a.casefold() == team_b.casefold():
         return error_envelope(code="INVALID_INPUT", message="team_a and team_b must be different.")
 
     # --- fetch squads (independent — gather) ---
     try:
         squad_result_a, squad_result_b = await asyncio.gather(
-            squad_chain.fetch(team=team_a.strip()),
-            squad_chain.fetch(team=team_b.strip()),
+            squad_chain.fetch(team=team_a),
+            squad_chain.fetch(team=team_b),
         )
     except AllSourcesFailedError as e:
         return error_envelope(
@@ -486,8 +492,8 @@ async def cricket_head_to_head(team_a: str, team_b: str) -> Envelope:
 
     # --- derive H2H summary ---
     h2h_result = summarise_h2h(
-        team_a.strip(),
-        team_b.strip(),
+        team_a,
+        team_b,
         squad_a_players,
         squad_b_players,
         stats_by_player,
@@ -605,16 +611,22 @@ async def cricket_player_matchup(player_a: str, player_b: str) -> Envelope:
         data: {matchup_type, edge_holder, edge_reason, signals, role_a, role_b}.
         meta.estimated: true — heuristic model, not ball-by-ball H2H data.
     """
-    if not player_a or not player_a.strip():
+    player_a = player_a.strip()
+    player_b = player_b.strip()
+    if not player_a:
         return error_envelope(code="INVALID_INPUT", message="player_a must not be empty.")
-    if not player_b or not player_b.strip():
+    if not player_b:
         return error_envelope(code="INVALID_INPUT", message="player_b must not be empty.")
-    if player_a.strip() == player_b.strip():
+    if len(player_a) > 200 or len(player_b) > 200:
+        return error_envelope(
+            code="INVALID_INPUT", message="player identifiers must not exceed 200 characters."
+        )
+    if player_a.casefold() == player_b.casefold():
         return error_envelope(code="INVALID_INPUT", message="player_a and player_b must be different.")
 
     stats_a_r, stats_b_r = await asyncio.gather(
-        player_stats_chain.fetch(player_id=player_a.strip()),
-        player_stats_chain.fetch(player_id=player_b.strip()),
+        player_stats_chain.fetch(player_id=player_a),
+        player_stats_chain.fetch(player_id=player_b),
         return_exceptions=True,
     )
 

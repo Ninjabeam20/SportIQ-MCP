@@ -67,10 +67,10 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
         data: {intercept, slope, residual_std, sample_count}.
         meta.estimated: true — model output, not telemetry oracle.
     """
-    if session_key <= 0 or driver_number <= 0:
+    if session_key <= 0 or not 1 <= driver_number <= 99:
         return error_envelope(
             code="INVALID_INPUT",
-            message="session_key and driver_number must be positive.",
+            message="session_key must be positive and driver_number must be 1-99.",
         )
     compound_upper = compound.upper()
     if compound_upper not in {"SOFT", "MEDIUM", "HARD", "INTER", "WET"}:
@@ -144,11 +144,19 @@ async def f1_undercut_window(
         data: {laps_to_clear, viable, marginal}.
         meta.estimated: true.
     """
-    if session_key <= 0 or attacker_number <= 0 or target_number <= 0 or current_lap <= 0:
+    if session_key <= 0:
+        return error_envelope(code="INVALID_INPUT", message="session_key must be positive.")
+    if not 1 <= attacker_number <= 99 or not 1 <= target_number <= 99:
         return error_envelope(
             code="INVALID_INPUT",
-            message="All numeric args must be positive.",
+            message="attacker_number and target_number must be 1-99.",
         )
+    if attacker_number == target_number:
+        return error_envelope(
+            code="INVALID_INPUT", message="attacker_number and target_number must differ."
+        )
+    if not 1 <= current_lap <= 200:
+        return error_envelope(code="INVALID_INPUT", message="current_lap must be 1-200.")
 
     try:
         # _resolve_circuit_profile is best-effort (never raises) so it rides the
@@ -212,8 +220,14 @@ async def f1_head_to_head_pace(session_key: int, driver_a: int, driver_b: int) -
         data: {driver_a_avg_s, driver_b_avg_s, delta_s, faster_driver}.
         meta.estimated: true.
     """
-    if session_key <= 0 or driver_a <= 0 or driver_b <= 0:
-        return error_envelope(code="INVALID_INPUT", message="All args must be positive.")
+    if session_key <= 0:
+        return error_envelope(code="INVALID_INPUT", message="session_key must be positive.")
+    if not 1 <= driver_a <= 99 or not 1 <= driver_b <= 99:
+        return error_envelope(
+            code="INVALID_INPUT", message="driver_a and driver_b must be 1-99."
+        )
+    if driver_a == driver_b:
+        return error_envelope(code="INVALID_INPUT", message="driver_a and driver_b must differ.")
 
     try:
         laps_a, laps_b = await asyncio.gather(
@@ -336,15 +350,23 @@ async def f1_predict_pit_strategy(
         f1_predict_pit_strategy(session_key=9158, driver_number=1)
         f1_predict_pit_strategy(session_key=9158, driver_number=16, current_lap=20, total_laps=78)
     """
-    if session_key <= 0 or driver_number <= 0:
+    if session_key <= 0 or not 1 <= driver_number <= 99:
         return error_envelope(
             code="INVALID_INPUT",
-            message="session_key and driver_number must be positive.",
+            message="session_key must be positive and driver_number must be 1-99.",
         )
-    if current_lap < 1 or (total_laps is not None and total_laps < current_lap):
+    if not 1 <= current_lap <= 200:
+        return error_envelope(
+            code="INVALID_INPUT", message="current_lap must be in [1, 200]."
+        )
+    if total_laps is not None and not 1 <= total_laps <= 200:
+        return error_envelope(
+            code="INVALID_INPUT", message="total_laps must be in [1, 200]."
+        )
+    if total_laps is not None and current_lap > total_laps:
         return error_envelope(
             code="INVALID_INPUT",
-            message="current_lap must be >= 1 and <= total_laps.",
+            message="current_lap must be <= total_laps.",
         )
 
     # Laps are required; stints + weather are best-effort enrichment. If either
@@ -514,8 +536,12 @@ async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -
         data: {by_compound, overall_faster, compounds_compared}.
         meta.estimated: true — degradation model fit, not official timing.
     """
-    if session_key <= 0 or driver_a <= 0 or driver_b <= 0:
-        return error_envelope(code="INVALID_INPUT", message="All args must be positive.")
+    if session_key <= 0:
+        return error_envelope(code="INVALID_INPUT", message="session_key must be positive.")
+    if not 1 <= driver_a <= 99 or not 1 <= driver_b <= 99:
+        return error_envelope(
+            code="INVALID_INPUT", message="driver_a and driver_b must be 1-99."
+        )
     if driver_a == driver_b:
         return error_envelope(code="INVALID_INPUT", message="driver_a and driver_b must differ.")
 

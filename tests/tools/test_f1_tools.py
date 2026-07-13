@@ -184,6 +184,16 @@ async def test_f1_get_lap_times_invalid_driver_number():
     assert result["error"]["code"] == "INVALID_INPUT"
 
 
+async def test_f1_get_lap_times_rejects_driver_over_99_before_chain():
+    from sportiq.f1 import tools
+
+    with patch("sportiq.f1.tools.f1_laps_chain") as mock:
+        mock.fetch = AsyncMock()
+        result = await tools.f1_get_lap_times(session_key=9877, driver_number=100)
+        assert result["error"]["code"] == "INVALID_INPUT"
+        mock.fetch.assert_not_awaited()
+
+
 async def test_f1_get_lap_times_all_sources_failed():
     from sportiq.f1 import tools
 

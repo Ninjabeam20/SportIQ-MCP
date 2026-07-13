@@ -41,6 +41,22 @@ async def test_whitespace_only_team_invalid():
     assert result["error"]["code"] == "INVALID_INPUT"
 
 
+async def test_team_identifiers_over_200_rejected_before_chain():
+    with patch("sportiq.cricket.intel_tools.squad_chain") as mock:
+        mock.fetch = AsyncMock()
+        result = await cricket_head_to_head("x" * 201, "CSK")
+        assert result["error"]["code"] == "INVALID_INPUT"
+        mock.fetch.assert_not_awaited()
+
+
+async def test_same_team_trimmed_casefold_rejected_before_chain():
+    with patch("sportiq.cricket.intel_tools.squad_chain") as mock:
+        mock.fetch = AsyncMock()
+        result = await cricket_head_to_head("  Straße ", "STRASSE")
+        assert result["error"]["code"] == "INVALID_INPUT"
+        mock.fetch.assert_not_awaited()
+
+
 async def test_valid_returns_envelope():
     mock_squad = _mock_squad_result([{"name": "P1", "player_id": "1"}])
 

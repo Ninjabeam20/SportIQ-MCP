@@ -53,6 +53,22 @@ async def test_invalid_whitespace_player_a():
     assert result["error"]["code"] == "INVALID_INPUT"
 
 
+async def test_player_identifiers_over_200_rejected_before_chain():
+    with patch("sportiq.cricket.intel_tools.player_stats_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock()
+        result = await cricket_player_matchup("x" * 201, "bumrah")
+        assert result["error"]["code"] == "INVALID_INPUT"
+        mock_chain.fetch.assert_not_awaited()
+
+
+async def test_same_player_trimmed_casefold_rejected_before_chain():
+    with patch("sportiq.cricket.intel_tools.player_stats_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock()
+        result = await cricket_player_matchup("  Straße ", "STRASSE")
+        assert result["error"]["code"] == "INVALID_INPUT"
+        mock_chain.fetch.assert_not_awaited()
+
+
 # --- ALL_SOURCES_FAILED ---
 
 async def test_all_sources_failed_player_a():

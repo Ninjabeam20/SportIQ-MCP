@@ -172,6 +172,49 @@ async def test_f1_undercut_window_invalid_args():
     assert result["error"]["code"] == "INVALID_INPUT"
 
 
+async def test_f1_driver_and_lap_bounds_stop_before_chains():
+    from sportiq.f1 import intel_tools
+
+    with (
+        patch("sportiq.f1.intel_tools.f1_laps_chain") as laps,
+        patch("sportiq.f1.intel_tools.f1_stints_chain") as stints,
+        patch("sportiq.f1.intel_tools.f1_weather_chain") as weather,
+    ):
+        laps.fetch = AsyncMock()
+        stints.fetch = AsyncMock()
+        weather.fetch = AsyncMock()
+        results = [
+            await intel_tools.f1_tyre_degradation(9877, 100, "SOFT"),
+            await intel_tools.f1_undercut_window(9877, 100, 16, 25),
+            await intel_tools.f1_undercut_window(9877, 1, 16, 201),
+            await intel_tools.f1_head_to_head_pace(9877, 1, 100),
+            await intel_tools.f1_predict_pit_strategy(9877, 100),
+            await intel_tools.f1_predict_pit_strategy(9877, 1, current_lap=201),
+            await intel_tools.f1_predict_pit_strategy(9877, 1, total_laps=201),
+            await intel_tools.f1_race_pace_compare(9877, 1, 100),
+        ]
+        assert all(result["error"]["code"] == "INVALID_INPUT" for result in results)
+        laps.fetch.assert_not_awaited()
+        stints.fetch.assert_not_awaited()
+        weather.fetch.assert_not_awaited()
+
+
+async def test_f1_matchup_and_lap_order_validation_stop_before_chains():
+    from sportiq.f1 import intel_tools
+
+    with patch("sportiq.f1.intel_tools.f1_laps_chain") as laps:
+        laps.fetch = AsyncMock()
+        results = [
+            await intel_tools.f1_undercut_window(9877, 1, 1, 25),
+            await intel_tools.f1_head_to_head_pace(9877, 1, 1),
+            await intel_tools.f1_predict_pit_strategy(
+                9877, 1, current_lap=50, total_laps=49
+            ),
+        ]
+        assert all(result["error"]["code"] == "INVALID_INPUT" for result in results)
+        laps.fetch.assert_not_awaited()
+
+
 # -- f1_head_to_head_pace ------------------------------------------------------
 
 

@@ -114,11 +114,19 @@ async def football_xg_model(home_team: str, away_team: str, neutral: bool = True
         data: {expected_home_goals, expected_away_goals, home_win, draw, away_win}.
         meta.estimated: true.
     """
-    if len(home_team) > 100:
+    home, away = home_team.strip().upper(), away_team.strip().upper()
+    if not home or not away:
+        return error_envelope(
+            code="INVALID_INPUT", message="home_team and away_team must be non-empty."
+        )
+    if len(home) > 100:
         return error_envelope(code="INVALID_INPUT", message="home_team must not exceed 100 characters.")
-    if len(away_team) > 100:
+    if len(away) > 100:
         return error_envelope(code="INVALID_INPUT", message="away_team must not exceed 100 characters.")
-    home, away = home_team.upper(), away_team.upper()
+    if home == away:
+        return error_envelope(
+            code="INVALID_INPUT", message="home_team and away_team must differ."
+        )
 
     try:
         result = await _groups_payload()
@@ -160,11 +168,19 @@ async def football_match_predictor(home_team: str, away_team: str, neutral: bool
         data: {most_likely_score, home_win, draw, away_win, predicted_winner}.
         meta.estimated: true.
     """
-    if len(home_team) > 100:
+    home, away = home_team.strip().upper(), away_team.strip().upper()
+    if not home or not away:
+        return error_envelope(
+            code="INVALID_INPUT", message="home_team and away_team must be non-empty."
+        )
+    if len(home) > 100:
         return error_envelope(code="INVALID_INPUT", message="home_team must not exceed 100 characters.")
-    if len(away_team) > 100:
+    if len(away) > 100:
         return error_envelope(code="INVALID_INPUT", message="away_team must not exceed 100 characters.")
-    home, away = home_team.upper(), away_team.upper()
+    if home == away:
+        return error_envelope(
+            code="INVALID_INPUT", message="home_team and away_team must differ."
+        )
 
     try:
         result = await _groups_payload()
@@ -213,13 +229,18 @@ async def football_simulate_group(group: str, iterations: int = 5000) -> Envelop
         data.iterations: iterations actually run.
         meta.estimated: true. meta.conditioned_matches: completed matches locked in.
     """
+    key = group.strip().upper()
+    if len(key) != 1:
+        return error_envelope(
+            code="INVALID_INPUT", message="group must be one letter from A to L."
+        )
+
     try:
         result = await _groups_payload()
     except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(code=e.code, message="Could not load draw.", sources_tried=e.attempts)
 
     groups = result.value.get("groups", {})
-    key = group.upper()
     if key not in groups:
         return error_envelope(code="NOT_FOUND", message=f"Unknown group {group!r}; groups are A-L.")
 
@@ -257,6 +278,11 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
         football_simulate_bracket()
         football_simulate_bracket(iterations=20000, seed=42)
     """
+    if seed is not None and not 0 <= seed <= 2**64 - 1:
+        return error_envelope(
+            code="INVALID_INPUT", message="seed must be in [0, 2**64 - 1]."
+        )
+
     try:
         result = await _groups_payload()
     except (AllSourcesFailedError, NotFoundError) as e:
@@ -283,9 +309,15 @@ async def football_knockout_path(team: str, iterations: int = 10000, seed: int |
         data: {team, reach_r32, reach_r16, reach_qf, reach_sf, reach_final, win}.
         meta.estimated: true.
     """
-    if len(team) > 100:
+    code = team.strip().upper()
+    if not code:
+        return error_envelope(code="INVALID_INPUT", message="team must be non-empty.")
+    if len(code) > 100:
         return error_envelope(code="INVALID_INPUT", message="team must not exceed 100 characters.")
-    code = team.upper()
+    if seed is not None and not 0 <= seed <= 2**64 - 1:
+        return error_envelope(
+            code="INVALID_INPUT", message="seed must be in [0, 2**64 - 1]."
+        )
 
     try:
         result = await _groups_payload()

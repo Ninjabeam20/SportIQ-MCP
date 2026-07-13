@@ -131,6 +131,19 @@ async def test_xg_model_unknown_team_not_found():
     assert result["error"]["code"] == "NOT_FOUND"
 
 
+async def test_matchup_validation_rejects_blank_and_same_before_chain():
+    from sportiq.football import intel_tools
+
+    with patch("sportiq.football.intel_tools.football_groups_chain") as mock:
+        mock.fetch = AsyncMock()
+        for fn in (intel_tools.football_xg_model, intel_tools.football_match_predictor):
+            blank = await fn(home_team="  ", away_team="ARG")
+            same = await fn(home_team=" arg ", away_team="ARG")
+            assert blank["error"]["code"] == "INVALID_INPUT"
+            assert same["error"]["code"] == "INVALID_INPUT"
+        mock.fetch.assert_not_awaited()
+
+
 async def test_xg_model_chain_not_found_returns_envelope():
     from sportiq.football import intel_tools
 
@@ -169,6 +182,30 @@ async def test_simulate_group_unknown_group_not_found():
         mock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
         result = await intel_tools.football_simulate_group(group="Z")
     assert result["error"]["code"] == "NOT_FOUND"
+
+
+async def test_simulate_group_rejects_blank_or_multichar_group_before_chain():
+    from sportiq.football import intel_tools
+
+    with patch("sportiq.football.intel_tools.football_groups_chain") as mock:
+        mock.fetch = AsyncMock()
+        for group in ("  ", "AA"):
+            result = await intel_tools.football_simulate_group(group=group)
+            assert result["error"]["code"] == "INVALID_INPUT"
+        mock.fetch.assert_not_awaited()
+
+
+async def test_simulation_seed_bounds_reject_before_chain():
+    from sportiq.football import intel_tools
+
+    with patch("sportiq.football.intel_tools.football_groups_chain") as mock:
+        mock.fetch = AsyncMock()
+        for seed in (-1, 2**64):
+            bracket = await intel_tools.football_simulate_bracket(seed=seed)
+            path = await intel_tools.football_knockout_path(team="ARG", seed=seed)
+            assert bracket["error"]["code"] == "INVALID_INPUT"
+            assert path["error"]["code"] == "INVALID_INPUT"
+        mock.fetch.assert_not_awaited()
 
 
 async def test_simulate_bracket_flagship_invariants():
