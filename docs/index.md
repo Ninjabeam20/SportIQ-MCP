@@ -14,7 +14,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[football-get-top-scorers]] — Returns the WC 2026 top scorers.
 - [[football-xg-model]] — Expected goals + win/draw/loss probabilities for a matchup (Elo-driven Poisson).
 - [[football-match-predictor]] — Most likely scoreline + outcome for a single match.
-- [[football-simulate-group]] — Monte Carlo one group into per-team qualification probabilities.
+- [[football-simulate-group]] — Contextual 12-group Monte Carlo, returning one group's automatic/best-third qualification probabilities.
 - [[football-simulate-bracket]] — **Flagship**: Monte Carlo the full 48-team WC into per-team round + title probabilities.
 - [[football-knockout-path]] — Round-by-round survival probabilities for one team.
 - [[football-get-odds]] — Live market h2h odds for WC 2026 matches; optional team-name filter.
@@ -66,9 +66,9 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[form-trends]] — Rolling form string, W/D/L, goals, xG, and recent trend for a national football team from fixture history.
 - [[poisson-xg]] — Expected goals -> Poisson scoreline matrix -> P(home/draw/away); shared match engine.
 - [[elo]] — Elo win-expectation + rating update; seeds the Poisson engine and the knockout shootout.
-- [[group-sim]] — 4-team round-robin Monte Carlo with FIFA tiebreakers; p_advance sums to 2.
+- [[group-sim]] — 12-group qualification Monte Carlo with available FIFA tiebreakers and contextual best thirds.
 - [[bracket-sim]] — Full 48-team tournament Monte Carlo (groups + best-thirds + 32-team knockout).
-- [[results-state]] — Joins live fixtures onto team codes; partitions each group into completed/remaining; backs derived standings.
+- [[results-state]] — Joins stage-aware live fixtures onto team codes; separates group results, knockout winners, and rematches.
 - [[live-conditioning]] — Locks completed results into the sims (eliminated teams → 0) + opt-in in-tournament Elo nudge.
 - [[value-bet]] — De-vig market odds (multiplicative) and flag outcomes where model_prob beats market by an edge.
 - [[parlay-builder]] — `build_accumulator()` pure function: edge filter, dedup, combined odds under independence assumption.
@@ -96,7 +96,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 ### Football
 
-- [[football-fixtures-chain]] — api_football → football_data_org → static wc2026; 6h TTL.
+- [[football-fixtures-chain]] — api_football → football_data_org → openfootball → static seed; normalized identity/stage/winner, 30min TTL.
 - [[football-standings-chain]] — api_football → football_data_org; 10min TTL.
 - [[football-groups-chain]] — static wc2026 terminator (draw + Elo ratings); ~1y TTL.
 - [[football-team-stats-chain]] — api_football → football_data_org; 24h TTL.

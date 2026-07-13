@@ -3,7 +3,7 @@ title: Football Fixtures Chain
 type: chain
 tags: [football]
 sources: []
-last_updated: 2026-06-13
+last_updated: 2026-07-14
 related: [[api-football]], [[football-data-org]], [[openfootball]], [[static-seed]], [[football-get-fixtures]]
 ---
 
@@ -28,3 +28,8 @@ api-football -> football-data-org -> openfootball -> static-seed
 ## Cache key
 `sportiq:football:fixtures:wc2026`
 
+## Normalized fixture contract
+
+Every adapter returns the existing home/away/date/status/score fields plus `match_id`, `stage`,
+and `winner`. Network adapters preserve native IDs when available; the static seed uses a stable
+group/pair ID. Conditioning uses identity + stage so group and knockout rematches cannot collide.

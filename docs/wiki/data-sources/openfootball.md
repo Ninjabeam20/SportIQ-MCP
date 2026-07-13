@@ -3,7 +3,7 @@ title: openfootball
 type: data-source
 tags: [football, fixtures, keyless]
 sources: []
-last_updated: 2026-06-13
+last_updated: 2026-07-14
 related: [[football-fixtures-chain]], [[football-data-org]], [[static-seed]]
 ---
 
@@ -32,8 +32,11 @@ Top-level `matches[]`; each match →
 | `home` / `away` | `team1` / `team2` |
 | `date` | `date` (`YYYY-MM-DD`) |
 | `group` | `group` |
+| `match_id` | native `id` when present, else `None` |
+| `stage` | `round` |
 | `status` | `FINISHED` if `score.ft` is a 2-list, else `SCHEDULED` |
 | `home_goals` / `away_goals` | `score.ft[0]` / `score.ft[1]`, else `None` |
+| `winner` | `None` (winner inferred from decisive scores; level knockouts stay undecidable) |
 
 Output is normalised to `{"fixtures": [...]}` to match [[api-football]] / [[football-data-org]], so it
 is a drop-in chain fallback. Returns the full fixture list (including future, unplayed matches), so it

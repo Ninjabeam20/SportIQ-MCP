@@ -49,3 +49,8 @@ The public boundary now has deterministic memory, request-rate, telemetry-captur
 work limits without introducing a new service or requiring Redis for local development. A single
 instance limits horizontal availability and throughput; that is an explicit security/cost tradeoff
 until admission state is externalized.
+
+The existing upstream 10 MiB response ceiling is still enforced after httpx buffers a response;
+it is not streaming ingress protection. Provider budget admission also retains the
+peek→fetch→consume race even though counter increments themselves are now atomic. Neither caveat
+was hidden, and no live deployment validation occurred on this branch.

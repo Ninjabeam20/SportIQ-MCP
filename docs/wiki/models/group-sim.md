@@ -2,16 +2,30 @@
 title: Group-Stage Monte Carlo
 type: model
 tags: [football, monte-carlo, group]
-sources: []
-last_updated: 2026-05-29
+sources: [FIFA World Cup 2026 regulations]
+last_updated: 2026-07-14
 related: [[poisson-xg]], [[bracket-sim]], [[football-simulate-group]]
 ---
 
 # Group-Stage Monte Carlo
 
-Simulates a 4-team round-robin (6 matches) many times; match scores sampled from [[poisson-xg]]. Standings use 3/1/0 points with FIFA-style tiebreakers (points -> goal difference -> goals for -> random).
+Simulates all 12 four-team round-robins (6 matches each); match scores are sampled from
+[[poisson-xg]] and completed fixtures are locked. One iteration ranks all third-placed teams
+together, so the best-eight decision is shared by `football_simulate_group` and the bracket.
+
+Within an equal-points cohort, the available FIFA order is head-to-head points → head-to-head
+goal difference → goals scored in all group matches → overall goal difference → overall goals
+scored. Conduct and latest FIFA ranking are not present in the model input, so ties that reach
+those fields use model rating, then RNG only for equal ratings. Best-thirds use points → goal
+difference → goals scored, with the same explicit fallback. Fallback rows are counted and exposed.
+The implemented order follows FIFA's published [qualification and tiebreak
+explainer](https://www.fifa.com/en/articles/groups-how-teams-qualify-tie-breakers) where the
+model has the required fields.
 
 - `simulate_group_once(rng, teams, ratings)` — one draw; returns ranked standings (used by [[bracket-sim]]).
-- `simulate_group(teams, ratings, n_iter, seed)` — aggregates `p_first/second/third/fourth`, `p_advance` and `avg_points`.
+- `simulate_group_stage(groups, ratings, n_iter, seed, results)` — aggregates all groups and
+  returns `p_auto_advance`, `p_best_third_advance`, truthful `p_advance`, and fallback counts.
+- `simulate_group(...)` — retained pure one-group helper where `p_advance` means top two only.
 
-Invariant: `p_advance` over the 4 teams sums to exactly 2 (two teams advance per group).
+Invariants: automatic-advance mass per group is 2; best-third mass over the tournament is 8;
+combined R32 mass is 32. Seeded calls are reproducible.

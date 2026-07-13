@@ -1,6 +1,7 @@
 # GAPS.md — Honest audit of weaknesses
 
-> Written 2026-07-07 against v0.3.1 (commit `b7a1392`). Ordered by severity, most important
+> Written 2026-07-07 against v0.3.1 (commit `b7a1392`); status refreshed 2026-07-14 on
+> `codex_changes`. Ordered by severity, most important
 > first. Each entry: what it is, where it lives, why it matters, and a fix scoped small enough
 > to execute as a single task. Severity: **HIGH / MEDIUM / LOW**.
 >
@@ -13,6 +14,10 @@
 ---
 
 ## 1. HIGH — No per-client rate limiting on the hosted endpoint; shared upstream quotas are a public DoS surface
+
+- **Status 2026-07-14 (`codex_changes`): RESOLVED IN CODE, NOT DEPLOYED.** Pure-ASGI admission
+  now enforces 1 MiB POST bodies, 60 requests/client/minute, and 300 requests/process/minute.
+  Client keys are hashed and forwarded IPs are trusted only under Cloud Run. See ADR-0012.
 
 - **What:** The Cloud Run deployment serves `/mcp` with no authentication and no per-client
   throttling. Server-side keys are configured on the host (CRICAPI_KEY was added 2026-07-03;
@@ -35,6 +40,10 @@
 
 ## 2. HIGH — Rate-limit counters are non-atomic (read-modify-write) and the peek→consume gap allows double-spend
 
+- **Status 2026-07-14 (`codex_changes`): PARTIALLY RESOLVED.** Cache increments are atomic
+  (diskcache transaction; Redis Lua INCR + first expiry), so increments are no longer lost.
+  The provider `has_budget()` peek → upstream fetch → `consume()` admission race remains.
+
 - **What:** `has_budget()` and `consume()` in `src/sportiq/core/ratelimit.py` do
   `get → compare/add → set`. Two concurrent requests both peek "1 token left", both fetch, both
   consume — counter says 1 spent, upstream saw 2 calls. `consume()` itself is also
@@ -54,6 +63,9 @@
   `asyncio.gather`.
 
 ## 3. MEDIUM — `NotFoundError` from chains is uncaught in football and F1 raw/intel tools (latent envelope-contract crash)
+
+- **Status 2026-07-14 (`codex_changes`): RESOLVED.** Football and F1 raw/intelligence boundaries
+  convert expected misses to `NOT_FOUND` envelopes; focused contract tests cover both sports.
 
 - **What:** `FallbackChain.fetch()` can raise `NotFoundError` (fallback.py:221). Cricket tools
   catch it everywhere (regression-locked per the NOT_FOUND-invariant finding), but
@@ -81,6 +93,9 @@
 
 ## 4. MEDIUM — Redirect handling in the shared HTTP client breaks on relative `Location` headers
 
+- **Status 2026-07-14 (`codex_changes`): RESOLVED.** Relative locations are resolved against the
+  request URL and the full scheme/host/port origin is checked before the one-hop follow.
+
 - **What:** `_fetch_json_once()` (`src/sportiq/core/http.py:72-103`) follows redirects manually.
   A relative `Location` (e.g. `/v4/competitions/WC`) has an empty `netloc`, passes the same-host
   check, and is then passed to `client.get(location)` — but the shared client has no `base_url`,
@@ -96,6 +111,10 @@
   relative-Location 302 in `tests/unit/test_s6_http_hardening.py`.
 
 ## 5. MEDIUM — Stampede guard and cache/rate-limit state are per-process; multi-instance Cloud Run multiplies quota burn
+
+- **Status 2026-07-14 (`codex_changes`): PARTIAL GUARDRAIL, NOT DEPLOYED.** ADR-0012 and
+  `cloud.md` now require `--max-instances=1`, but no Cloud Run state was changed or verified.
+  Scaling above one still requires shared admission/cache state.
 
 - **What:** three pieces of state assume one process: `FallbackChain._key_locks`
   (`src/sportiq/core/fallback.py:74,101-113`) serializes concurrent misses per key;
@@ -139,6 +158,9 @@
 
 ## 7. LOW — Dead code: `_SERVER_SEMAPHORE` is created and never used
 
+- **Status 2026-07-14 (`codex_changes`): RESOLVED.** The dead semaphore is gone. Tool telemetry
+  now applies one concurrency-two semaphore to the five CPU-heavy flagship/simulation paths.
+
 - **What:** `src/sportiq/server.py:28` creates `asyncio.Semaphore(20)` with a comment
   "not wired into tools yet; available when fan-out is added." Nothing imports or acquires it.
   It also creates the semaphore at import time, outside any running event loop.
@@ -151,6 +173,9 @@
   if the cap is actually wanted. Deleting is the simpler, rule-compliant option.
 
 ## 8. LOW — Envelope is an untyped open `TypedDict`, contradicting the project's own FastMCP convention
+
+- **Status 2026-07-14 (`codex_changes`): RESOLVED AS DOCUMENTATION.** The FastMCP rule now names
+  `Envelope` as the sanctioned structured-return exception and preserves the uniform contract.
 
 - **What:** `.claude/rules/fastmcp-conventions.md` says "Pydantic models preferred for structured
   returns" and bans untyped dicts, but every tool returns `Envelope`
@@ -166,6 +191,9 @@
   always `Envelope` (the sanctioned exception to "Pydantic preferred"), and why. No code change.
 
 ## 9. LOW — Stale docstring in `tests/conftest.py` claims healthchecks make live HTTP calls
+
+- **Status 2026-07-14 (`codex_changes`): RESOLVED.** The fixture rationale now describes the
+  real risk: credentials loaded from `.env` could let an unmocked adapter fetch hit an upstream.
 
 - **What:** `no_live_credentials`' docstring (`tests/conftest.py:29-36`) justifies itself with
   "Some healthchecks (e.g. CricAPILiveMatchesAdapter) make a live HTTP call when their key is

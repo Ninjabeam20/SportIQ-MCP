@@ -3,7 +3,7 @@ title: API-Football
 type: data-source
 tags: [football, fixtures, standings, squad, scorers]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-07-14
 related: [[football-fixtures-chain]], [[football-standings-chain]], [[football-squad-chain]], [[football-scorers-chain]], [[football-team-stats-chain]]
 ---
 
@@ -29,4 +29,6 @@ Primary network source for World Cup 2026 fixtures, standings, team stats, squad
 | `/players/squads` | `football_get_squad` | [[football-squad-chain]] |
 | `/players/topscorers` | `football_get_top_scorers` | [[football-scorers-chain]] |
 
-Each adapter normalises the provider's `{"response": [...]}` envelope into the common per-chain shape.
+Each adapter normalises the provider's `{"response": [...]}` envelope into the common per-chain
+shape. Fixtures preserve `fixture.id` as `match_id`, `league.round` as `stage`, and the name whose
+`teams.*.winner` flag is true as `winner`; this supports rematches and shootouts in live conditioning.

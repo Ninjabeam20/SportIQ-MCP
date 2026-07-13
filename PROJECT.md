@@ -1,6 +1,7 @@
 # PROJECT.md — SportIQ MCP: The Full Picture
 
-> Deep knowledge-transfer document, written 2026-07-07 against v0.3.1 (commit `b7a1392`).
+> Deep knowledge-transfer document, written 2026-07-07 against v0.3.1 (commit `b7a1392`) and
+> refreshed 2026-07-14 on `codex_changes` after the hardening/correctness batches.
 > Read this first. For known weaknesses read `GAPS.md`. For operational rules read `CLAUDE.md`.
 
 ---
@@ -97,9 +98,10 @@ core/http.py (shared httpx client: retry, same-host redirects, 10MB cap)
 - **`src/sportiq/server.py`** — entry point. `main()` is the uvx contract
   (`[project.scripts] sportiq-mcp = "sportiq.server:main"`). Default transport is stdio;
   `SPORTIQ_TRANSPORT=http` builds the Starlette app manually (NOT via `mcp.run("streamable-http")`,
-  which would drop the middlewares) and runs uvicorn with two **pure-ASGI** middlewares:
-  `ClientInfoMiddleware` (logs which client called) and `LegacyKeyPathMiddleware` (rewrites the
-  paid-era `/u/<key>/mcp` sponsor-connector paths to `/mcp`).
+  which would drop the middlewares) and runs uvicorn with three **pure-ASGI** middlewares:
+  `RequestLimitMiddleware` (1 MiB + per-client/process admission), `ClientInfoMiddleware`
+  (bounded/sanitized client logging), and `LegacyKeyPathMiddleware` (rewrites the paid-era
+  `/u/<key>/mcp` sponsor-connector paths to `/mcp`).
 
 - **`src/sportiq/core/`** — everything sport-agnostic:
   - `fallback.py` — **the** load-bearing file. `FallbackChain[T]`, `Adapter` protocol,
@@ -110,21 +112,22 @@ core/http.py (shared httpx client: retry, same-host redirects, 10MB cap)
   - `errors.py` — `SportiqError` hierarchy + `ErrorCode` literal. Note `MissingCredentialsError`
     maps to code `ALL_SOURCES_FAILED` on purpose — the chain walks past keyless adapters as a
     normal failure.
-  - `cache.py` — unified `get`/`set`/`healthcheck`; JSON-encoded values wrapped with `stored_at`
-    so age/staleness is computable. Redis errors downgrade *permanently for the process* to
-    diskcache.
-  - `ratelimit.py` — `Budget(source, per_minute, per_day)`, `has_budget()` (peek),
-    `consume()` (after success only), `remaining()` (for health). Counters live in the cache.
+  - `cache.py` — unified wrapped-value cache plus atomic raw counters, delete/close lifecycle,
+    and corrupt-entry eviction. Redis errors downgrade *permanently for the process* to diskcache.
+  - `ratelimit.py` — `Budget(source, per_minute, per_day)`, `has_budget()` (peek), atomic
+    `consume()` (after success only), `remaining()` (for health). The peek→fetch race remains.
   - `http.py` — `get_json()` (retries transport + 5xx only, never 429) and `get_json_burst()`
-    (also retries 429 — ONLY for no-quota sources like OpenF1). Same-host-only redirects, 10 MB cap.
+    (also retries 429 — ONLY for no-quota sources like OpenF1). Relative redirects are resolved
+    before full-origin checks; upstream responses have a post-buffer 10 MiB cap.
   - `redact.py` — `scrub()` strips API keys from exception strings before they land in attempt
     logs / error envelopes (keys travel as URL query params for some sources; ADR-0009).
-  - `health.py` — `sportiq_health` tool; adapters self-register (deduped by name); healthchecks
-    are key-presence-only (a live call would burn quota on every public health invocation).
+  - `health.py` — `sportiq_health` tool; adapters self-register (deduped by optional
+    `health_name`, otherwise name); healthchecks are key-presence-only.
   - `param_docs.py` — post-registration shim that parses docstring `Args:` blocks into the tool
     JSON schema (FastMCP only schemas type hints; directories like Smithery score param docs).
   - `tool_telemetry.py` — wraps every registered tool to emit a structlog `tool_call` event
-    (success, latency, error code, client) — the raw feed for `scripts/dashboard.py`.
+    (success, latency, error code, client) and shares a concurrency-two semaphore across the
+    five expensive football/F1/cricket paths.
   - `prompts.py`, `instructions.py` — MCP prompts + an instructions resource.
   - `parlay.py`, `value_bet.py` — shared math for accumulator/value-bet tools across sports.
 
@@ -166,10 +169,10 @@ Key principle: chains that must never fail end in a **static-seed terminator** (
 - **Football** (`football/models/`): `elo.py` (frozen seed ratings — see D1 note below),
   `elo_live.py` (opt-in `SPORTIQ_FOOTBALL_LIVE_ELO`: walks Elo forward from completed WC matches),
   `poisson_xg.py` (Elo → per-team goal lambdas → scipy Poisson score matrix),
-  `group_sim.py`, `bracket_sim.py` (loads `wc2026_bracket.json` at import; per iteration:
-  12 groups → top-2 + 8 best-thirds via official Annex C allocation → knockout tree → champion),
-  `results_state.py` (parses real completed fixtures so sims condition on reality: eliminated
-  teams get probability 0), `form_trends.py`, `value_bet.py` (de-vig + model-edge).
+  `group_sim.py`, `bracket_sim.py` (one contextual 12-group draw per iteration: top two plus the
+  eight best thirds → official 495-row Annex-C allocation → knockout tree → champion),
+  `results_state.py` (stage-aware match IDs/winners preserve group/knockout rematches and lock
+  real results), `form_trends.py`, `value_bet.py` (de-vig + model-edge).
 - **F1** (`f1/models/`): `tyre_deg.py` (linear per-compound fits on lap times), `pit_strategy.py`
   (degradation + measured per-circuit pit loss from `circuits.json` → optimal stops),
   `undercut.py`, `race_pace.py`, `quali_analysis.py`.
@@ -194,7 +197,7 @@ Karpathy three-layer ownership:
 
 ### 3.6 Testing architecture
 
-599 tests, four layers (see `.claude/rules/testing.md`):
+758 collected tests, four layers (see `.claude/rules/testing.md`):
 `tests/unit/` (pure models + core, no I/O) → `tests/adapters/` (respx-mocked HTTP against
 committed cassettes in `tests/fixtures/{source}/`) → `tests/chains/` (stub adapters; order,
 fallback, stale-serve, budget behavior) → `tests/tools/` (envelope shape end-to-end with stubbed
@@ -274,7 +277,8 @@ analytics), `launch/` marketing copy, wiki lint tooling.
 2. **`BaseHTTPMiddleware` breaks MCP streamable-HTTP** (SSE buffering). Pure ASGI only on `/mcp`.
 3. **Football fixture `status` strings differ per adapter** (api-football: `FT`/`AET`/`PEN`;
    football-data.org: `FINISHED`). Gate finished-detection on the status set, never on
-   "scores present".
+   "scores present". Preserve provider match ID, stage/round, and explicit winner: stage must
+   distinguish a same-pair knockout rematch from its group match, and `PEN` may be score-level.
 4. **api_football free plan returns empty (not error) for uncovered seasons** — and an empty
    success would poison the cache for 30 min. The guard raises `NotFoundError`; keep it.
 5. **Version lives in three places:** `pyproject.toml` (source of truth; `__init__.__version__`
@@ -287,7 +291,8 @@ analytics), `launch/` marketing copy, wiki lint tooling.
 8. **Cassette recording is manual-only.** CricAPI fixtures come from its docs page, RapidAPI from
    the portal's sample tab, scrapers from one dev-time live fetch (scrub Set-Cookie first).
 9. **The hosted deployment runs diskcache, not Redis** (zero-spend rule) — per-instance cache,
-   per-instance rate-limit counters. Acceptable at current traffic; see GAPS.md #2/#5.
+   per-instance rate-limit counters. Hosted limit math therefore requires max-instances=1;
+   this branch documents but did not deploy that setting. See GAPS.md #2/#5 and ADR-0012.
 10. **CBC must exist on PATH** for the Dream11 solver — `brew install cbc` (macOS),
     `apt-get install coinor-cbc` (CI/Docker do this explicitly).
 11. **Coverage gate lives in the CI command, not pyproject `addopts`** — deliberately, so partial

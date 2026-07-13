@@ -3,13 +3,17 @@ title: Tournament Monte Carlo (flagship)
 type: model
 tags: [football, monte-carlo, bracket, 2026-format]
 sources: [wc2026_bracket.json]
-last_updated: 2026-05-30
+last_updated: 2026-07-14
 related: [[group-sim]], [[poisson-xg]], [[elo]], [[football-simulate-bracket]], [[0008-football-fallback-strategy]]
 ---
 
 # Tournament Monte Carlo (flagship engine)
 
 Drives `football_simulate_bracket`. Per iteration: simulate all **12 groups**, take the **top 2 + 8 best third-placed** teams (32 qualifiers — the 2026 format), slot them into the **official FIFA 2026 knockout structure**, and play it to a champion. Aggregating gives each team's probability of reaching every round and winning.
+
+The group rankings and best-third selection come from the same contextual path as
+`football_simulate_group`; fallback use for unavailable conduct/latest-ranking fields is counted
+in `tiebreak_fallbacks` rather than hidden.
 
 ## Knockout
 - Ties sampled from [[poisson-xg]]; draws after normal time go to a shootout weighted by [[elo]] `expected_score`.
@@ -22,3 +26,4 @@ The knockout structure lives in `src/sportiq/football/data/wc2026_bracket.json`,
 - `reach_r32` mass across teams == 32 (exactly 32 qualify each iteration).
 - `win` mass == 1 (one champion per iteration).
 - Round probabilities are monotone; champion title-probability is stable (±2%) across seeds at ~10k iterations.
+- Seeded simulations are reproducible, and the R32 qualifier mass is automatic 24 + best-third 8.

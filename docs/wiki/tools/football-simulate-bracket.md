@@ -3,7 +3,7 @@ title: football_simulate_bracket
 type: tool
 tags: [football, monte-carlo, flagship, 2026-format]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-07-14
 related: [[bracket-sim]], [[group-sim]], [[poisson-xg]], [[football-groups-chain]], [[0008-football-fallback-strategy]]
 ---
 
@@ -17,11 +17,15 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
 ```
 
 ## Args
-- `iterations` — Tournament simulations (clamped 100..50000; ~10k gives ±2%).
+- `iterations` — Tournament simulations (clamped 100..20000; ~10k gives ±2%).
 - `seed` — Optional RNG seed for reproducibility.
 
 ## Returns
-`data.teams`: {code: {reach_r32, reach_r16, reach_qf, reach_sf, reach_final, win}} sorted by win prob; `data.champion`; `data.iterations`. `meta.estimated: true`.
+`data.teams`: `{code: {reach_r32, reach_r16, reach_qf, reach_sf, reach_final, win}}`
+sorted by win probability; `data.champion`; `data.iterations`; `data.tiebreak_fallbacks`.
+`meta.estimated: true` and includes live-result conditioning plus the exposed tiebreak policy.
 
 ## 2026 format
-48 teams, 12 groups, top 2 + 8 best thirds -> 32-team knockout (R32 -> R16 -> QF -> SF -> Final). See [[bracket-sim]] for the seeding caveat.
+48 teams, 12 groups, top 2 + 8 best thirds → 32-team knockout (R32 → R16 → QF →
+SF → Final). The R32 template and all 495 best-third group combinations use the official encoded
+allocation; see [[bracket-sim]].
