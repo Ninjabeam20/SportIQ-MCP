@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
+import pytest
+
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.fallback import FallbackResult
 from sportiq.football.adapters.static_seed import load_elo_seed, load_wc2026
@@ -163,7 +165,7 @@ async def test_match_predictor_returns_scoreline():
     assert result["data"]["predicted_winner"] in {"BRA", "QAT", "DRAW"}
 
 
-async def test_simulate_group_advance_mass_two():
+async def test_simulate_group_models_contextual_best_third_advancement():
     from sportiq.football import intel_tools
 
     with patch("sportiq.football.intel_tools.football_groups_chain") as gmock, \
@@ -171,8 +173,15 @@ async def test_simulate_group_advance_mass_two():
         gmock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
         fmock.fetch = AsyncMock(return_value=_fr({"fixtures": []}))
         result = await intel_tools.football_simulate_group(group="A", iterations=1500)
-    total = sum(t["p_advance"] for t in result["data"]["teams"].values())
-    assert abs(total - 2.0) < 0.01  # exactly 2 advance/iter; tol covers 4dp rounding
+    teams = result["data"]["teams"].values()
+    assert sum(t["p_auto_advance"] for t in teams) == pytest.approx(2.0, abs=0.01)
+    assert any(t["p_best_third_advance"] > 0 for t in result["data"]["teams"].values())
+    for row in result["data"]["teams"].values():
+        assert row["p_advance"] == pytest.approx(
+            row["p_auto_advance"] + row["p_best_third_advance"], abs=0.0001
+        )
+    assert "tiebreak_fallbacks" in result["meta"]
+    assert "tiebreak_policy" in result["meta"]
 
 
 async def test_simulate_group_unknown_group_not_found():
@@ -221,6 +230,8 @@ async def test_simulate_bracket_flagship_invariants():
     assert abs(sum(t["reach_r32"] for t in data["teams"].values()) - 32.0) < 0.01
     assert data["champion"] in data["teams"]
     assert result["meta"]["estimated"] is True
+    assert result["meta"]["tiebreak_fallbacks"] == data["tiebreak_fallbacks"]
+    assert "model rating" in result["meta"]["tiebreak_policy"]
 
 
 async def test_knockout_path_returns_team_row():

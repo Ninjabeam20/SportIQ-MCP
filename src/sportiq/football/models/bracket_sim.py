@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 
 from sportiq.football.models.elo import expected_score
-from sportiq.football.models.group_sim import simulate_group_once
+from sportiq.football.models.group_sim import draw_qualifiers_once
 from sportiq.football.models.poisson_xg import lambdas_from_elo
 from sportiq.football.models.results_state import ResultsState
 
@@ -40,26 +40,9 @@ def _draw_qualifiers(
     maps only the 8 best third-placed groups (by points -> gd -> gf -> random) to their team.
     When ``results`` is supplied, each group's played matches are locked in.
     """
-    winners: dict[str, str] = {}
-    runners: dict[str, str] = {}
-    thirds: list[dict] = []
-    for letter, teams in groups.items():
-        if len(teams) != 4:
-            raise ValueError(
-                f"Group {letter} must have exactly 4 teams (WC 2026 format); got {len(teams)}."
-            )
-        known = results.groups.get(letter) if results else None
-        standings = simulate_group_once(rng, teams, ratings, known)
-        winners[letter] = standings[0]["team"]
-        runners[letter] = standings[1]["team"]
-        third = dict(standings[2])
-        third["group"] = letter
-        thirds.append(third)
-
-    best = sorted(
-        thirds, key=lambda r: (r["points"], r["gd"], r["gf"], rng.random()), reverse=True
-    )[:8]
-    best_thirds = {r["group"]: r["team"] for r in best}
+    winners, runners, best_thirds, _, _ = draw_qualifiers_once(
+        rng, groups, ratings, results
+    )
     return winners, runners, best_thirds
 
 
@@ -120,9 +103,11 @@ def _simulate_once(
     ratings: dict[str, float],
     results: ResultsState | None = None,
     locked_ko: dict[frozenset[str], str] | None = None,
-) -> dict[str, int]:
-    """One tournament. Returns ``{team: furthest_stage_index}`` for qualifiers."""
-    winners, runners, best_thirds = _draw_qualifiers(rng, groups, ratings, results)
+) -> tuple[dict[str, int], int]:
+    """Return furthest stages plus the number of model-rating fallbacks."""
+    winners, runners, best_thirds, _, fallback_rows = draw_qualifiers_once(
+        rng, groups, ratings, results
+    )
     current = _build_r32(winners, runners, best_thirds)
     locked_ko = locked_ko or {}
 
@@ -137,7 +122,7 @@ def _simulate_once(
             reached[winner] = stage_idx
             nxt.append(winner)
         current = nxt
-    return reached
+    return reached, fallback_rows
 
 
 def simulate_tournament(
@@ -167,12 +152,16 @@ def simulate_tournament(
     rng = np.random.default_rng(seed)
     all_teams = [t for teams in groups.values() for t in teams]
     counts = {t: [0] * len(_STAGES) for t in all_teams}
+    fallback_rows = 0
     locked_ko = (
         {frozenset((a, b)): w for (a, b, w) in results.knockout} if results else {}
     )
 
     for _ in range(n_iter):
-        reached = _simulate_once(rng, groups, ratings, results, locked_ko)
+        reached, iteration_fallbacks = _simulate_once(
+            rng, groups, ratings, results, locked_ko
+        )
+        fallback_rows += iteration_fallbacks
         for team, furthest in reached.items():
             for idx in range(furthest + 1):  # cumulative: reaching SF implies reaching R32..SF
                 counts[team][idx] += 1
@@ -184,4 +173,9 @@ def simulate_tournament(
     }
     ranked = dict(sorted(teams_out.items(), key=lambda kv: kv[1]["win"], reverse=True))
     champion = next(iter(ranked))
-    return {"teams": ranked, "iterations": n_iter, "champion": champion}
+    return {
+        "teams": ranked,
+        "iterations": n_iter,
+        "champion": champion,
+        "tiebreak_fallbacks": fallback_rows,
+    }

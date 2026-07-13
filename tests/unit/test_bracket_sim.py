@@ -72,3 +72,11 @@ def test_draw_qualifiers_rejects_non_four_team_group():
     ratings = {"X": 1500.0, "Y": 1500.0, "Z": 1500.0}
     with pytest.raises(ValueError):
         bracket_sim._draw_qualifiers(rng, bad_groups, ratings)
+
+
+def test_tournament_reports_model_rating_tiebreak_fallbacks():
+    sim = simulate_tournament(_GROUPS, _RATINGS, n_iter=50, seed=3)
+
+    assert "tiebreak_fallbacks" in sim
+    assert isinstance(sim["tiebreak_fallbacks"], int)
+    assert sim["tiebreak_fallbacks"] >= 0

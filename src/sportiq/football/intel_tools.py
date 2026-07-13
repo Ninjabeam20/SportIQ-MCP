@@ -21,7 +21,7 @@ from sportiq.football.models import poisson_xg
 from sportiq.football.models.bracket_sim import simulate_tournament
 from sportiq.football.models.elo_live import nudge_ratings
 from sportiq.football.models.form_trends import compute_form_trends
-from sportiq.football.models.group_sim import simulate_group as _simulate_group
+from sportiq.football.models.group_sim import simulate_group_stage
 from sportiq.football.models.results_state import ResultsState, build_results_state
 from sportiq.football.models.value_bet import find_value
 
@@ -29,6 +29,9 @@ _MAX_ITERATIONS = 20000
 _MIN_ITERATIONS = 100
 
 _NO_LIVE_NOTE = "Live results unavailable; simulated from the pre-tournament seed."
+_TIEBREAK_POLICY = (
+    "FIFA 2026 available fields; model rating substitutes for missing conduct/FIFA ranking."
+)
 
 
 async def _groups_payload() -> dict:
@@ -84,7 +87,12 @@ async def _maybe_nudge_single(groups_value: dict, ratings: dict) -> tuple[dict, 
     return nudge_ratings(ratings, state.completed_chrono), True
 
 
-def _sim_meta(groups_result, fixtures_result, state: ResultsState | None) -> dict:
+def _sim_meta(
+    groups_result,
+    fixtures_result,
+    state: ResultsState | None,
+    tiebreak_fallbacks: int | None = None,
+) -> dict:
     """Build the meta envelope for a conditioned simulation tool."""
     sources = [groups_result] + ([fixtures_result] if fixtures_result is not None else [])
     meta: dict = {
@@ -99,6 +107,9 @@ def _sim_meta(groups_result, fixtures_result, state: ResultsState | None) -> dic
         meta["live_elo"] = True
     if state is None:
         meta["note"] = _NO_LIVE_NOTE
+    if tiebreak_fallbacks is not None:
+        meta["tiebreak_fallbacks"] = tiebreak_fallbacks
+        meta["tiebreak_policy"] = _TIEBREAK_POLICY
     return meta
 
 
@@ -218,14 +229,15 @@ async def football_match_predictor(home_team: str, away_team: str, neutral: bool
 
 
 async def football_simulate_group(group: str, iterations: int = 5000) -> Envelope:
-    """Monte Carlo one group's round-robin -> per-team qualification probabilities.
+    """Monte Carlo one group within the full 12-group qualification context.
 
     Args:
         group: Group letter A-L.
         iterations: Number of simulations (clamped to 100..20000).
 
     Returns:
-        data.teams: {code: {p_first, p_second, p_third, p_fourth, p_advance, avg_points}}.
+        data.teams: Per-team position probabilities, p_auto_advance,
+            p_best_third_advance, truthful combined p_advance, and avg_points.
         data.iterations: iterations actually run.
         meta.estimated: true. meta.conditioned_matches: completed matches locked in.
     """
@@ -246,13 +258,30 @@ async def football_simulate_group(group: str, iterations: int = 5000) -> Envelop
 
     state, fixtures_result = await _fetch_live_state(result.value)
     ratings = _conditioned_ratings(result.value.get("ratings", {}), state)
-    known = state.groups.get(key) if state else None
-
-    sim = _simulate_group(groups[key], ratings, n_iter=_clamp_iterations(iterations), known=known)
-    meta = _sim_meta(result, fixtures_result, state)
+    sim = simulate_group_stage(
+        groups,
+        ratings,
+        n_iter=_clamp_iterations(iterations),
+        results=state,
+    )
+    selected_teams = {team: sim["teams"][team] for team in groups[key]}
+    meta = _sim_meta(
+        result,
+        fixtures_result,
+        state,
+        tiebreak_fallbacks=sim["tiebreak_fallbacks"],
+    )
     if state:  # group-tool count should reflect only this group's locked matches
+        known = state.groups.get(key)
         meta["conditioned_matches"] = len(known.completed) if known else 0
-    return {"data": {"group": key, **sim}, "meta": meta}
+    return {
+        "data": {
+            "group": key,
+            "teams": selected_teams,
+            "iterations": sim["iterations"],
+        },
+        "meta": meta,
+    }
 
 
 async def football_simulate_bracket(iterations: int = 10000, seed: int | None = None) -> Envelope:
@@ -294,7 +323,15 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
     sim = simulate_tournament(
         groups, ratings, n_iter=_clamp_iterations(iterations), seed=seed, results=state
     )
-    return {"data": sim, "meta": _sim_meta(result, fixtures_result, state)}
+    return {
+        "data": sim,
+        "meta": _sim_meta(
+            result,
+            fixtures_result,
+            state,
+            tiebreak_fallbacks=sim["tiebreak_fallbacks"],
+        ),
+    }
 
 
 async def football_knockout_path(team: str, iterations: int = 10000, seed: int | None = None) -> Envelope:
@@ -335,7 +372,15 @@ async def football_knockout_path(team: str, iterations: int = 10000, seed: int |
         groups, ratings, n_iter=_clamp_iterations(iterations), seed=seed, results=state
     )
     row = sim["teams"].get(code, {})
-    return {"data": {"team": code, **row}, "meta": _sim_meta(result, fixtures_result, state)}
+    return {
+        "data": {"team": code, **row},
+        "meta": _sim_meta(
+            result,
+            fixtures_result,
+            state,
+            tiebreak_fallbacks=sim["tiebreak_fallbacks"],
+        ),
+    }
 
 
 async def football_find_value_bets(team: str | None = None, min_edge: float = 0.05) -> Envelope:
