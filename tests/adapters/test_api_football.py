@@ -27,11 +27,20 @@ def _with_key(monkeypatch):
 async def test_fixtures_adapter_normalises_shape():
     from sportiq.football.adapters.api_football import APIFootballFixturesAdapter
 
-    respx.get(f"{_BASE}/fixtures").mock(return_value=Response(200, json=_load("fixtures.json")))
+    payload = _load("fixtures.json")
+    match = payload["response"][0]
+    match["fixture"]["id"] = 12345
+    match["league"] = {"round": "Group Stage - 1"}
+    match["teams"]["home"]["winner"] = True
+    match["teams"]["away"]["winner"] = False
+    respx.get(f"{_BASE}/fixtures").mock(return_value=Response(200, json=payload))
     result = await APIFootballFixturesAdapter().fetch()
     assert "fixtures" in result
     assert result["fixtures"][0]["home"] == "Mexico"
     assert result["fixtures"][0]["away"] == "Poland"
+    assert result["fixtures"][0]["match_id"] == 12345
+    assert result["fixtures"][0]["stage"] == "Group Stage - 1"
+    assert result["fixtures"][0]["winner"] == "Mexico"
 
 
 @respx.mock

@@ -68,8 +68,10 @@ class StaticSeedFixturesAdapter:
             for i in range(len(teams)):
                 for j in range(i + 1, len(teams)):
                     home, away = teams[i], teams[j]
+                    pair_id = ":".join(sorted((home, away)))
                     fixtures.append(
                         {
+                            "match_id": f"static:group:{group}:{pair_id}",
                             "home": teams_meta.get(home, {}).get("name", home),
                             "away": teams_meta.get(away, {}).get("name", away),
                             "group": group,
@@ -77,6 +79,7 @@ class StaticSeedFixturesAdapter:
                             "status": "SCHEDULED",
                             "home_goals": None,
                             "away_goals": None,
+                            "winner": None,
                         }
                     )
         return {"fixtures": fixtures, "source": "static_seed"}

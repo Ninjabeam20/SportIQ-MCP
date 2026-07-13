@@ -10,14 +10,9 @@ matches for the in-tournament Elo walk, and a standings derivation that backs a
 keyless standings fallback.
 
 Robustness contract: a fixture whose team names cannot be resolved to codes is
-**dropped and counted**, never crashed. Group membership (not the upstream
-``group`` string) decides which group a match belongs to, so noisy group labels
-across sources can't misfile a result.
-
-Known V1 limitation: a knockout tie between two teams from the *same* group is
-indistinguishable from their group-stage meeting by membership alone, so it is
-treated as the group fixture. Cross-group knockout ties (the overwhelming
-majority) classify correctly. See update.md for the follow-up.
+**dropped and counted**, never crashed. Explicit provider stage data decides
+whether a match is a group or knockout fixture; same-group membership is only a
+fallback for legacy payloads without a stage.
 """
 from __future__ import annotations
 
@@ -133,6 +128,23 @@ def _is_finished(fx: dict) -> bool:
     )
 
 
+def _stage_class(
+    stage: object,
+    a: str,
+    b: str,
+    code_to_group: dict[str, str],
+) -> str:
+    """Classify a provider stage, falling back to draw membership when absent."""
+    value = _normalize(str(stage or ""))
+    if value:
+        tokens = value.split()
+        if "group" in tokens or "matchday" in tokens:
+            return "group"
+        return "knockout"
+    same_group = code_to_group.get(a) is not None and code_to_group.get(a) == code_to_group.get(b)
+    return "group" if same_group else "knockout"
+
+
 def build_results_state(
     fixtures: list[dict],
     groups: dict[str, list[str]],
@@ -153,9 +165,12 @@ def build_results_state(
     index = build_code_index(teams_meta)
     code_to_group = {code: letter for letter, codes in groups.items() for code in codes}
 
-    # Per pairing keep one entry; the latest report by date wins (re-reported
-    # scores). ``record`` holds (code_a, code_b, goals_a, goals_b, date, is_group).
-    record: dict[frozenset[str], tuple[str, str, int, int, str, bool]] = {}
+    # Per provider match ID keep one report; legacy payloads without an ID are
+    # deduplicated by stage class + pairing. The latest report by date wins.
+    # Values hold (code_a, code_b, goals_a, goals_b, date, stage_class, winner).
+    record: dict[
+        tuple[str, object], tuple[str, str, int, int, str, str, str | None]
+    ] = {}
     dropped = 0
 
     for fx in fixtures:
@@ -169,26 +184,42 @@ def build_results_state(
         ga = int(fx["home_goals"])
         gb = int(fx["away_goals"])
         date = fx.get("date") or ""
-        key = frozenset((a, b))
-        is_group = code_to_group.get(a) is not None and code_to_group.get(a) == code_to_group.get(b)
-        if not is_group and ga == gb:
-            dropped += 1  # knockout draw on the scoreline — not lockable
+        pair = frozenset((a, b))
+        stage_class = _stage_class(fx.get("stage"), a, b, code_to_group)
+        if stage_class == "group" and (
+            code_to_group.get(a) is None or code_to_group.get(a) != code_to_group.get(b)
+        ):
+            dropped += 1
             continue
+        winner = resolve_code(fx.get("winner") or "", index)
+        if winner not in pair:
+            winner = None
+        if stage_class == "knockout":
+            winner = winner or (a if ga > gb else b if gb > ga else None)
+            if winner is None:
+                dropped += 1  # level knockout score with no shootout winner
+                continue
+        match_id = fx.get("match_id")
+        key: tuple[str, object] = (
+            ("id", match_id)
+            if match_id is not None and match_id != ""
+            else (stage_class, pair)
+        )
         if key in record and date < record[key][4]:
             continue  # older report of a pairing we already have
-        record[key] = (a, b, ga, gb, date, is_group)
+        record[key] = (a, b, ga, gb, date, stage_class, winner)
 
     completed_by_group: dict[str, dict[frozenset[str], tuple[str, str, int, int]]] = {
         letter: {} for letter in groups
     }
     knockout: list[tuple[str, str, str]] = []
     chrono: list[tuple[str, str, int, int, str]] = []
-    for key, (a, b, ga, gb, date, is_group) in record.items():
+    for a, b, ga, gb, date, stage_class, winner in record.values():
         chrono.append((a, b, ga, gb, date))
-        if is_group:
-            completed_by_group[code_to_group[a]][key] = (a, b, ga, gb)
+        if stage_class == "group":
+            completed_by_group[code_to_group[a]][frozenset((a, b))] = (a, b, ga, gb)
         else:
-            knockout.append((a, b, a if ga > gb else b))
+            knockout.append((a, b, winner))
 
     group_states: dict[str, GroupResults] = {}
     for letter, codes in groups.items():

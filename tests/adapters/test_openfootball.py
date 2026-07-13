@@ -27,6 +27,8 @@ async def test_finished_match_carries_real_score():
     played = result["fixtures"][0]
     assert played["home"] == "Mexico"
     assert played["away"] == "South Africa"
+    assert played["stage"] == "Matchday 1"
+    assert played["winner"] is None
     assert played["status"] == "FINISHED"
     assert played["home_goals"] == 2
     assert played["away_goals"] == 0

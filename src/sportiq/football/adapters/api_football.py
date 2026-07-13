@@ -47,16 +47,28 @@ class APIFootballFixturesAdapter:
             )
         fixtures = []
         for item in data.get("response", []):
+            fixture = item.get("fixture", {})
+            league = item.get("league", {})
             teams = item.get("teams", {})
+            home = teams.get("home", {})
+            away = teams.get("away", {})
             goals = item.get("goals", {})
+            winner = None
+            if home.get("winner") is True:
+                winner = home.get("name")
+            elif away.get("winner") is True:
+                winner = away.get("name")
             fixtures.append(
                 {
-                    "home": teams.get("home", {}).get("name"),
-                    "away": teams.get("away", {}).get("name"),
-                    "date": item.get("fixture", {}).get("date"),
-                    "status": item.get("fixture", {}).get("status", {}).get("short"),
+                    "match_id": fixture.get("id"),
+                    "home": home.get("name"),
+                    "away": away.get("name"),
+                    "date": fixture.get("date"),
+                    "stage": league.get("round"),
+                    "status": fixture.get("status", {}).get("short"),
                     "home_goals": goals.get("home"),
                     "away_goals": goals.get("away"),
+                    "winner": winner,
                 }
             )
         return {"fixtures": fixtures}

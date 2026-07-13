@@ -19,13 +19,21 @@ def _load(name: str) -> dict:
 async def test_fixtures_adapter_normalises_shape():
     from sportiq.football.adapters.football_data_org import FootballDataOrgFixturesAdapter
 
+    payload = _load("matches.json")
+    match = payload["matches"][0]
+    match["id"] = 67890
+    match["stage"] = "LAST_16"
+    match["score"]["winner"] = "AWAY_TEAM"
     respx.get(f"{_BASE}/competitions/WC/matches").mock(
-        return_value=Response(200, json=_load("matches.json"))
+        return_value=Response(200, json=payload)
     )
     result = await FootballDataOrgFixturesAdapter().fetch()
     assert result["fixtures"][0]["home"] == "Argentina"
     assert result["fixtures"][0]["away"] == "Mexico"
     assert result["fixtures"][0]["status"] == "SCHEDULED"
+    assert result["fixtures"][0]["match_id"] == 67890
+    assert result["fixtures"][0]["stage"] == "LAST_16"
+    assert result["fixtures"][0]["winner"] == "Mexico"
 
 
 @respx.mock

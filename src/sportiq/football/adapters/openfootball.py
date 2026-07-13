@@ -33,13 +33,16 @@ class OpenFootballFixturesAdapter:
             played = isinstance(ft, list) and len(ft) == 2
             fixtures.append(
                 {
+                    "match_id": match.get("id"),
                     "home": match.get("team1"),
                     "away": match.get("team2"),
                     "date": match.get("date"),
                     "group": match.get("group"),
+                    "stage": match.get("round"),
                     "status": "FINISHED" if played else "SCHEDULED",
                     "home_goals": ft[0] if played else None,
                     "away_goals": ft[1] if played else None,
+                    "winner": None,
                 }
             )
         return {"fixtures": fixtures}

@@ -34,15 +34,25 @@ class FootballDataOrgFixturesAdapter:
         )
         fixtures = []
         for match in data.get("matches", []):
-            score = match.get("score", {}).get("fullTime", {})
+            home = match.get("homeTeam", {})
+            away = match.get("awayTeam", {})
+            score_block = match.get("score", {})
+            score = score_block.get("fullTime", {})
+            winner = {
+                "HOME_TEAM": home.get("name"),
+                "AWAY_TEAM": away.get("name"),
+            }.get(score_block.get("winner"))
             fixtures.append(
                 {
-                    "home": match.get("homeTeam", {}).get("name"),
-                    "away": match.get("awayTeam", {}).get("name"),
+                    "match_id": match.get("id"),
+                    "home": home.get("name"),
+                    "away": away.get("name"),
                     "date": match.get("utcDate"),
+                    "stage": match.get("stage"),
                     "status": match.get("status"),
                     "home_goals": score.get("home"),
                     "away_goals": score.get("away"),
+                    "winner": winner,
                 }
             )
         return {"fixtures": fixtures}

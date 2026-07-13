@@ -22,7 +22,15 @@ _TEAMS = {
 }
 
 
-def _fx(home, away, hs, as_, date="2026-06-12", status="FINISHED"):
+def _fx(
+    home,
+    away,
+    hs,
+    as_,
+    date="2026-06-12",
+    status="FINISHED",
+    **extra,
+):
     return {
         "home": home,
         "away": away,
@@ -30,6 +38,7 @@ def _fx(home, away, hs, as_, date="2026-06-12", status="FINISHED"):
         "away_goals": as_,
         "date": date,
         "status": status,
+        **extra,
     }
 
 
@@ -117,6 +126,79 @@ def test_knockout_draw_on_scoreline_dropped():
     fixtures = [_fx("Argentina", "France", 1, 1)]
     state = build_results_state(fixtures, _GROUPS, _TEAMS)
     assert state.knockout == []
+    assert state.dropped == 1
+
+
+def test_same_pair_group_then_knockout_are_both_preserved():
+    fixtures = [
+        _fx(
+            "Argentina",
+            "Colombia",
+            0,
+            1,
+            date="2026-06-12",
+            match_id=101,
+            stage="GROUP_STAGE",
+        ),
+        _fx(
+            "Argentina",
+            "Colombia",
+            2,
+            1,
+            date="2026-07-05",
+            match_id=202,
+            stage="QUARTER_FINALS",
+        ),
+    ]
+
+    state = build_results_state(fixtures, _GROUPS, _TEAMS)
+
+    assert state.groups["A"].completed == [("ARG", "COL", 0, 1)]
+    assert state.knockout == [("ARG", "COL", "ARG")]
+    assert state.completed_chrono == [
+        ("ARG", "COL", 0, 1),
+        ("ARG", "COL", 2, 1),
+    ]
+    assert state.matched == 2
+    assert state.dropped == 0
+
+
+def test_level_penalty_result_with_explicit_winner_locks_knockout():
+    fixtures = [
+        _fx(
+            "Argentina",
+            "France",
+            1,
+            1,
+            status="PEN",
+            stage="FINAL",
+            winner="France",
+        )
+    ]
+
+    state = build_results_state(fixtures, _GROUPS, _TEAMS)
+
+    assert state.knockout == [("ARG", "FRA", "FRA")]
+    assert state.matched == 1
+    assert state.dropped == 0
+
+
+def test_level_penalty_result_without_winner_is_dropped():
+    fixtures = [
+        _fx(
+            "Argentina",
+            "France",
+            1,
+            1,
+            status="PEN",
+            stage="FINAL",
+        )
+    ]
+
+    state = build_results_state(fixtures, _GROUPS, _TEAMS)
+
+    assert state.knockout == []
+    assert state.matched == 0
     assert state.dropped == 1
 
 
