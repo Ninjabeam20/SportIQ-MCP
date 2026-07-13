@@ -53,6 +53,25 @@ async def test_healthcheck_passes_on_diskcache():
     assert await cache.healthcheck() is True
 
 
+@pytest.mark.asyncio
+async def test_get_evicts_corrupt_wrapped_entry():
+    cache = get_cache()
+    cache._disk.set("corrupt", "not-json", expire=60)
+
+    assert await cache.get("corrupt") is None
+    assert cache._disk.get("corrupt") is None
+
+
+@pytest.mark.asyncio
+async def test_close_releases_backend_handles():
+    cache = get_cache()
+
+    await cache.close()
+
+    assert cache._redis is None
+    assert cache._disk is None
+
+
 class _DeadRedis:
     """Stands in for a redis client whose daemon is unreachable. redis.from_url
     is lazy (no I/O at construction), so failures only surface on first use."""
@@ -73,6 +92,7 @@ async def test_downgrades_to_diskcache_when_redis_unreachable():
     not crash every tool at the first cache read."""
     cache = get_cache()
     # Mirror real redis-mode state: redis selected at init, no disk backend yet.
+    cache._disk.close()
     cache.backend = "redis"
     cache._redis = _DeadRedis()
     cache._disk = None

@@ -10,9 +10,16 @@ from sportiq.core.ratelimit import Budget
 
 
 class _StubAdapter:
-    def __init__(self, name: str, budget: Budget | None = None) -> None:
+    def __init__(
+        self,
+        name: str,
+        budget: Budget | None = None,
+        health_name: str | None = None,
+    ) -> None:
         self.name = name
         self.budget = budget
+        if health_name is not None:
+            self.health_name = health_name
 
     async def fetch(self, **_kwargs) -> dict:
         return {}
@@ -59,3 +66,20 @@ async def test_sportiq_health_includes_quota_per_budgeted_source():
     assert "cricapi" in quotas
     assert quotas["cricapi"] == 100  # nothing consumed; full budget remains
     assert "static_seed" not in quotas
+
+
+async def test_health_names_separate_sports_and_dedupe_shared_provider():
+    from sportiq.core.health import get_health_report
+
+    register_adapter_for_health(
+        _StubAdapter("static_seed", health_name="football_static_seed")
+    )
+    register_adapter_for_health(
+        _StubAdapter("static_seed", health_name="cricket_static_seed")
+    )
+    register_adapter_for_health(_StubAdapter("theodds", health_name="theodds"))
+    register_adapter_for_health(_StubAdapter("theodds", health_name="theodds"))
+
+    envelope = await get_health_report()
+    names = [status["name"] for status in envelope["data"]["adapters"]]
+    assert names == ["football_static_seed", "cricket_static_seed", "theodds"]

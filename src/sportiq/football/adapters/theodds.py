@@ -71,6 +71,7 @@ def _normalise_events(events: list[dict]) -> list[dict]:
 
 class TheOddsFootballAdapter:
     name = "theodds"
+    health_name = "theodds"
     budget = _THEODDS_BUDGET
 
     async def fetch(self, **kwargs) -> dict:

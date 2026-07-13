@@ -28,6 +28,7 @@ def _load(filename: str) -> dict | list:
 
 class StaticSeedSquadAdapter:
     name = "static_seed"
+    health_name = "cricket_static_seed"
     budget = None  # local JSON read, no upstream to rate-limit
 
     async def fetch(self, team: str | None = None, series_id: str | None = None, **kwargs) -> dict:
@@ -49,6 +50,7 @@ class StaticSeedVenueAdapter:
     """Looks up venue metadata from the bundled venues.json."""
 
     name = "static_seed"
+    health_name = "cricket_static_seed"
     budget = None
 
     async def fetch(self, venue: str, **kwargs) -> dict:

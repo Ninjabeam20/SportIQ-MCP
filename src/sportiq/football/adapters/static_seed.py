@@ -36,6 +36,7 @@ class StaticSeedGroupsAdapter:
     """Terminator for the groups chain — the canonical 2026 draw + Elo ratings."""
 
     name = "static_seed"
+    health_name = "football_static_seed"
     budget = None
 
     async def fetch(self, **kwargs) -> dict:
@@ -56,6 +57,7 @@ class StaticSeedFixturesAdapter:
     """Fixtures terminator — synthesises the group-stage round-robin from the draw."""
 
     name = "static_seed"
+    health_name = "football_static_seed"
     budget = None
 
     async def fetch(self, **kwargs) -> dict:
@@ -89,6 +91,7 @@ class StaticSeedSquadAdapter:
     metadata rather than failing (preserves the NOT_FOUND terminator invariant)."""
 
     name = "static_seed"
+    health_name = "football_static_seed"
     budget = None
 
     async def fetch(self, team: str, **kwargs) -> dict:

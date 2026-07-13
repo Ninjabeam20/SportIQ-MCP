@@ -3,17 +3,20 @@
 Per CLAUDE.md hard rule: this file MUST expose a `main()` function that calls
 `mcp.run()`. `pyproject.toml` wires `[project.scripts] sportiq-mcp = "sportiq.server:main"`.
 
-MCP servers on stdio are inherently single-client; 20 concurrent calls is a safe
-ceiling against malformed client bursts without affecting normal single-client usage.
+Stdio remains the single-client local path. HTTP request and expensive-tool
+admission controls are attached without rebuilding FastMCP's streaming app.
 """
 
 import os
+from contextlib import asynccontextmanager
 
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
 from sportiq.config import settings
+from sportiq.core.cache import close_cache
 from sportiq.core.health import register_health_tool
+from sportiq.core.http import close_client
 from sportiq.core.instructions import register_instructions_resource
 from sportiq.core.logging import configure_logging
 from sportiq.core.param_docs import apply_param_descriptions
@@ -26,7 +29,17 @@ from sportiq.server_tools.cross_sport import register_cross_sport_tools
 
 configure_logging()
 
-mcp = FastMCP("sportiq")
+
+@asynccontextmanager
+async def _lifespan(_server):
+    try:
+        yield {}
+    finally:
+        await close_client()
+        await close_cache()
+
+
+mcp = FastMCP("sportiq", lifespan=_lifespan)
 
 register_health_tool(mcp)
 register_instructions_resource(mcp)

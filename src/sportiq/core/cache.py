@@ -87,13 +87,35 @@ class Cache:
             else:
                 if raw is None:
                     return None
-                return _decode(raw)
+                if raw.strip().lstrip("-").isdigit():
+                    return None
+                try:
+                    return _decode(raw)
+                except (KeyError, TypeError, ValueError) as e:
+                    log.warning(
+                        "cache.entry.corrupt",
+                        key=key,
+                        backend=self.backend,
+                        error=type(e).__name__,
+                    )
+                    await self.delete(key)
+                    return None
         raw = self._disk.get(key)
         if raw is None:
             return None
         if not isinstance(raw, str):
             return None
-        return _decode(raw)
+        try:
+            return _decode(raw)
+        except (KeyError, TypeError, ValueError) as e:
+            log.warning(
+                "cache.entry.corrupt",
+                key=key,
+                backend=self.backend,
+                error=type(e).__name__,
+            )
+            await self.delete(key)
+            return None
 
     async def set(self, key: str, value: Any, ttl_seconds: int) -> None:
         encoded = _encode(value)
@@ -140,6 +162,31 @@ class Cache:
                 self._disk.expire(key, ttl_seconds)
         return int(value)
 
+    async def delete(self, key: str) -> None:
+        if self.backend == "redis":
+            try:
+                await self._redis.delete(key)
+                return
+            except Exception as e:
+                self._downgrade_to_disk(e)
+        self._disk.delete(key)
+
+    async def close(self) -> None:
+        """Release backend resources; a closed instance must not be reused."""
+        redis_client = self._redis
+        disk_cache = self._disk
+        self._redis = None
+        self._disk = None
+        if redis_client is not None:
+            close_redis = getattr(redis_client, "aclose", None)
+            if close_redis is not None:
+                try:
+                    await close_redis()
+                except Exception as e:
+                    log.warning("cache.redis.close_failed", error=type(e).__name__)
+        if disk_cache is not None:
+            disk_cache.close()
+
     async def healthcheck(self) -> bool:
         try:
             if self.backend == "redis":
@@ -163,8 +210,11 @@ def _decode(raw: str) -> CachedEntry | None:
 
     payload = json.loads(raw)
     if not isinstance(payload, dict):
-        return None
-    return CachedEntry(value=payload["value"], stored_at=payload["stored_at"])
+        raise TypeError("cache payload must be an object")
+    stored_at = payload["stored_at"]
+    if not isinstance(stored_at, (int, float)):
+        raise TypeError("cache stored_at must be numeric")
+    return CachedEntry(value=payload["value"], stored_at=stored_at)
 
 
 _cache_singleton: Cache | None = None
@@ -175,3 +225,11 @@ def get_cache() -> Cache:
     if _cache_singleton is None:
         _cache_singleton = Cache()
     return _cache_singleton
+
+
+async def close_cache() -> None:
+    global _cache_singleton
+    cache = _cache_singleton
+    _cache_singleton = None
+    if cache is not None:
+        await cache.close()

@@ -18,16 +18,21 @@ from sportiq.core.tool_response import Envelope
 _registered_adapters: list = []
 
 
+def _health_name(adapter) -> str:
+    return getattr(adapter, "health_name", adapter.name)
+
+
 def register_adapter_for_health(adapter) -> None:
     """Sport modules call this when they construct their chains.
 
-    Deduped by ``adapter.name``: chains often instantiate several adapter
+    Deduped by ``adapter.health_name`` when present, else ``adapter.name``:
+    chains often instantiate several adapter
     classes that share the same upstream identity (e.g. all the CricAPI
     flavours), but ``sportiq_health()`` should report each upstream once.
     The first registration wins — chains should register their primary /
     most-representative healthcheck first.
     """
-    if any(existing.name == adapter.name for existing in _registered_adapters):
+    if any(_health_name(existing) == _health_name(adapter) for existing in _registered_adapters):
         return
     _registered_adapters.append(adapter)
 
@@ -42,11 +47,11 @@ async def get_health_report() -> dict:
         try:
             ok = await adapter.healthcheck()
             adapter_statuses.append(
-                AdapterStatus(name=adapter.name, ok=ok, detail=None)
+                AdapterStatus(name=_health_name(adapter), ok=ok, detail=None)
             )
         except Exception as e:
             adapter_statuses.append(
-                AdapterStatus(name=adapter.name, ok=False, detail=str(e))
+                AdapterStatus(name=_health_name(adapter), ok=False, detail=str(e))
             )
 
     quotas: dict[str, int] = {}
