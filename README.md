@@ -71,6 +71,8 @@ All 44 tools register on the plain URL. Whether a live/provider-backed call can 
 | **Local, keyless** | All tools register; bundled seeds and keyless sources work where supported, while credential-only live sources are skipped. |
 | **Local, BYO keys** | The same tools can use the configured providers for fresher/live data, subject to provider quota. |
 
+The hosted HTTP boundary rejects request bodies over 1 MiB, limits traffic to 60 requests per client and 300 total requests per minute, and permits at most two concurrent expensive model/solver calls. These counters are per process, so the documented Cloud Run configuration requires one maximum instance.
+
 > First request after idle takes ~5–10s (the server scales to zero, so it wakes up); fast after that.
 
 ### Local install
@@ -130,6 +132,7 @@ If SportIQ saves you time, **[sponsor the project at github.com/sponsors/Ninjabe
 - **Open source, MIT licensed**, published on [PyPI](https://pypi.org/project/sportiq-mcp/) with signed build attestations — read the code before you connect it.
 - **Read-only.** Tools only fetch and analyse public sports data — no write, delete, payment, email, or file-system tools.
 - **Limited operational telemetry.** HTTP mode logs client software name/version, User-Agent, tool name, outcome, latency, selected source, and staleness; Cloud Run may also retain platform network/request metadata. Local stdio emits local logs but sends no SportIQ-host telemetry.
+- **Hosted abuse controls.** HTTP POST bodies are capped at 1 MiB; requests are limited to 60/client/minute and 300/process/minute; the five expensive simulation/strategy/solver tools share a concurrency limit of two.
 - **Credential-aware.** A hosted operator may configure provider credentials; the repository does not claim the public instance's current key inventory. Keys are redacted from application logs and envelopes.
 - Historical automated AI code-review results are documented in [`SECURITY.md`](SECURITY.md#independent-review); they are not a current third-party certification.
 

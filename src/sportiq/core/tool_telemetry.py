@@ -25,14 +25,26 @@ is safe and touches none of the 44 tool source files.
 
 from __future__ import annotations
 
+import asyncio
 import functools
 import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from sportiq.config import settings
 from sportiq.core.logging import get_logger
 
 _log = get_logger("tool_telemetry")
+
+_EXPENSIVE_TOOLS = frozenset(
+    {
+        "football_simulate_group",
+        "football_simulate_bracket",
+        "football_knockout_path",
+        "f1_predict_pit_strategy",
+        "cricket_build_dream11_team",
+    }
+)
 
 
 def instrument_tools(mcp: Any) -> None:
@@ -44,19 +56,26 @@ def instrument_tools(mcp: Any) -> None:
     tools = getattr(getattr(mcp, "_tool_manager", None), "_tools", None)
     if not tools:
         return
+    expensive_semaphore = asyncio.Semaphore(settings.expensive_tool_concurrency)
     for tool in tools.values():
         if getattr(tool, "is_async", False):
-            tool.fn = _instrument(tool.name, tool.fn)
+            tool.fn = _instrument(tool.name, tool.fn, expensive_semaphore)
 
 
 def _instrument(
-    name: str, fn: Callable[..., Awaitable[Any]]
+    name: str,
+    fn: Callable[..., Awaitable[Any]],
+    expensive_semaphore: asyncio.Semaphore,
 ) -> Callable[..., Awaitable[Any]]:
     @functools.wraps(fn)
     async def wrapper(**kwargs: Any) -> Any:
         start = time.perf_counter()
         try:
-            result = await fn(**kwargs)
+            if name in _EXPENSIVE_TOOLS:
+                async with expensive_semaphore:
+                    result = await fn(**kwargs)
+            else:
+                result = await fn(**kwargs)
         except Exception as exc:
             # An uncaught exception is the worst "bad": no envelope was returned.
             _log.error(

@@ -9,10 +9,12 @@ def test_public_docs_do_not_claim_zero_telemetry_or_host_secrets():
     assert "zero API keys" not in security
 
 
-def test_security_docs_do_not_advertise_unenforced_output_limits():
+def test_security_docs_describe_enforced_request_and_actual_output_limits():
     security = Path("SECURITY.md").read_text()
     assert "Tools cap list payloads at 200 items" not in security
-    assert "no application-level MCP request-size limit" in security
+    assert "1 MiB application-level MCP request-body limit" in security
+    assert "60 POST `/mcp` requests per client and 300 total per" in security
+    assert "--max-instances=1" in security
 
 
 def test_security_reporting_discourages_public_disclosure():

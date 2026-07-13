@@ -7,6 +7,7 @@ and never alters the tool's return value.
 """
 from __future__ import annotations
 
+import asyncio
 from typing import ClassVar
 
 import pytest
@@ -41,7 +42,7 @@ async def test_success_envelope_logs_ok_and_passes_value_through(rec: _Recorder)
     async def fn(**kw):
         return {"data": {"x": 1}, "meta": {"source": "openfootball", "is_stale": True}}
 
-    wrapped = tool_telemetry._instrument("football_get_fixtures", fn)
+    wrapped = tool_telemetry._instrument("football_get_fixtures", fn, asyncio.Semaphore(2))
     result = await wrapped()
 
     assert result == {"data": {"x": 1}, "meta": {"source": "openfootball", "is_stale": True}}
@@ -59,7 +60,7 @@ async def test_error_envelope_logs_failure_with_code(rec: _Recorder):
     async def fn(**kw):
         return {"error": {"code": "ALL_SOURCES_FAILED", "message": "nope"}}
 
-    wrapped = tool_telemetry._instrument("cricket_get_scorecard", fn)
+    wrapped = tool_telemetry._instrument("cricket_get_scorecard", fn, asyncio.Semaphore(2))
     await wrapped()
 
     method, event, fields = rec.calls[0]
@@ -73,7 +74,7 @@ async def test_exception_logs_and_reraises(rec: _Recorder):
     async def fn(**kw):
         raise ValueError("boom")
 
-    wrapped = tool_telemetry._instrument("f1_predict_pit_strategy", fn)
+    wrapped = tool_telemetry._instrument("f1_predict_pit_strategy", fn, asyncio.Semaphore(2))
     with pytest.raises(ValueError):
         await wrapped()
 
@@ -106,3 +107,59 @@ def test_instrument_tools_wraps_only_async_tools():
     tool_telemetry.instrument_tools(_Mcp())
     assert async_tool.fn is not a  # wrapped
     assert sync_tool.fn is b  # untouched
+
+
+async def test_expensive_tools_share_configured_concurrency_limit(rec: _Recorder):
+    active = 0
+    peak = 0
+    two_entered = asyncio.Event()
+    release = asyncio.Event()
+
+    async def probe(**kw):
+        nonlocal active, peak
+        active += 1
+        peak = max(peak, active)
+        if active == 2:
+            two_entered.set()
+        await release.wait()
+        active -= 1
+        return {"data": {}, "meta": {}}
+
+    wrapped = tool_telemetry._instrument(
+        "football_simulate_bracket", probe, asyncio.Semaphore(2)
+    )
+    tasks = [asyncio.create_task(wrapped()) for _ in range(4)]
+
+    await asyncio.wait_for(two_entered.wait(), timeout=1)
+    await asyncio.sleep(0)
+    assert peak == 2
+    release.set()
+    await asyncio.gather(*tasks)
+    assert peak == 2
+
+
+async def test_cheap_tools_are_not_serialized_by_expensive_limit(rec: _Recorder):
+    active = 0
+    peak = 0
+    four_entered = asyncio.Event()
+    release = asyncio.Event()
+
+    async def probe(**kw):
+        nonlocal active, peak
+        active += 1
+        peak = max(peak, active)
+        if active == 4:
+            four_entered.set()
+        await release.wait()
+        active -= 1
+        return {"data": {}, "meta": {}}
+
+    wrapped = tool_telemetry._instrument(
+        "football_get_fixtures", probe, asyncio.Semaphore(2)
+    )
+    tasks = [asyncio.create_task(wrapped()) for _ in range(4)]
+
+    await asyncio.wait_for(four_entered.wait(), timeout=1)
+    assert peak == 4
+    release.set()
+    await asyncio.gather(*tasks)

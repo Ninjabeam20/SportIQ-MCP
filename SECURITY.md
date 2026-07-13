@@ -25,10 +25,11 @@ risk of the respective sites.
 
 ## Payload size limits
 
-There is currently no application-level MCP request-size limit. Upstream HTTP responses
-larger than 10 MiB are rejected, but that check occurs after httpx has buffered the
-response. Output truncation is tool-specific rather than a universal response limit;
-tools that truncate report it through response metadata.
+HTTP transport enforces a 1 MiB application-level MCP request-body limit before the
+request reaches FastMCP. Upstream HTTP responses larger than 10 MiB are rejected, but
+that separate check occurs after httpx has buffered the response. Output truncation is
+tool-specific rather than a universal response limit; tools that truncate report it
+through response metadata.
 
 ## Operational telemetry
 
@@ -45,6 +46,18 @@ unauthenticated, read-only data service. A hosted operator may configure provide
 credentials, so callers must not assume the host is secret-free; this repository does
 not claim the deployment's unverified current key inventory. Application logging
 redacts known credential patterns, but provider quota remains an operator concern.
+
+The application accepts at most 60 POST `/mcp` requests per client and 300 total per
+minute, returning HTTP 429 with `Retry-After` before MCP dispatch. Client identities are
+hashed before entering cache keys. A validated leftmost `X-Forwarded-For` address is
+trusted only when Cloud Run's `K_SERVICE` marker is present; other environments use the
+ASGI peer address. Initialize-body telemetry capture is capped at 64 KiB, and the five
+expensive simulation/strategy/solver tools share a concurrency limit of two.
+
+Rate counters are per process. The hosted policy therefore requires Cloud Run
+`--max-instances=1`; increasing that value multiplies the effective global limit and
+must be accompanied by a shared admission-control design. These controls are present in
+this branch, but this branch did not change or validate the live Cloud Run deployment.
 
 In HTTP transport mode the server disables FastMCP's DNS-rebinding protection
 (`enable_dns_rebinding_protection=False` in `server.py`). This is intentional and required:

@@ -58,6 +58,7 @@ gcloud run deploy sportiq-mcp \
   --allow-unauthenticated \
   --memory 1Gi \
   --cpu 1 \
+  --max-instances 1 \
   --port 8080
 ```
 
@@ -68,6 +69,8 @@ What this does:
 - `--allow-unauthenticated` → makes the URL public so anyone can connect.
 - `--memory 1Gi` → enough RAM for the World Cup bracket simulation. Bump to `2Gi` if it ever
   runs out of memory.
+- `--max-instances 1` → required while request counters are process-local; raising it multiplies
+  the effective global request limit and needs shared admission control first.
 
 When it finishes it prints a **Service URL**. Your MCP endpoint = that URL **+ `/mcp`**.
 
@@ -126,7 +129,7 @@ Use your `<URL>/mcp` link.
 
 | Thing | Value |
 | --- | --- |
-| Deploy command | `gcloud run deploy sportiq-mcp --source . --region us-central1 --allow-unauthenticated --memory 1Gi --cpu 1 --port 8080` |
+| Deploy command | `gcloud run deploy sportiq-mcp --source . --region us-central1 --allow-unauthenticated --memory 1Gi --cpu 1 --max-instances 1 --port 8080` |
 | MCP endpoint | `<Service URL>/mcp` |
 | Transport | streamable-HTTP (set by `SPORTIQ_TRANSPORT=http` in the Dockerfile) |
 | Keep public, **no API keys** | avoids strangers burning your quotas |
@@ -162,7 +165,7 @@ gcloud builds submit --config cloudbuild.yaml --substitutions=_TAG=<git-sha> .
 # 2. deploy as a NO-TRAFFIC canary, adding the Pro env vars (existing env preserved)
 gcloud run deploy sportiq-mcp \
   --image us-central1-docker.pkg.dev/sportiq-mcp-prod/cloud-run-source-deploy/sportiq-mcp:<git-sha> \
-  --region us-central1 --no-traffic --tag v2a \
+  --region us-central1 --no-traffic --tag v2a --max-instances 1 \
   --update-env-vars SPORTIQ_VALID_KEYS=<key>,SPORTIQ_FREE_TOOLS=football_simulate_bracket
 
 # 3. smoke-test the tagged canary URL (https://v2a---<service>.run.app/mcp): a gated tool must
