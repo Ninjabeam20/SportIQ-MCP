@@ -29,12 +29,41 @@ async def test_same_host_redirect_is_followed():
 
 
 @respx.mock
+async def test_relative_redirect_is_followed():
+    respx.get("https://api.example.com/v1/data").mock(
+        return_value=httpx.Response(302, headers={"location": "/v2/data"})
+    )
+    respx.get("https://api.example.com/v2/data").mock(
+        return_value=httpx.Response(200, json={"ok": True})
+    )
+
+    assert await get_json("https://api.example.com/v1/data") == {"ok": True}
+
+
+@pytest.mark.parametrize(
+    "location",
+    (
+        "http://api.example.com/v2/data",
+        "https://api.example.com:8443/v2/data",
+    ),
+)
+@respx.mock
+async def test_scheme_or_port_change_redirect_is_blocked(location):
+    respx.get("https://api.example.com/v1/data").mock(
+        return_value=httpx.Response(302, headers={"location": location})
+    )
+
+    with pytest.raises(httpx.HTTPStatusError, match="Cross-origin redirect blocked"):
+        await get_json("https://api.example.com/v1/data")
+
+
+@respx.mock
 async def test_cross_host_redirect_is_blocked():
     """A redirect to a different host raises HTTPStatusError."""
     respx.get("https://api.example.com/v1/data").mock(
         return_value=httpx.Response(301, headers={"location": "https://attacker.evil.com/steal"})
     )
-    with pytest.raises(httpx.HTTPStatusError, match="Cross-host redirect blocked"):
+    with pytest.raises(httpx.HTTPStatusError, match="Cross-origin redirect blocked"):
         await get_json("https://api.example.com/v1/data")
 
 
@@ -84,7 +113,7 @@ async def test_cross_host_redirect_blocked_after_same_host():
     respx.get("https://api.example.com/v2/data").mock(
         return_value=httpx.Response(301, headers={"location": "https://attacker.evil.com/pwned"})
     )
-    with pytest.raises(httpx.HTTPStatusError, match="Cross-host redirect blocked"):
+    with pytest.raises(httpx.HTTPStatusError, match="Cross-origin redirect blocked"):
         await get_json("https://api.example.com/v1/data")
 
 

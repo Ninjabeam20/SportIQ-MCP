@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
-from sportiq.core.errors import AllSourcesFailedError
+from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.fallback import FallbackResult
 from sportiq.football.adapters.static_seed import load_elo_seed, load_wc2026
 
@@ -50,6 +50,15 @@ async def test_get_fixtures_all_sources_failed():
         mock.fetch = AsyncMock(side_effect=AllSourcesFailedError("failed", attempts=[]))
         result = await tools.football_get_fixtures()
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+async def test_get_fixtures_not_found_returns_envelope():
+    from sportiq.football import tools
+
+    with patch("sportiq.football.tools.football_fixtures_chain") as mock:
+        mock.fetch = AsyncMock(side_effect=NotFoundError("missing"))
+        result = await tools.football_get_fixtures()
+    assert result["error"]["code"] == "NOT_FOUND"
 
 
 async def test_get_squad_empty_team_invalid_input():
@@ -119,6 +128,15 @@ async def test_xg_model_unknown_team_not_found():
     with patch("sportiq.football.intel_tools.football_groups_chain") as mock:
         mock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
         result = await intel_tools.football_xg_model(home_team="ZZZ", away_team="ARG")
+    assert result["error"]["code"] == "NOT_FOUND"
+
+
+async def test_xg_model_chain_not_found_returns_envelope():
+    from sportiq.football import intel_tools
+
+    with patch("sportiq.football.intel_tools.football_groups_chain") as mock:
+        mock.fetch = AsyncMock(side_effect=NotFoundError("missing"))
+        result = await intel_tools.football_xg_model(home_team="ARG", away_team="USA")
     assert result["error"]["code"] == "NOT_FOUND"
 
 

@@ -89,9 +89,9 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
         f1_stints_chain.fetch(session_key=session_key, driver_number=driver_number),
         return_exceptions=True,
     )
-    if isinstance(laps_r, AllSourcesFailedError):
+    if isinstance(laps_r, (AllSourcesFailedError, NotFoundError)):
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=laps_r.code,
             message="Could not fetch lap data.",
             sources_tried=laps_r.attempts,
         )
@@ -101,7 +101,7 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
 
     stints: list[dict] = []
     stints_result = None
-    if isinstance(stints_r, AllSourcesFailedError):
+    if isinstance(stints_r, (AllSourcesFailedError, NotFoundError)):
         pass
     elif isinstance(stints_r, BaseException):
         raise stints_r
@@ -158,9 +158,9 @@ async def f1_undercut_window(
             _fetch_driver_laps(session_key=session_key, driver_number=target_number),
             _resolve_circuit_profile(session_key),
         )
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message="Could not fetch lap data.",
             sources_tried=e.attempts,
         )
@@ -220,9 +220,9 @@ async def f1_head_to_head_pace(session_key: int, driver_a: int, driver_b: int) -
             _fetch_driver_laps(session_key=session_key, driver_number=driver_a),
             _fetch_driver_laps(session_key=session_key, driver_number=driver_b),
         )
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message="Could not fetch lap data.",
             sources_tried=e.attempts,
         )
@@ -267,9 +267,9 @@ async def f1_weather_strategy_impact(session_key: int) -> Envelope:
 
     try:
         weather_result = await f1_weather_chain.fetch(session_key=session_key)
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message="Could not fetch weather data.",
             sources_tried=e.attempts,
         )
@@ -359,9 +359,9 @@ async def f1_predict_pit_strategy(
         _resolve_circuit_profile(session_key),  # best-effort, never raises
         return_exceptions=True,
     )
-    if isinstance(laps_r, AllSourcesFailedError):
+    if isinstance(laps_r, (AllSourcesFailedError, NotFoundError)):
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=laps_r.code,
             message="Could not fetch lap data for pit strategy prediction.",
             sources_tried=laps_r.attempts,
         )
@@ -371,7 +371,7 @@ async def f1_predict_pit_strategy(
 
     stints: list[dict] = []
     stints_result = None
-    if isinstance(stints_r, AllSourcesFailedError):
+    if isinstance(stints_r, (AllSourcesFailedError, NotFoundError)):
         pass
     elif isinstance(stints_r, BaseException):
         raise stints_r
@@ -381,7 +381,7 @@ async def f1_predict_pit_strategy(
 
     weather: list[dict] = []
     weather_result = None
-    if isinstance(weather_r, AllSourcesFailedError):
+    if isinstance(weather_r, (AllSourcesFailedError, NotFoundError)):
         pass
     elif isinstance(weather_r, BaseException):
         raise weather_r
@@ -530,11 +530,14 @@ async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -
     # Laps are required; stints are best-effort
     if isinstance(laps_a_r, Exception) or isinstance(laps_b_r, Exception):
         attempts = []
+        code = "ALL_SOURCES_FAILED"
         for exc in (laps_a_r, laps_b_r):
             if isinstance(exc, AllSourcesFailedError):
                 attempts.extend(exc.attempts)
+            elif isinstance(exc, NotFoundError):
+                code = "NOT_FOUND"
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=code,
             message="Could not fetch lap data for one or both drivers.",
             sources_tried=attempts,
         )

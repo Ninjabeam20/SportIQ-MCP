@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
-from sportiq.core.errors import AllSourcesFailedError
+from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.fallback import FallbackResult
 
 
@@ -43,6 +43,24 @@ async def test_f1_get_sessions_all_sources_failed():
         mock.fetch = AsyncMock(side_effect=AllSourcesFailedError("failed", attempts=[]))
         result = await tools.f1_get_sessions(year=2025)
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+async def test_f1_get_sessions_not_found_returns_envelope():
+    from sportiq.f1 import tools
+
+    with patch("sportiq.f1.tools.f1_sessions_chain") as mock:
+        mock.fetch = AsyncMock(side_effect=NotFoundError("missing"))
+        result = await tools.f1_get_sessions(year=2025)
+    assert result["error"]["code"] == "NOT_FOUND"
+
+
+async def test_f1_weather_intel_not_found_returns_envelope():
+    from sportiq.f1 import intel_tools
+
+    with patch("sportiq.f1.intel_tools.f1_weather_chain") as mock:
+        mock.fetch = AsyncMock(side_effect=NotFoundError("missing"))
+        result = await intel_tools.f1_weather_strategy_impact(session_key=9877)
+    assert result["error"]["code"] == "NOT_FOUND"
 
 
 async def test_f1_get_lap_times_returns_envelope():

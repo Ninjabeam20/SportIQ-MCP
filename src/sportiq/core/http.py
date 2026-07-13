@@ -8,7 +8,7 @@ S.6a hardening: same-host-only redirects + 10 MB response ceiling.
 
 from __future__ import annotations
 
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from tenacity import (
@@ -75,7 +75,6 @@ async def _fetch_json_once(url: str, **kwargs) -> dict:
     The retry policy lives on the public wrappers below; this is one attempt.
     """
     client = get_client()
-    original_host = urlparse(url).netloc
     response = await client.get(url, **kwargs)
 
     hops = 0
@@ -87,14 +86,20 @@ async def _fetch_json_once(url: str, **kwargs) -> dict:
                 request=response.request,
                 response=response,
             )
-        redirect_host = urlparse(location).netloc
-        if redirect_host and redirect_host != original_host:
+        resolved = urljoin(str(response.request.url), location)
+        original = urlparse(str(response.request.url))
+        target = urlparse(resolved)
+        if (target.scheme, target.hostname, target.port) != (
+            original.scheme,
+            original.hostname,
+            original.port,
+        ):
             raise httpx.HTTPStatusError(
-                f"Cross-host redirect blocked: {original_host!r} -> {redirect_host!r}",
+                f"Cross-origin redirect blocked: {original.netloc!r} -> {target.netloc!r}",
                 request=response.request,
                 response=response,
             )
-        response = await client.get(location, **kwargs)
+        response = await client.get(resolved, **kwargs)
         hops += 1
 
     response.raise_for_status()

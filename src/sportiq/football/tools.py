@@ -4,7 +4,7 @@ Thin wrappers: validate args -> call chain.fetch() -> return tool_response.
 """
 from __future__ import annotations
 
-from sportiq.core.errors import AllSourcesFailedError
+from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.tool_response import Envelope, error_envelope, paginate, tool_response
 from sportiq.football.chains import (
     football_fixtures_chain,
@@ -38,9 +38,9 @@ async def football_get_groups() -> Envelope:
     """
     try:
         result = await football_groups_chain.fetch()
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message="Could not fetch World Cup 2026 group draw.",
             sources_tried=e.attempts,
         )
@@ -65,9 +65,9 @@ async def football_get_fixtures(limit: int = 50, offset: int = 0) -> Envelope:
         return error_envelope(code="INVALID_INPUT", message="offset must be >= 0.")
     try:
         result = await football_fixtures_chain.fetch()
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message="Could not fetch World Cup 2026 fixtures.",
             sources_tried=e.attempts,
         )
@@ -93,9 +93,9 @@ async def football_get_standings(limit: int = 50, offset: int = 0) -> Envelope:
         return error_envelope(code="INVALID_INPUT", message="offset must be >= 0.")
     try:
         result = await football_standings_chain.fetch()
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message="Could not fetch World Cup 2026 standings.",
             sources_tried=e.attempts,
         )
@@ -120,9 +120,9 @@ async def football_get_squad(team: str) -> Envelope:
         return error_envelope(code="INVALID_INPUT", message="team must not exceed 100 characters.")
     try:
         result = await football_squad_chain.fetch(team=team.strip())
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message=f"Could not fetch squad for {team!r}.",
             sources_tried=e.attempts,
         )
@@ -147,9 +147,9 @@ async def football_get_match_stats(team: int) -> Envelope:
         return error_envelope(code="INVALID_INPUT", message="team id must be positive.")
     try:
         result = await football_team_stats_chain.fetch(team=team)
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message=f"Could not fetch team stats for team {team}.",
             sources_tried=e.attempts,
         )
@@ -165,9 +165,9 @@ async def football_get_top_scorers() -> Envelope:
     """
     try:
         result = await football_scorers_chain.fetch()
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message="Could not fetch World Cup 2026 top scorers.",
             sources_tried=e.attempts,
         )
@@ -191,9 +191,9 @@ async def football_get_odds(team: str | None = None) -> Envelope:
     """
     try:
         result = await football_odds_chain.fetch()
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message="No football odds source is available right now.",
             sources_tried=e.attempts,
             suggestion="Set THEODDS_KEY to enable live odds.",

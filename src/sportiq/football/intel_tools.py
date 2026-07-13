@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 
 from sportiq.config import settings
-from sportiq.core.errors import AllSourcesFailedError
+from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.parlay import build_accumulator
 from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta
 from sportiq.football.chains import (
@@ -48,7 +48,7 @@ async def _fetch_live_state(groups_value: dict) -> tuple[ResultsState | None, ob
     """
     try:
         fixtures_result = await football_fixtures_chain.fetch()
-    except AllSourcesFailedError:
+    except (AllSourcesFailedError, NotFoundError):
         return None, None
     try:
         state = build_results_state(
@@ -122,8 +122,8 @@ async def football_xg_model(home_team: str, away_team: str, neutral: bool = True
 
     try:
         result = await _groups_payload()
-    except AllSourcesFailedError as e:
-        return error_envelope(code="ALL_SOURCES_FAILED", message="Could not load ratings.", sources_tried=e.attempts)
+    except (AllSourcesFailedError, NotFoundError) as e:
+        return error_envelope(code=e.code, message="Could not load ratings.", sources_tried=e.attempts)
 
     ratings = result.value.get("ratings", {})
     if home not in ratings or away not in ratings:
@@ -168,8 +168,8 @@ async def football_match_predictor(home_team: str, away_team: str, neutral: bool
 
     try:
         result = await _groups_payload()
-    except AllSourcesFailedError as e:
-        return error_envelope(code="ALL_SOURCES_FAILED", message="Could not load ratings.", sources_tried=e.attempts)
+    except (AllSourcesFailedError, NotFoundError) as e:
+        return error_envelope(code=e.code, message="Could not load ratings.", sources_tried=e.attempts)
 
     ratings = result.value.get("ratings", {})
     if home not in ratings or away not in ratings:
@@ -215,8 +215,8 @@ async def football_simulate_group(group: str, iterations: int = 5000) -> Envelop
     """
     try:
         result = await _groups_payload()
-    except AllSourcesFailedError as e:
-        return error_envelope(code="ALL_SOURCES_FAILED", message="Could not load draw.", sources_tried=e.attempts)
+    except (AllSourcesFailedError, NotFoundError) as e:
+        return error_envelope(code=e.code, message="Could not load draw.", sources_tried=e.attempts)
 
     groups = result.value.get("groups", {})
     key = group.upper()
@@ -259,8 +259,8 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
     """
     try:
         result = await _groups_payload()
-    except AllSourcesFailedError as e:
-        return error_envelope(code="ALL_SOURCES_FAILED", message="Could not load draw.", sources_tried=e.attempts)
+    except (AllSourcesFailedError, NotFoundError) as e:
+        return error_envelope(code=e.code, message="Could not load draw.", sources_tried=e.attempts)
 
     groups = result.value.get("groups", {})
     state, fixtures_result = await _fetch_live_state(result.value)
@@ -289,8 +289,8 @@ async def football_knockout_path(team: str, iterations: int = 10000, seed: int |
 
     try:
         result = await _groups_payload()
-    except AllSourcesFailedError as e:
-        return error_envelope(code="ALL_SOURCES_FAILED", message="Could not load draw.", sources_tried=e.attempts)
+    except (AllSourcesFailedError, NotFoundError) as e:
+        return error_envelope(code=e.code, message="Could not load draw.", sources_tried=e.attempts)
 
     groups = result.value.get("groups", {})
     base_ratings = result.value.get("ratings", {})
@@ -335,17 +335,17 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
     odds_r, groups_r = await asyncio.gather(
         football_odds_chain.fetch(), _groups_payload(), return_exceptions=True
     )
-    if isinstance(odds_r, AllSourcesFailedError):
+    if isinstance(odds_r, (AllSourcesFailedError, NotFoundError)):
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=odds_r.code,
             message="No football odds source is available right now.",
             sources_tried=odds_r.attempts,
             suggestion="Set THEODDS_KEY to enable live odds.",
         )
     if isinstance(odds_r, BaseException):
         raise odds_r
-    if isinstance(groups_r, AllSourcesFailedError):
-        return error_envelope(code="ALL_SOURCES_FAILED", message="Could not load ratings.", sources_tried=groups_r.attempts)
+    if isinstance(groups_r, (AllSourcesFailedError, NotFoundError)):
+        return error_envelope(code=groups_r.code, message="Could not load ratings.", sources_tried=groups_r.attempts)
     if isinstance(groups_r, BaseException):
         raise groups_r
     odds_result, groups_result = odds_r, groups_r
@@ -422,9 +422,9 @@ async def football_form_trends(team: str) -> Envelope:
 
     try:
         result = await football_fixtures_chain.fetch()
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message="No fixture source is available right now.",
             sources_tried=e.attempts,
         )

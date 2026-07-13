@@ -4,7 +4,7 @@ Thin wrappers: validate args → call chain.fetch() → return tool_response.
 """
 from __future__ import annotations
 
-from sportiq.core.errors import AllSourcesFailedError
+from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.tool_response import Envelope, error_envelope, paginate, tool_response
 from sportiq.f1.chains import (
     f1_drivers_chain,
@@ -31,9 +31,9 @@ async def f1_get_sessions(year: int, country: str | None = None) -> Envelope:
         return error_envelope(code="INVALID_INPUT", message="year must be between 2018 and 2030.")
     try:
         result = await f1_sessions_chain.fetch(year=year, country=country)
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message=f"Could not fetch F1 sessions for year {year}.",
             sources_tried=e.attempts,
         )
@@ -54,9 +54,9 @@ async def f1_get_drivers(session_key: int) -> Envelope:
         return error_envelope(code="INVALID_INPUT", message="session_key must be positive.")
     try:
         result = await f1_drivers_chain.fetch(session_key=session_key)
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message=f"Could not fetch drivers for session {session_key}.",
             sources_tried=e.attempts,
         )
@@ -90,9 +90,9 @@ async def f1_get_lap_times(
         return error_envelope(code="INVALID_INPUT", message="offset must be >= 0.")
     try:
         result = await f1_laps_chain.fetch(session_key=session_key, driver_number=driver_number)
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message=f"Could not fetch laps for driver {driver_number} in session {session_key}.",
             sources_tried=e.attempts,
         )
@@ -115,9 +115,9 @@ async def f1_get_standings(year: int) -> Envelope:
         return error_envelope(code="INVALID_INPUT", message="year must be between 2018 and 2030.")
     try:
         result = await f1_standings_chain.fetch(year=year)
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message=f"Could not fetch F1 standings for {year}.",
             sources_tried=e.attempts,
         )
@@ -142,9 +142,9 @@ async def f1_get_race_results(year: int, round: int) -> Envelope:
         return error_envelope(code="INVALID_INPUT", message="round must be between 1 and 30.")
     try:
         result = await f1_results_chain.fetch(year=year, round=round)
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message=f"Could not fetch race results for {year} round {round}.",
             sources_tried=e.attempts,
         )
@@ -165,9 +165,9 @@ async def f1_get_weather(session_key: int) -> Envelope:
         return error_envelope(code="INVALID_INPUT", message="session_key must be positive.")
     try:
         result = await f1_weather_chain.fetch(session_key=session_key)
-    except AllSourcesFailedError as e:
+    except (AllSourcesFailedError, NotFoundError) as e:
         return error_envelope(
-            code="ALL_SOURCES_FAILED",
+            code=e.code,
             message=f"Could not fetch weather for session {session_key}.",
             sources_tried=e.attempts,
         )
