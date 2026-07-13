@@ -25,17 +25,26 @@ risk of the respective sites.
 
 ## Payload size limits
 
-Tools cap list payloads at 200 items and string fields at 500 characters to prevent a
-hostile or misbehaving upstream from blowing the LLM context window or server memory.
-Truncated responses carry `meta.truncated: true`.
+There is currently no application-level MCP request-size limit. Upstream HTTP responses
+larger than 10 MiB are rejected, but that check occurs after httpx has buffered the
+response. Output truncation is tool-specific rather than a universal response limit;
+tools that truncate report it through response metadata.
+
+## Operational telemetry
+
+HTTP mode emits structured application logs containing client software name/version,
+User-Agent, tool name, outcome, latency, selected source, and staleness. Cloud Run may
+also retain platform network/request metadata according to the operator's logging
+configuration. Local stdio mode emits logs locally but sends no telemetry to a
+SportIQ-hosted service.
 
 ## Hosted deployment (public Cloud Run instance)
 
-The public instance at `https://sportiq-mcp-329580761892.us-central1.run.app/mcp` runs with
-**zero API keys** configured — there are no secrets on the host to leak and no operator quota
-to burn. It exposes only the read-only/keyless tool set; live-score and odds tools that require
-credentials are inert there. The endpoint is `--allow-unauthenticated` by design (a public,
-read-only data service) and scales to zero when idle.
+The public instance at `https://sportiq-mcp-329580761892.us-central1.run.app/mcp` is an
+unauthenticated, read-only data service. A hosted operator may configure provider
+credentials, so callers must not assume the host is secret-free; this repository does
+not claim the deployment's unverified current key inventory. Application logging
+redacts known credential patterns, but provider quota remains an operator concern.
 
 In HTTP transport mode the server disables FastMCP's DNS-rebinding protection
 (`enable_dns_rebinding_protection=False` in `server.py`). This is intentional and required:
@@ -48,8 +57,8 @@ kind of managed HTTPS perimeter.
 ## Independent review
 
 sportiq-mcp is **fully open source (MIT)** — the entire codebase, build pipeline, and test
-suite are public, so anyone can audit it themselves rather than trust a claim. It has already
-been put through two automated AI code-review passes prior to launch:
+suite are public, so anyone can audit it themselves rather than trust a claim. The following
+are historical automated reviews, not statements about the current branch:
 
 - **Full MCP-rubric audit (2026-06-04)** — a code-audit agent ran static analysis, a runtime
   smoke test, and a **clean-room install** (fresh venv → install the published wheel → drive the
@@ -68,5 +77,5 @@ yourself.
 
 ## Reporting a vulnerability
 
-Open a GitHub issue tagged `security`. For sensitive disclosures, email
-utkarshgupta885@gmail.com with subject `[sportiq-mcp] security`.
+For sensitive disclosures, email utkarshgupta885@gmail.com with subject
+`[sportiq-mcp] security`. Do not open a public issue for a suspected vulnerability.

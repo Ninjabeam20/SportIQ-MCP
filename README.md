@@ -20,7 +20,7 @@ MCP server that turns any AI assistant into a sports analyst across **FIFA World
   <a href="https://sport-iq-sports-analysis.vercel.app"><img src="https://img.shields.io/badge/%F0%9F%8C%90_Website-Visit-2563EB?style=for-the-badge" alt="Website"></a>
 </p>
 
-> **Every tool is free** — the three flagships and everything in the INTEL columns below, no key, no account. If SportIQ is useful to you, [sponsor the project](https://github.com/sponsors/Ninjabeam20) to support ongoing development. It's a donation, not a paywall — nothing is locked behind it.
+> **Every tool is free to use** — the three flagships and everything in the INTEL columns below have no SportIQ paywall or account requirement. Live/provider-backed data still depends on the keys and quota available to the host or local operator. If SportIQ is useful to you, [sponsor the project](https://github.com/sponsors/Ninjabeam20) to support ongoing development.
 
 ## What it does
 
@@ -63,7 +63,13 @@ https://sportiq-mcp-329580761892.us-central1.run.app/mcp
 - **claude.ai (web):** Settings → Connectors → Add custom connector → paste URL → Save.
 - **ChatGPT:** Settings → Apps & Connectors → enable **Developer mode** → Create app (MCP) → paste URL → No authentication → Connect.
 
-All 44 tools work out of the box on the plain URL above — data tools *and* the full intelligence layer (bracket simulation, pit strategy, Dream11, value bets). No key, no account, nothing to unlock.
+All 44 tools register on the plain URL. Whether a live/provider-backed call can return current data depends on the credentials, quota, and fallbacks available to the hosted operator; the repository does not claim the public instance's current key inventory.
+
+| Mode | What is available |
+|------|-------------------|
+| **Hosted** | All tools register; live/provider-backed results depend on the host's current keys, quota, and fallbacks. |
+| **Local, keyless** | All tools register; bundled seeds and keyless sources work where supported, while credential-only live sources are skipped. |
+| **Local, BYO keys** | The same tools can use the configured providers for fresher/live data, subject to provider quota. |
 
 > First request after idle takes ~5–10s (the server scales to zero, so it wakes up); fast after that.
 
@@ -94,7 +100,7 @@ uv sync --extra dev --extra analytics && uv run python -m sportiq.server
 }
 ```
 
-Every tool works with no keys — the server boots and serves seed/free-source data, and the whole intelligence layer runs locally. Data-source keys are optional and only upgrade the *source* a tool reads from (fresher/live data); they never unlock tools.
+The server boots and registers every tool without keys. Seed/keyless fallbacks and the intelligence layer work where their required inputs are available; provider keys add fresher/live sources and quota rather than unlocking a separate paid tool tier.
 
 | Var | Unlocks | Free tier |
 |-----|---------|-----------|
@@ -115,7 +121,7 @@ Set `SPORTIQ_TRANSPORT=http` and the server serves the MCP endpoint at `/mcp` (b
 
 ## Support SportIQ
 
-Every tool is free and open source — the raw-data tools, `sportiq_health`, and the full intelligence layer (the three flagships + everything in the INTEL columns). No key, no account, nothing gated.
+Every tool is free and open source — the raw-data tools, `sportiq_health`, and the full intelligence layer (the three flagships + everything in the INTEL columns). SportIQ has no paid feature gate; provider-backed data can still require operator credentials and quota.
 
 If SportIQ saves you time, **[sponsor the project at github.com/sponsors/Ninjabeam20](https://github.com/sponsors/Ninjabeam20)** to help fund hosting and ongoing development. It's a voluntary donation — you get the same fully-unlocked server either way.
 
@@ -123,9 +129,9 @@ If SportIQ saves you time, **[sponsor the project at github.com/sponsors/Ninjabe
 
 - **Open source, MIT licensed**, published on [PyPI](https://pypi.org/project/sportiq-mcp/) with signed build attestations — read the code before you connect it.
 - **Read-only.** Tools only fetch and analyse public sports data — no write, delete, payment, email, or file-system tools.
-- **No data collection.** It answers a tool call and forgets it.
-- **The hosted instance holds no secrets** — it runs with zero API keys.
-- Independently reviewed by AI code-audit agents (verdict: ship-ready, clean) — see [`SECURITY.md`](SECURITY.md#independent-review) for the full trust model.
+- **Limited operational telemetry.** HTTP mode logs client software name/version, User-Agent, tool name, outcome, latency, selected source, and staleness; Cloud Run may also retain platform network/request metadata. Local stdio emits local logs but sends no SportIQ-host telemetry.
+- **Credential-aware.** A hosted operator may configure provider credentials; the repository does not claim the public instance's current key inventory. Keys are redacted from application logs and envelopes.
+- Historical automated AI code-review results are documented in [`SECURITY.md`](SECURITY.md#independent-review); they are not a current third-party certification.
 
 Every response carries a `meta.is_stale` flag + data age, so the AI tells you how fresh each answer is. Live scores refresh ~30s, F1 telemetry ~10s, standings ~10min, fixtures ~6h.
 
