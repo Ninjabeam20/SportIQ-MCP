@@ -357,7 +357,7 @@ Cover these behaviors with an inert downstream ASGI app and exact tests named
 `test_request_limit_returns_429_with_retry_after_per_client`,
 `test_request_limit_returns_429_at_global_ceiling_across_clients`,
 `test_request_limit_ignores_xff_outside_cloud_run`,
-`test_request_limit_uses_valid_leftmost_xff_on_cloud_run`, and
+`test_request_limit_uses_valid_rightmost_xff_on_cloud_run`, and
 `test_request_limit_passes_get_and_non_mcp_requests_unchanged`. Each rejection
 asserts the exact HTTP status, the `Retry-After` header where applicable, and that
 the downstream call counter remains zero; the replay test asserts byte-for-byte
@@ -381,7 +381,8 @@ Expected: FAIL because the middleware/settings/capture limits do not exist.
 - [ ] **Step 3: Implement request limiting**
 
 `request_limits.py` exposes `_client_identity(scope: dict, *, trust_forwarded: bool) -> str`,
-which trusts a validated leftmost XFF IP only when `trust_forwarded` is true and
+which trusts the validated rightmost XFF IP appended by Cloud Run only when
+`trust_forwarded` is true and
 otherwise uses `scope["client"][0]`, falling back to `"unknown"`. It also exposes
 `_json_response(send, status: int, message: str, retry_after: int | None = None) -> None`,
 which sends compact UTF-8 `application/json` with `Content-Length` and optional
@@ -465,7 +466,7 @@ Create one semaphore inside `instrument_tools()` and pass it into `_instrument()
 The ADR frontmatter must use `type: decision`, link request limiting/cache/telemetry, and record:
 
 - 1 MiB request body, 60 client requests/minute, 300 global requests/minute;
-- Cloud Run-only trust of validated leftmost XFF;
+- Cloud Run-only trust of the validated rightmost XFF entry appended by the platform;
 - 64 KiB telemetry capture and concurrency 2;
 - per-process counters plus the required one-instance deployment invariant;
 - stdio unaffected; 413/429 occur before MCP envelopes;

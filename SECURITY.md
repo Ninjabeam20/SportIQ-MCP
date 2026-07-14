@@ -49,9 +49,9 @@ redacts known credential patterns, but provider quota remains an operator concer
 
 The application accepts at most 60 POST `/mcp` requests per client and 300 total per
 minute, returning HTTP 429 with `Retry-After` before MCP dispatch. Client identities are
-hashed before entering cache keys. A validated leftmost `X-Forwarded-For` address is
-trusted only when Cloud Run's `K_SERVICE` marker is present; other environments use the
-ASGI peer address. Initialize-body telemetry capture is capped at 64 KiB, and the five
+hashed before entering cache keys. The validated rightmost `X-Forwarded-For` address appended
+by Cloud Run is trusted only when its `K_SERVICE` marker is present; other environments use
+the ASGI peer address. Initialize-body telemetry capture is capped at 64 KiB, and the five
 expensive simulation/strategy/solver tools share a concurrency limit of two.
 
 Rate counters are per process. The hosted policy therefore requires Cloud Run

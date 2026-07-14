@@ -220,14 +220,33 @@ def test_request_limit_ignores_xff_outside_cloud_run():
     assert _client_identity(scope, trust_forwarded=False) == "192.0.2.10"
 
 
-def test_request_limit_uses_valid_leftmost_xff_on_cloud_run():
+def test_request_limit_uses_valid_rightmost_xff_on_cloud_run():
     scope = {
         "headers": [(b"x-forwarded-for", b"203.0.113.7, 198.51.100.2")],
         "client": ("192.0.2.10", 1234),
     }
-    assert _client_identity(scope, trust_forwarded=True) == "203.0.113.7"
-    scope["headers"] = [(b"x-forwarded-for", b"not-an-ip, 198.51.100.2")]
+    assert _client_identity(scope, trust_forwarded=True) == "198.51.100.2"
+    scope["headers"] = [(b"x-forwarded-for", b"203.0.113.7, not-an-ip")]
     assert _client_identity(scope, trust_forwarded=True) == "192.0.2.10"
+
+
+async def test_request_limit_spoofed_xff_prefix_cannot_rotate_buckets():
+    app = _RecordingApp()
+    middleware = _middleware(app, client=1)
+    middleware.trust_forwarded = True
+
+    first = await _request(
+        middleware,
+        headers=[(b"x-forwarded-for", b"203.0.113.7, 198.51.100.2")],
+    )
+    rejected = await _request(
+        middleware,
+        headers=[(b"x-forwarded-for", b"203.0.113.99, 198.51.100.2")],
+    )
+
+    assert _status(first) == 200
+    assert _status(rejected) == 429
+    assert app.calls == 1
 
 
 async def test_request_limit_passes_get_and_non_mcp_requests_unchanged():

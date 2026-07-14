@@ -19,10 +19,10 @@ def _header(scope: dict, name: bytes) -> str:
 
 
 def _client_identity(scope: dict, *, trust_forwarded: bool) -> str:
-    """Return the rate-limit identity without trusting caller-supplied XFF locally."""
+    """Use Cloud Run's rightmost XFF hop; ignore caller-supplied XFF locally."""
     if trust_forwarded:
         forwarded = _header(scope, b"x-forwarded-for")
-        candidate = forwarded.split(",", 1)[0].strip()
+        candidate = forwarded.rsplit(",", 1)[-1].strip()
         if candidate:
             try:
                 return str(ipaddress.ip_address(candidate))

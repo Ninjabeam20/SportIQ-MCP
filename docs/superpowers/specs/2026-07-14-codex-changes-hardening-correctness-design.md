@@ -110,10 +110,10 @@ Add a pure-ASGI `RequestLimitMiddleware`; never use `BaseHTTPMiddleware`.
 - Enforce a per-client fixed-window limit of 60 accepted POSTs/minute and a global limit
   of 300 accepted POSTs/minute per process. Return HTTP 429 plus `Retry-After` before MCP
   processing; rejected requests make no adapter/tool call.
-- On Cloud Run (`K_SERVICE` present), use the validated leftmost IP in
-  `X-Forwarded-For`; elsewhere ignore that header and use the ASGI peer address. Invalid
-  or absent identities share an `unknown` bucket. Hash client identifiers in cache keys
-  with `blake2s(digest_size=8)`.
+- On Cloud Run (`K_SERVICE` present), use the validated rightmost IP appended to
+  `X-Forwarded-For`; elsewhere ignore that header and use the ASGI peer address. Invalid or absent
+  identities share an `unknown` bucket. Hash client identifiers in cache keys with
+  `blake2s(digest_size=8)`.
 - Expose the four defaults as positive settings with `SPORTIQ_` environment aliases:
   body bytes, client requests/minute, global requests/minute, and expensive-tool
   concurrency. No disable switch is added.

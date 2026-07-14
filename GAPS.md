@@ -33,9 +33,9 @@
   politeness of each individual anonymous client. This is the highest-leverage gap because the
   caching layer makes it invisible until the day it isn't.
 - **Suggested fix (single task):** add a pure-ASGI (NOT BaseHTTPMiddleware — see PROJECT.md §6.2)
-  middleware that keys a token bucket on client IP (`X-Forwarded-For` head, Cloud Run sets it)
-  using the existing cache-backed counters in `core/ratelimit.py` (e.g. 60 req/min per IP), and
-  returns 429 with `Retry-After` beyond it. Wire it in `server.py` next to the other two
+  middleware that keys a token bucket on the validated rightmost `X-Forwarded-For` IP appended
+  by Cloud Run, using the existing cache-backed counters in `core/ratelimit.py` (e.g. 60 req/min
+  per IP), and returns 429 with `Retry-After` beyond it. Wire it in `server.py` next to the other two
   middlewares, HTTP transport only. Unit-test like `tests/unit/test_path_compat_middleware.py`.
 
 ## 2. HIGH — Rate-limit counters are non-atomic (read-modify-write) and the peek→consume gap allows double-spend

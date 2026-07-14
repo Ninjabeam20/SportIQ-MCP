@@ -27,8 +27,9 @@ also used a non-atomic read-modify-write sequence.
   FastMCP dispatch.
 - Each process permits 60 requests per hashed client identity and 300 total requests per minute.
   Excess traffic receives HTTP 429 plus `Retry-After: 60` before MCP envelope handling.
-- A validated leftmost `X-Forwarded-For` IP is trusted only when Cloud Run's `K_SERVICE` marker
-  exists. Other environments use the ASGI peer IP; raw identities never enter counter keys.
+- The validated rightmost `X-Forwarded-For` IP appended by Cloud Run is trusted only when its
+  `K_SERVICE` marker exists. Other environments use the ASGI peer IP; raw identities never enter
+  counter keys.
 - `core/cache.py` provides atomic raw counters: diskcache transaction locally and Redis
   INCR/first-expiry Lua when configured.
 - `core/client_info.py` captures at most 64 KiB for initialize inspection while forwarding every
