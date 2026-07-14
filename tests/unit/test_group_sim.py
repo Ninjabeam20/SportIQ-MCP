@@ -98,6 +98,50 @@ def test_head_to_head_goal_difference_precedes_overall_goal_difference():
     assert positions["BBB"] < positions["AAA"]
 
 
+def test_overall_goal_difference_beats_overall_goals_after_h2h_draw():
+    known = GroupResults(
+        completed=[
+            ("AAA", "BBB", 0, 0),
+            ("AAA", "CCC", 5, 4),
+            ("AAA", "DDD", 0, 3),
+            ("BBB", "CCC", 2, 0),
+            ("BBB", "DDD", 2, 3),
+            ("CCC", "DDD", 0, 0),
+        ],
+        remaining=[],
+    )
+
+    standings = simulate_group_once(
+        np.random.default_rng(1), _TEAMS, _RATINGS, known
+    )
+    positions = {row["team"]: row["rank"] for row in standings}
+
+    assert positions["BBB"] < positions["AAA"]
+
+
+def test_head_to_head_goals_rank_three_team_points_cohort():
+    known = GroupResults(
+        completed=[
+            ("AAA", "BBB", 2, 2),
+            ("AAA", "CCC", 1, 1),
+            ("BBB", "CCC", 0, 0),
+            ("AAA", "DDD", 1, 0),
+            ("BBB", "DDD", 4, 0),
+            ("CCC", "DDD", 5, 0),
+        ],
+        remaining=[],
+    )
+
+    standings = simulate_group_once(
+        np.random.default_rng(1), _TEAMS, _RATINGS, known
+    )
+    tied_cohort = [
+        row["team"] for row in standings if row["team"] in {"AAA", "BBB", "CCC"}
+    ]
+
+    assert tied_cohort == ["AAA", "BBB", "CCC"]
+
+
 def test_unavailable_tiebreak_fields_use_rating_and_are_marked():
     known = GroupResults(
         completed=[

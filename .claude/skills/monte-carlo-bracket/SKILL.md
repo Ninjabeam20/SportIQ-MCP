@@ -10,7 +10,7 @@ when_to_use: When building or modifying football_simulate_bracket, football_simu
 
 - **48 teams, 12 groups (A–L) of 4.**
 - Group stage: 4-team round-robin, 3/1/0 points. Equal-points cohorts use available FIFA fields:
-  head-to-head points → head-to-head GD → all-group goals → overall GD → overall GF. Missing
+  head-to-head points → head-to-head GD → head-to-head goals → overall GD → overall GF. Missing
   conduct/latest-ranking data falls back visibly to model rating, then RNG only for equal ratings.
 - Advancement: **top 2 of each group (24) + 8 best third-placed teams = 32 → Round of 32.**
 - Knockout: R32 → R16 → QF → SF → Final (single elimination).
@@ -53,3 +53,5 @@ Level knockout scores lock only with an explicit penalty winner.
 Do not strength-seed or rebuild a generic 1-vs-N bracket. `_build_r32` must use the committed
 official template and 495-row allocation. Conduct/latest-ranking inputs remain unavailable; keep
 the model-rating fallback counted and exposed rather than silently calling it an official field.
+Head-to-head criteria are currently applied once to the equal-points cohort rather than reapplied
+iteratively to a shrinking tied subset; retain this explicit modeling approximation.

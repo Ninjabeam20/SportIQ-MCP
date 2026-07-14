@@ -65,7 +65,7 @@ def _rank_group(
             team: (
                 h2h_points[team],
                 h2h_gf[team] - h2h_ga[team],
-                gf[team],
+                h2h_gf[team],
                 gf[team] - ga[team],
                 gf[team],
             )

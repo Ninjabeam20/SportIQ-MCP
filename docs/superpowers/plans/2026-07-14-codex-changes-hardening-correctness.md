@@ -697,7 +697,7 @@ git commit -m "fix: validate public tool inputs"
 
 - [ ] **Step 1: Write failing tiebreak tests**
 
-Use deterministic completed `GroupResults` fixtures that create equal overall points but distinct head-to-head records. Assert head-to-head points/GD decide before overall GD, and assert a tie surviving available FIFA fields sets `tiebreak_fallback=True` and uses the higher model rating before RNG.
+Use deterministic completed `GroupResults` fixtures that create equal overall points but distinct head-to-head records. Assert head-to-head points/GD/goals decide before overall GD, and assert a tie surviving available FIFA fields sets `tiebreak_fallback=True` and uses the higher model rating before RNG.
 
 - [ ] **Step 2: Write failing qualification-stage tests**
 
@@ -720,7 +720,7 @@ uv run pytest tests/unit/test_group_sim.py tests/unit/test_bracket_sim.py tests/
 
 - [ ] **Step 4: Implement one ranking path shared by group and bracket sims**
 
-Retain every simulated/fixed match score. Rank equal-point cohorts by FIFA-supported fields: head-to-head points, head-to-head GD, all-group GF, overall GD, overall GF. If still tied, sort by model rating and mark rows that needed this fallback; use RNG only for equal model ratings.
+Retain every simulated/fixed match score. Rank equal-point cohorts by FIFA-supported fields: head-to-head points, head-to-head GD, head-to-head GF, overall GD, overall GF. Apply those head-to-head fields once to the equal-points cohort; iterative reapplication to a shrinking tied subset remains an explicit approximation. If still tied, sort by model rating and mark rows that needed this fallback; use RNG only for equal model ratings.
 
 Replace bracket best-third random fallback with rating fallback and count it. Do not claim conduct/FIFA-ranking inputs exist.
 

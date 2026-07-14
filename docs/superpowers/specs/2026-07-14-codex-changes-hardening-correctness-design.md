@@ -228,11 +228,14 @@ Use the official published order where current inputs support it:
 
 1. head-to-head points among the tied teams;
 2. head-to-head goal difference;
-3. goals scored in all group matches;
+3. head-to-head goals scored;
 4. overall goal difference;
 5. overall goals scored;
 6. team conduct score;
 7. latest FIFA men's ranking.
+
+The current model applies the head-to-head criteria once to the equal-points cohort rather than
+iteratively reapplying them to a shrinking tied subset; this is an explicit approximation.
 
 The runtime has no conduct feed or committed FIFA-ranking snapshot. When a tie survives
 the available criteria, use the existing model rating as an explicit deterministic proxy,

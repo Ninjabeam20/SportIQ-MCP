@@ -14,10 +14,12 @@ Simulates all 12 four-team round-robins (6 matches each); match scores are sampl
 together, so the best-eight decision is shared by `football_simulate_group` and the bracket.
 
 Within an equal-points cohort, the available FIFA order is head-to-head points → head-to-head
-goal difference → goals scored in all group matches → overall goal difference → overall goals
-scored. Conduct and latest FIFA ranking are not present in the model input, so ties that reach
-those fields use model rating, then RNG only for equal ratings. Best-thirds use points → goal
-difference → goals scored, with the same explicit fallback. Fallback rows are counted and exposed.
+goal difference → head-to-head goals scored → overall goal difference → overall goals scored.
+The model applies those head-to-head criteria once to the equal-points cohort rather than
+iteratively reapplying them to a shrinking tied subset; this is a known approximation. Conduct and
+latest FIFA ranking are not present in the model input, so ties that reach those fields use model
+rating, then RNG only for equal ratings. Best-thirds use points → goal difference → goals scored,
+with the same explicit fallback. Fallback rows are counted and exposed.
 The implemented order follows FIFA's published [qualification and tiebreak
 explainer](https://www.fifa.com/en/articles/groups-how-teams-qualify-tie-breakers) where the
 model has the required fields.
