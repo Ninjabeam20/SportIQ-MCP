@@ -12,8 +12,9 @@ related: [[0012-hosted-abuse-controls]], [[group-sim]], [[bracket-sim]], [[footb
 A recall-biased line-by-line review (2026-07-14) of the 13-commit `codex_changes` hardening
 branch found four confirmed defects that blocked merging into `main`, despite the full 758-test
 suite passing. Two were proven with executable repros; two were verified against external
-authoritative sources. All four blockers and the adjacent mid-body disconnect defect are fixed
-locally on `codex_changes`; nothing was pushed, merged, or deployed.
+authoritative sources. All four blockers and the adjacent mid-body disconnect defect were fixed
+on `codex_changes`, re-verified (766 tests, ruff, hook regression), and the branch was
+fast-forward merged into `main` at `07dcf99` on 2026-07-14. Nothing pushed or deployed yet.
 
 ## Resolution
 
