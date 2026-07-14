@@ -14,7 +14,9 @@ branch found four confirmed defects that blocked merging into `main`, despite th
 suite passing. Two were proven with executable repros; two were verified against external
 authoritative sources. All four blockers and the adjacent mid-body disconnect defect were fixed
 on `codex_changes`, re-verified (766 tests, ruff, hook regression), and the branch was
-fast-forward merged into `main` at `07dcf99` on 2026-07-14. Nothing pushed or deployed yet.
+fast-forward merged into `main` at `07dcf99` on 2026-07-14 (docs commit `50530ef`), pushed to
+origin, and canary-deployed to Cloud Run as revision `sportiq-mcp-00035-vam` (100% traffic) after
+verifying the SSE fix live on the tagged URL.
 
 ## Resolution
 
