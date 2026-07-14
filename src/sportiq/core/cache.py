@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 import diskcache
+from redis.exceptions import ResponseError
 
 from sportiq.config import settings
 from sportiq.core.logging import get_logger
@@ -146,18 +147,24 @@ class Cache:
         """Atomically increment a raw counter and set expiry on first write."""
         if self.backend == "redis":
             try:
-                value = await self._redis.eval(
+                script = (
                     "local v=redis.call('INCR',KEYS[1]); "
-                    "if v==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return v",
-                    1,
-                    key,
-                    ttl_seconds,
+                    "if v==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return v"
                 )
+                try:
+                    value = await self._redis.eval(script, 1, key, ttl_seconds)
+                except ResponseError:
+                    await self._redis.delete(key)
+                    value = await self._redis.eval(script, 1, key, ttl_seconds)
                 return int(value)
             except Exception as e:
                 self._downgrade_to_disk(e)
         with self._disk.transact():
-            value = self._disk.incr(key, delta=1, default=0)
+            try:
+                value = self._disk.incr(key, delta=1, default=0)
+            except TypeError:
+                self._disk.delete(key)
+                value = self._disk.incr(key, delta=1, default=0)
             if value == 1:
                 self._disk.expire(key, ttl_seconds)
         return int(value)

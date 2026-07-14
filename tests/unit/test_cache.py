@@ -3,6 +3,8 @@
 import asyncio
 
 import pytest
+from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import ResponseError
 
 from sportiq.core.cache import get_cache
 
@@ -48,6 +50,22 @@ async def test_counter_is_separate_from_wrapped_cache_values():
 
 
 @pytest.mark.asyncio
+async def test_counter_resets_legacy_wrapped_disk_value():
+    cache = get_cache()
+    cache._disk.set(
+        "counter:legacy-disk",
+        '{"value":7,"stored_at":0}',
+        expire=60,
+    )
+
+    value = await cache.incr_counter("counter:legacy-disk", ttl_seconds=60)
+
+    assert value == 1
+    assert await cache.get_counter("counter:legacy-disk") == 1
+    assert cache.backend == "diskcache"
+
+
+@pytest.mark.asyncio
 async def test_healthcheck_passes_on_diskcache():
     cache = get_cache()
     assert await cache.healthcheck() is True
@@ -86,6 +104,32 @@ class _DeadRedis:
         raise ConnectionError("connection refused")
 
 
+class _LegacyCounterRedis:
+    def __init__(self) -> None:
+        self.eval_calls = 0
+        self.delete_calls = 0
+
+    async def eval(self, *args):
+        self.eval_calls += 1
+        if self.eval_calls == 1:
+            raise ResponseError("value is not an integer or out of range")
+        return 1
+
+    async def delete(self, key):
+        self.delete_calls += 1
+
+
+class _DisconnectedCounterRedis:
+    def __init__(self) -> None:
+        self.delete_calls = 0
+
+    async def eval(self, *args):
+        raise RedisConnectionError("connection refused")
+
+    async def delete(self, key):
+        self.delete_calls += 1
+
+
 @pytest.mark.asyncio
 async def test_downgrades_to_diskcache_when_redis_unreachable():
     """Per CLAUDE.md, an unreachable Redis daemon must downgrade to diskcache —
@@ -103,3 +147,34 @@ async def test_downgrades_to_diskcache_when_redis_unreachable():
     assert cache.backend == "diskcache"
     assert entry is not None
     assert entry.value == {"x": 1}
+
+
+@pytest.mark.asyncio
+async def test_redis_counter_resets_only_response_errors():
+    cache = get_cache()
+    cache._disk.close()
+    cache.backend = "redis"
+    cache._redis = _LegacyCounterRedis()
+    cache._disk = None
+
+    value = await cache.incr_counter("counter:legacy-redis", ttl_seconds=60)
+
+    assert value == 1
+    assert cache.backend == "redis"
+    assert cache._redis.eval_calls == 2
+    assert cache._redis.delete_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_redis_counter_connection_error_downgrades_without_delete():
+    cache = get_cache()
+    cache._disk.close()
+    cache.backend = "redis"
+    cache._redis = _DisconnectedCounterRedis()
+    cache._disk = None
+
+    value = await cache.incr_counter("counter:redis-down", ttl_seconds=60)
+
+    assert value == 1
+    assert cache.backend == "diskcache"
+    assert cache._redis.delete_calls == 0
