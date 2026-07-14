@@ -105,6 +105,8 @@ class RequestLimitMiddleware:
         body = bytearray()
         while True:
             message = await receive()
+            if message.get("type") == "http.disconnect":
+                return
             if message.get("type") != "http.request":
                 await _json_response(send, 400, "incomplete request body")
                 return
@@ -128,6 +130,6 @@ class RequestLimitMiddleware:
                     "body": bytes(body),
                     "more_body": False,
                 }
-            return {"type": "http.disconnect"}
+            return await receive()
 
         await self.app(scope, replay_receive, send)

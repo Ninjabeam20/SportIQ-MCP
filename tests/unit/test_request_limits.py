@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import json
+
+from sse_starlette import EventSourceResponse
+from starlette.requests import Request
 
 from sportiq.core.request_limits import RequestLimitMiddleware, _client_identity
 
@@ -25,6 +29,22 @@ class _RecordingApp:
         await send({"type": "http.response.body", "body": b"ok"})
 
 
+class _StreamingApp:
+    def __init__(self) -> None:
+        self.body = b""
+
+    async def __call__(self, scope, receive, send) -> None:
+        request = Request(scope, receive)
+        self.body = await request.body()
+
+        async def events():
+            for index in range(3):
+                await asyncio.sleep(0)
+                yield {"data": f"chunk-{index}"}
+
+        await EventSourceResponse(events(), ping=None)(scope, receive, send)
+
+
 async def _request(
     middleware,
     *,
@@ -33,6 +53,7 @@ async def _request(
     chunks: tuple[bytes, ...] = (b"{}",),
     headers: list[tuple[bytes, bytes]] | None = None,
     client: tuple[str, int] = ("192.0.2.10", 1234),
+    disconnect_after_body: bool = True,
 ) -> list[dict]:
     messages = [
         {
@@ -46,7 +67,10 @@ async def _request(
     async def receive() -> dict:
         if messages:
             return messages.pop(0)
-        return {"type": "http.disconnect"}
+        if disconnect_after_body:
+            return {"type": "http.disconnect"}
+        await asyncio.Event().wait()
+        raise AssertionError("unreachable")
 
     sent: list[dict] = []
 
@@ -108,6 +132,56 @@ async def test_request_limit_replays_accepted_body_byte_for_byte():
 
     assert _status(sent) == 200
     assert app.bodies == [b"abcdef"]
+
+
+async def test_request_limit_preserves_sse_stream_after_body_replay():
+    app = _StreamingApp()
+
+    sent = await asyncio.wait_for(
+        _request(
+            _middleware(app),
+            disconnect_after_body=False,
+        ),
+        timeout=1,
+    )
+
+    body = b"".join(
+        message.get("body", b"")
+        for message in sent
+        if message["type"] == "http.response.body"
+    )
+    assert app.body == b"{}"
+    assert _status(sent) == 200
+    assert all(f"data: chunk-{index}".encode() in body for index in range(3))
+
+
+async def test_request_limit_returns_silently_on_mid_body_disconnect():
+    app = _RecordingApp()
+    middleware = _middleware(app)
+    messages = [
+        {"type": "http.request", "body": b"partial", "more_body": True},
+        {"type": "http.disconnect"},
+    ]
+
+    async def receive() -> dict:
+        return messages.pop(0)
+
+    sent: list[dict] = []
+
+    async def send(message: dict) -> None:
+        sent.append(message)
+
+    scope = {
+        "type": "http",
+        "path": "/mcp",
+        "method": "POST",
+        "headers": [],
+        "client": ("192.0.2.10", 1234),
+    }
+    await middleware(scope, receive, send)
+
+    assert app.calls == 0
+    assert sent == []
 
 
 async def test_request_limit_returns_429_with_retry_after_per_client():
