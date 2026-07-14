@@ -38,8 +38,9 @@ for root in .claude .codex; do
 
   assert_exit 0 "{\"tool_input\":{\"file_path\":\"$python_file\"}}" "$format_hook"
   assert_exit 0 "{\"tool_input\":{\"file_path\":\"$text_file\"}}" "$format_hook"
-  assert_exit 2 '{broken-json' "$format_hook"
-  assert_exit 2 '{"tool_input":{}}' "$format_hook"
+  assert_exit 0 '{broken-json' "$format_hook"
+  assert_exit 0 '{"tool_input":{}}' "$format_hook"
+  assert_exit 0 '{"tool_input":{"patch":"*** Begin Patch"}}' "$format_hook"
 
   test "$(cat "$python_file")" = 'x = 1'
   test "$(cat "$text_file")" = 'x=  1'

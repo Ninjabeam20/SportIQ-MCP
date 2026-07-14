@@ -15,12 +15,12 @@ try:
     path = data["tool_input"]["file_path"]
     if not isinstance(path, str) or not path.strip():
         raise ValueError("missing file_path")
-except Exception as exc:
-    print(f"invalid hook input: {exc}", file=sys.stderr)
+except Exception:
     raise SystemExit(2)
 print(path)
 ')"; then
-  exit 2
+  # Formatting is a convenience hook: an unknown event shape is not applicable.
+  exit 0
 fi
 
 # Only act on Python files inside this repo.
