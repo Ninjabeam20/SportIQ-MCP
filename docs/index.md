@@ -157,6 +157,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 - [[cricapi-envelope-leak]] — CricAPI adapters leaked the request apikey and treated failure responses as empty successes (step8 live pass); fixed via `_unwrap` + `NotFoundError`.
 - [[error-envelope-secret-leak]] — Query-param API keys (CricAPI, TheOdds) leaked via the *error* envelope's `sources_tried` (httpx exception URL); fixed with `core/redact.py:scrub` at the fallback capture sites.
+- [[codex-changes-review-blockers]] — Four `codex_changes` merge blockers found on 2026-07-14 and fixed locally: SSE replay, FIFA tiebreak slot 3, Cloud Run XFF identity, and legacy atomic counters.
 
 ## Decisions (ADRs)
 
