@@ -14,6 +14,7 @@ Run: uv run python scripts/check_release_build.py
 from __future__ import annotations
 
 import fnmatch
+import json
 import subprocess
 import sys
 import tarfile
@@ -53,6 +54,34 @@ def project_version(root: Path) -> str:
         return tomllib.load(fh)["project"]["version"]
 
 
+def check_server_json(root: Path, version: str) -> list[str]:
+    path = root / "server.json"
+    if not path.is_file():
+        return ["  server.json is missing"]
+    data = json.loads(path.read_text())
+    errors: list[str] = []
+    if data.get("version") != version:
+        errors.append(f"  server.json version {data.get('version')!r} != {version!r}")
+    packages = data.get("packages") or []
+    if not packages:
+        errors.append("  server.json packages[0] missing")
+    elif packages[0].get("version") != version:
+        errors.append(
+            f"  server.json packages[0].version {packages[0].get('version')!r} != {version!r}"
+        )
+    return errors
+
+
+def check_dockerfile_lock(root: Path) -> list[str]:
+    text = (root / "Dockerfile").read_text()
+    errors: list[str] = []
+    if "uv.lock" not in text:
+        errors.append("  Dockerfile must copy/use uv.lock")
+    if "--frozen" not in text:
+        errors.append("  Dockerfile must install with --frozen")
+    return errors
+
+
 def _matches(rel: str, patterns: list[str]) -> bool:
     return any(fnmatch.fnmatch(rel, pat) for pat in patterns)
 
@@ -68,7 +97,7 @@ def check_sdist(path: Path, version: str) -> list[str]:
             if not name.startswith(prefix):
                 violations.append(f"  sdist: {name!r} lacks expected prefix {prefix!r}")
                 continue
-            rel = name[len(prefix):]
+            rel = name[len(prefix) :]
             if not _matches(rel, SDIST_ALLOW):
                 violations.append(f"  sdist: {rel!r} is not on the allowlist")
     return violations
@@ -101,8 +130,9 @@ def check_uvx_contract(wheel: Path) -> list[str]:
                 problems.append(
                     "  wheel: entry point 'sportiq-mcp = sportiq.server:main' not found"
                 )
-        if not any(n.startswith("sportiq/") and n.endswith(".json") and "/data/" in n
-                   for n in names):
+        if not any(
+            n.startswith("sportiq/") and n.endswith(".json") and "/data/" in n for n in names
+        ):
             problems.append("  wheel: package data '*/data/*.json' missing")
     return problems
 
@@ -129,11 +159,17 @@ def main() -> int:
         sdists = sorted(out_dir.glob("*.tar.gz"))
 
         errors: list[str] = []
+        errors.extend(check_server_json(root, version))
+        errors.extend(check_dockerfile_lock(root))
 
         if len(wheels) != 1:
-            errors.append(f"  expected exactly 1 wheel, got {len(wheels)}: {[w.name for w in wheels]}")
+            errors.append(
+                f"  expected exactly 1 wheel, got {len(wheels)}: {[w.name for w in wheels]}"
+            )
         if len(sdists) != 1:
-            errors.append(f"  expected exactly 1 sdist, got {len(sdists)}: {[s.name for s in sdists]}")
+            errors.append(
+                f"  expected exactly 1 sdist, got {len(sdists)}: {[s.name for s in sdists]}"
+            )
 
         expected_sdist = f"sportiq_mcp-{version}.tar.gz"
         expected_wheel_prefix = f"sportiq_mcp-{version}-"
@@ -147,9 +183,7 @@ def main() -> int:
         for archive in (*wheels, *sdists):
             size = archive.stat().st_size
             if size > MAX_ARCHIVE_BYTES:
-                errors.append(
-                    f"  {archive.name}: {size} bytes exceeds ceiling {MAX_ARCHIVE_BYTES}"
-                )
+                errors.append(f"  {archive.name}: {size} bytes exceeds ceiling {MAX_ARCHIVE_BYTES}")
 
         for s in sdists:
             errors.extend(check_sdist(s, version))

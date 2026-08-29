@@ -41,7 +41,7 @@ SportIQ-hosted service.
 
 ## Hosted deployment (public Cloud Run instance)
 
-The public instance at `https://sportiq-mcp-329580761892.us-central1.run.app/mcp` is an
+The public instance at `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` is an
 unauthenticated, read-only data service. A hosted operator may configure provider
 credentials, so callers must not assume the host is secret-free; this repository does
 not claim the deployment's unverified current key inventory. Application logging
@@ -50,22 +50,29 @@ redacts known credential patterns, but provider quota remains an operator concer
 The application accepts at most 60 POST `/mcp` requests per client and 300 total per
 minute, returning HTTP 429 with `Retry-After` before MCP dispatch. Client identities are
 hashed before entering cache keys. The validated rightmost `X-Forwarded-For` address appended
-by Cloud Run is trusted only when its `K_SERVICE` marker is present; other environments use
-the ASGI peer address. Initialize-body telemetry capture is capped at 64 KiB, and the five
-expensive simulation/strategy/solver tools share a concurrency limit of two.
+by Cloud Run is trusted only when its `K_SERVICE` marker is present. When
+`SPORTIQ_TRUST_CLOUDFLARE` is on (home-server Compose), identity is the validated
+`CF-Connecting-IP` and `X-Forwarded-For` is ignored. Other environments use the ASGI peer
+address. Do not set `K_SERVICE` on the home-server container. Initialize-body telemetry
+capture is capped at 64 KiB, and the five expensive simulation/strategy/solver tools share a
+concurrency limit of two.
 
-Rate counters are per process. The hosted policy therefore requires Cloud Run
-`--max-instances=1`; increasing that value multiplies the effective global limit and
-must be accompanied by a shared admission-control design. These controls are present in
-this branch, but this branch did not change or validate the live Cloud Run deployment.
+Rate counters are per process. The hosted policy therefore requires **one replica**
+(Cloud Run `--max-instances=1`, or a single Compose `sportiq` container). Increasing that
+value multiplies the effective global limit and must be accompanied by a shared
+admission-control design. Revision `sportiq-mcp-00035-vam` (2026-07-14, tag `hardening`)
+deployed these controls at 100% traffic with `maxScale: 1` (re-verified 2026-08-13). The
+home-server hostname is the production target and is not live until cutover.
 
 In HTTP transport mode the server disables FastMCP's DNS-rebinding protection
 (`enable_dns_rebinding_protection=False` in `server.py`). This is intentional and required:
-Cloud Run forwards a real `Host` header that the default `localhost`-only allowlist rejects.
-The deployment perimeter (Cloud Run's HTTPS front end) handles transport security; the tools
-themselves are read-only and stateless, so there is no rebinding-sensitive surface to protect.
+Cloud Run (and the home-server public hostname after cutover) forwards a real `Host` header
+that the default `localhost`-only allowlist rejects.
+The deployment perimeter (Cloud Run's HTTPS front end today; Cloudflare Tunnel + Caddy after
+cutover) handles transport security; the tools themselves are read-only and stateless, so there
+is no rebinding-sensitive surface to protect.
 Self-hosters who expose the HTTP endpoint on an untrusted network should put it behind the same
-kind of managed HTTPS perimeter.
+kind of managed HTTPS perimeter. Do not publish app ports on the host.
 
 ## Independent review
 

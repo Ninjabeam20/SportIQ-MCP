@@ -16,7 +16,7 @@ from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
 from sportiq.core.cache import get_cache
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.logging import get_logger
-from sportiq.core.ratelimit import Budget, consume, has_budget
+from sportiq.core.ratelimit import Budget, refund, reserve
 from sportiq.core.redact import scrub
 
 log = get_logger(__name__)
@@ -27,9 +27,9 @@ T = TypeVar("T")
 @runtime_checkable
 class Adapter(Protocol, Generic[T]):
     name: str
-    # Optional per-source rate-limit budget. The chain checks-and-consumes
-    # before calling fetch(); on exhaustion the adapter is skipped silently.
-    # Adapters without a budget (scrapers, static seeds, paid-by-plan) set None.
+    # Optional per-source rate-limit budget. The chain reserves a token
+    # before fetch() and refunds it if fetch fails; on exhaustion the adapter
+    # is skipped silently. Adapters without a budget set None.
     budget: Budget | None
 
     async def fetch(self, **kwargs: Any) -> T: ...
@@ -74,11 +74,7 @@ class FallbackChain(Generic[T]):
         self._key_locks: dict[str, asyncio.Lock] = {}
 
     def _fresh_hit(self, cached, started: float) -> FallbackResult[T] | None:
-        if (
-            cached is not None
-            and self.fresh_ttl > 0
-            and cached.age_seconds <= self.fresh_ttl
-        ):
+        if cached is not None and self.fresh_ttl > 0 and cached.age_seconds <= self.fresh_ttl:
             return FallbackResult(
                 value=cached.value,
                 source=f"cache:{self.name}",
@@ -122,25 +118,28 @@ class FallbackChain(Generic[T]):
         saw_other_failure = False
         for index, adapter in enumerate(self.adapters):
             budget: Budget | None = getattr(adapter, "budget", None)
-            if budget is not None and not await has_budget(budget):
-                attempts.append(
-                    {
-                        "name": adapter.name,
-                        "status": "skipped",
-                        "reason": "rate_limited",
-                        "duration_ms": 0,
-                    }
-                )
-                log.warning(
-                    "chain.adapter.rate_limited",
-                    chain=self.name,
-                    adapter=adapter.name,
-                    source=budget.source,
-                )
-                # A skipped adapter might have served the entity — can't claim
-                # NOT_FOUND when a source never got to answer.
-                saw_other_failure = True
-                continue
+            reserved = False
+            if budget is not None:
+                reserved = await reserve(budget)
+                if not reserved:
+                    attempts.append(
+                        {
+                            "name": adapter.name,
+                            "status": "skipped",
+                            "reason": "rate_limited",
+                            "duration_ms": 0,
+                        }
+                    )
+                    log.warning(
+                        "chain.adapter.rate_limited",
+                        chain=self.name,
+                        adapter=adapter.name,
+                        source=budget.source,
+                    )
+                    # A skipped adapter might have served the entity — can't claim
+                    # NOT_FOUND when a source never got to answer.
+                    saw_other_failure = True
+                    continue
 
             adapter_started = time.monotonic()
             try:
@@ -154,6 +153,8 @@ class FallbackChain(Generic[T]):
                 else:
                     value = await adapter.fetch(**kwargs)
             except Exception as e:
+                if reserved:
+                    await refund(budget)
                 if isinstance(e, NotFoundError):
                     saw_not_found = True
                 else:
@@ -165,9 +166,7 @@ class FallbackChain(Generic[T]):
                         # scrub: exception strings embed the request URL, which
                         # carries the API key as a query param for some sources.
                         "error": scrub(f"{type(e).__name__}: {e}"),
-                        "duration_ms": int(
-                            (time.monotonic() - adapter_started) * 1000
-                        ),
+                        "duration_ms": int((time.monotonic() - adapter_started) * 1000),
                     }
                 )
                 log.warning(
@@ -185,10 +184,8 @@ class FallbackChain(Generic[T]):
                     "duration_ms": int((time.monotonic() - adapter_started) * 1000),
                 }
             )
-            # Consume a budget token only after a successful fetch, so failed /
-            # missing-key calls don't burn quota.
-            if budget is not None:
-                await consume(budget)
+            # Token was reserved before fetch; success keeps it. Do not consume
+            # a second time.
             await cache.set(key, value, ttl_seconds=max(self.fresh_ttl, self.stale_ttl))
             return FallbackResult(
                 value=value,
@@ -201,9 +198,7 @@ class FallbackChain(Generic[T]):
             )
 
         if cached is not None and self.stale_ttl > 0 and cached.age_seconds <= self.stale_ttl:
-            log.info(
-                "chain.serving_stale", chain=self.name, age=cached.age_seconds
-            )
+            log.info("chain.serving_stale", chain=self.name, age=cached.age_seconds)
             return FallbackResult(
                 value=cached.value,
                 source=f"cache:stale:{self.name}",

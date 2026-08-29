@@ -146,9 +146,7 @@ async def test_request_limit_preserves_sse_stream_after_body_replay():
     )
 
     body = b"".join(
-        message.get("body", b"")
-        for message in sent
-        if message["type"] == "http.response.body"
+        message.get("body", b"") for message in sent if message["type"] == "http.response.body"
     )
     assert app.body == b"{}"
     assert _status(sent) == 200
@@ -247,6 +245,64 @@ async def test_request_limit_spoofed_xff_prefix_cannot_rotate_buckets():
     assert _status(first) == 200
     assert _status(rejected) == 429
     assert app.calls == 1
+
+
+def test_client_identity_uses_cf_connecting_ip_when_trust_cloudflare():
+    scope = {
+        "headers": [
+            (b"cf-connecting-ip", b"203.0.113.50"),
+            (b"x-forwarded-for", b"198.51.100.9, 10.0.0.2"),
+        ],
+        "client": ("172.18.0.4", 1234),
+    }
+    assert _client_identity(scope, trust_forwarded=False, trust_cloudflare=True) == "203.0.113.50"
+
+
+def test_client_identity_ignores_cf_connecting_ip_when_flag_off():
+    scope = {
+        "headers": [(b"cf-connecting-ip", b"203.0.113.50")],
+        "client": ("172.18.0.4", 1234),
+    }
+    assert _client_identity(scope, trust_forwarded=False, trust_cloudflare=False) == "172.18.0.4"
+
+
+def test_client_identity_ignores_invalid_cf_connecting_ip():
+    scope = {
+        "headers": [(b"cf-connecting-ip", b"not-an-ip")],
+        "client": ("172.18.0.4", 1234),
+    }
+    assert _client_identity(scope, trust_forwarded=False, trust_cloudflare=True) == "172.18.0.4"
+
+
+async def test_request_limit_home_proxy_uses_cf_ip_not_xff():
+    app = _RecordingApp()
+    middleware = _middleware(app, client=1)
+    middleware.trust_forwarded = False
+    middleware.trust_cloudflare = True
+
+    first = await _request(
+        middleware,
+        headers=[
+            (b"cf-connecting-ip", b"203.0.113.50"),
+            (b"x-forwarded-for", b"198.51.100.9"),
+        ],
+    )
+    rejected = await _request(
+        middleware,
+        headers=[
+            (b"cf-connecting-ip", b"203.0.113.50"),
+            (b"x-forwarded-for", b"198.51.100.99"),
+        ],
+    )
+    other = await _request(
+        middleware,
+        headers=[(b"cf-connecting-ip", b"203.0.113.51")],
+    )
+
+    assert _status(first) == 200
+    assert _status(rejected) == 429
+    assert _status(other) == 200
+    assert app.calls == 2
 
 
 async def test_request_limit_passes_get_and_non_mcp_requests_unchanged():

@@ -60,8 +60,10 @@ async def test_same_team_trimmed_casefold_rejected_before_chain():
 async def test_valid_returns_envelope():
     mock_squad = _mock_squad_result([{"name": "P1", "player_id": "1"}])
 
-    with patch("sportiq.cricket.intel_tools.squad_chain") as ms, \
-         patch("sportiq.cricket.intel_tools.player_stats_chain") as mps:
+    with (
+        patch("sportiq.cricket.intel_tools.squad_chain") as ms,
+        patch("sportiq.cricket.intel_tools.player_stats_chain") as mps,
+    ):
         ms.fetch = AsyncMock(return_value=mock_squad)
         mps.fetch = AsyncMock(side_effect=Exception("no stats"))
         result = await cricket_head_to_head("MI", "CSK")
@@ -74,18 +76,25 @@ async def test_valid_returns_envelope():
 async def test_data_has_required_keys():
     mock_squad = _mock_squad_result([{"name": "P1", "player_id": "1"}])
 
-    with patch("sportiq.cricket.intel_tools.squad_chain") as ms, \
-         patch("sportiq.cricket.intel_tools.player_stats_chain") as mps:
+    with (
+        patch("sportiq.cricket.intel_tools.squad_chain") as ms,
+        patch("sportiq.cricket.intel_tools.player_stats_chain") as mps,
+    ):
         ms.fetch = AsyncMock(return_value=mock_squad)
         mps.fetch = AsyncMock(side_effect=Exception("no stats"))
         result = await cricket_head_to_head("MI", "CSK")
 
     for key in [
-        "team_a", "team_b",
-        "team_a_edge_count", "team_b_edge_count",
-        "key_players_a", "key_players_b",
-        "h2h_win_rate_a", "h2h_win_rate_b",
-        "win_prob_a", "win_prob_b",
+        "team_a",
+        "team_b",
+        "team_a_edge_count",
+        "team_b_edge_count",
+        "key_players_a",
+        "key_players_b",
+        "h2h_win_rate_a",
+        "h2h_win_rate_b",
+        "win_prob_a",
+        "win_prob_b",
     ]:
         assert key in result["data"], f"missing key: {key}"
 
@@ -93,8 +102,10 @@ async def test_data_has_required_keys():
 async def test_win_prob_present_and_sums_to_one():
     mock_squad = _mock_squad_result([{"name": "P1"}])
 
-    with patch("sportiq.cricket.intel_tools.squad_chain") as ms, \
-         patch("sportiq.cricket.intel_tools.player_stats_chain") as mps:
+    with (
+        patch("sportiq.cricket.intel_tools.squad_chain") as ms,
+        patch("sportiq.cricket.intel_tools.player_stats_chain") as mps,
+    ):
         ms.fetch = AsyncMock(return_value=mock_squad)
         mps.fetch = AsyncMock(side_effect=Exception("no stats"))
         result = await cricket_head_to_head("India", "Australia")
@@ -111,6 +122,16 @@ async def test_squad_failure_returns_all_sources_failed():
         result = await cricket_head_to_head("MI", "CSK")
 
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+async def test_squad_not_found_returns_not_found():
+    from sportiq.core.errors import NotFoundError
+
+    with patch("sportiq.cricket.intel_tools.squad_chain") as ms:
+        ms.fetch = AsyncMock(side_effect=NotFoundError("no squad", attempts=[]))
+        result = await cricket_head_to_head("MI", "CSK")
+
+    assert result["error"]["code"] == "NOT_FOUND"
 
 
 async def test_no_player_ids_gives_neutral_result():

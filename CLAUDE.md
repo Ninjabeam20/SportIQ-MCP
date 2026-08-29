@@ -116,6 +116,11 @@ When you need to understand a domain question (scoring rules, API quirks, model 
 
 - **HTTP middleware on `/mcp` must be pure ASGI.** `BaseHTTPMiddleware` buffers SSE and breaks
   MCP streamable-HTTP. See `core/path_compat.py` / `core/client_info.py` for the pattern.
+- **HTTP transport is stateless** (`mcp.settings.stateless_http = True`, HTTP branch of
+  `server.py` only). No `Mcp-Session-Id`, so an in-place `docker compose up --build` on the
+  home server does not strand live connectors. stdio/uvx is unaffected. Keep
+  `json_response` **False** — SSE framing is how tool results stream. This is a plain
+  FastMCP setting on `mcp` 1.29.0; it does NOT require SDK v2.
 - **Don't call `mcp.run("streamable-http")` in the HTTP branch** — it rebuilds the Starlette
   app and drops the middlewares. `server.py` builds the app manually; keep it that way.
 - **Registration order ≠ import order** in `server.py`: imports stay alphabetical (ruff isort);
@@ -126,7 +131,9 @@ When you need to understand a domain question (scoring rules, API quirks, model 
 - **Never retry 429 on quota-capped APIs** — that's why `get_json` and `get_json_burst` are
   separate. Picking the wrong one burns 3× quota on guaranteed failures.
 - **Version lives in 3 places:** `pyproject.toml` (truth), `__init__.__version__` (dynamic —
-  leave it), `server.json` (manual bump; has drifted before — check it at every release).
+  leave it), `server.json` (MCP registry). `scripts/check_release_build.py` fails CI if
+  `server.json` drifts. FastMCP 1.29 does not take `version=`; `server.py` binds
+  `mcp._mcp_server.version = __version__` so initialize reports SportIQ, not the SDK.
 - **Coverage gate is in CI only** (`--cov-fail-under=84` in `test.yml`), deliberately not in
   pyproject `addopts` — don't "fix" that; partial local runs must be able to pass.
 - **CBC binary must be on PATH** for the Dream11 solver (`brew install cbc` /
@@ -134,13 +141,29 @@ When you need to understand a domain question (scoring rules, API quirks, model 
 - **OpenF1 401s 2025+ seasons without a key**; 2023–24 stays free. Build scripts skip-with-warn.
 - **The Elo seed is frozen** (D1 finding) — never re-tune it; `SPORTIQ_FOOTBALL_LIVE_ELO=1`
   walks it forward from real results instead.
-- **sdist safety is a blocklist** (`pyproject.toml` excludes + `scripts/check_release_build.py`).
-  Any new root-level doc must be added there or it ships to PyPI.
+- **sdist safety is an allowlist** (`pyproject.toml` `[tool.hatch.build.targets.sdist] include`
+  + `scripts/check_release_build.py`). New root files are excluded by default. Do not revert
+  to a blocklist.
 - **`/u/<key>/mcp` paths must keep working** (`core/path_compat.py`) — sponsor connectors from
   the paid era are configured with them.
-- **Prod deploys are canaried:** build via `cloudbuild.yaml` (Kaniko cache), deploy no-traffic
-  tagged revision, smoke-test, then promote. Runbook in `cloud.md`. Deploys are a Rule-7 hard
-  stop regardless.
+- **Production target is home-server Compose**, not a Cloud Run canary. Repo-root
+  `docker-compose.yml` joins Docker network `apps`, `container_name: sportiq`, **no** `ports:`.
+  Plan: `docs/superpowers/plans/2026-08-13-home-server-migration.md`. Cloud Run (`cloud.md`)
+  is rollback until teardown. Apply/Caddy/Cloudflare need `yes`; connector/docs flip needs
+  `flip`; GCP teardown needs `yes, delete GCP`. Always-on idle: `restart: unless-stopped`,
+  no keep-warm cron on the Dell, no auto-sleep (Cloud Run `sportiq-keepwarm` exists only
+  because GCP scales to zero; delete it in Task 9, do not copy it).
+- **Never set `K_SERVICE` on the Dell.** That flag means Cloud Run and would trust spoofable
+  `X-Forwarded-For`. Home-server Compose sets `SPORTIQ_TRUST_CLOUDFLARE=1` so 429s key on
+  `CF-Connecting-IP`. Leave that env unset on Cloud Run and stdio.
+- **Live public connector URL** is still `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp`
+  until Task 8 flip (after Task 7 prove). The older `sportiq-mcp-329580761892.us-central1.run.app`
+  hostname does not resolve. Do **not** point README/`links.ts` at
+  `https://sportiq.utkarshgupta.org/mcp` until the Dell is proven (initialize, tool call,
+  SSE, 429s) and the owner says `flip`. Advertising it while NXDOMAIN repeats the dead-URL bug.
+- **Dockerfile must install with `uv pip install --system --frozen` against `uv.lock`.** Do not
+  revert to unpinned `pip install ".[f1]"`. `mcp` is `>=1.27.2,<2` — 2.0.0 removes
+  `mcp.server.fastmcp`. Do not combine the home-server move with SDK v2.
 
 ## When you finish a coding task
 

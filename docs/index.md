@@ -158,6 +158,9 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[cricapi-envelope-leak]] — CricAPI adapters leaked the request apikey and treated failure responses as empty successes (step8 live pass); fixed via `_unwrap` + `NotFoundError`.
 - [[error-envelope-secret-leak]] — Query-param API keys (CricAPI, TheOdds) leaked via the *error* envelope's `sources_tried` (httpx exception URL); fixed with `core/redact.py:scrub` at the fallback capture sites.
 - [[codex-changes-review-blockers]] — Four `codex_changes` merge blockers found on 2026-07-14 and fixed locally: SSE replay, FIFA tiebreak slot 3, Cloud Run XFF identity, and legacy atomic counters.
+- [[hosted-url-and-release-drift]] — 2026-08-13 audit: advertised connector URL was dead DNS; PyPI 0.3.1 lagged the host; FastMCP reported the SDK version as serverInfo. In-tree URL is `ey2eariulq`; PyPI tag still owner-gated.
+- [[home-server-cutover]] — two systems, one public URL: live Cloud Run until Task 8 `flip`; Dell hostname NXDOMAIN; live Caddy already has a sportiq block that must drop `header_up CF-Connecting-IP`; always-on idle.
+- [[mac-cutover-inventory]] — 2026-08-30 file-by-file list of the Mac worktree that ships 0.3.2 + home-server Compose without flipping the public URL.
 
 ## Decisions (ADRs)
 

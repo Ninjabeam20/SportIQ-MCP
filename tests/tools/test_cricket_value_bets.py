@@ -1,4 +1,5 @@
 """Tool tests for cricket_find_value_bets."""
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from sportiq.cricket.intel_tools import cricket_find_value_bets
@@ -25,6 +26,15 @@ async def test_all_sources_failed():
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
 
 
+async def test_not_found_returns_envelope():
+    from sportiq.core.errors import NotFoundError
+
+    with patch("sportiq.cricket.intel_tools.odds_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(side_effect=NotFoundError("no events", attempts=[]))
+        result = await cricket_find_value_bets()
+    assert result["error"]["code"] == "NOT_FOUND"
+
+
 async def test_returns_valid_envelope_with_stubbed_odds():
     mock_result = MagicMock()
     mock_result.value = {
@@ -34,9 +44,7 @@ async def test_returns_valid_envelope_with_stubbed_odds():
                 "home": "Mumbai Indians",
                 "away": "Chennai Super Kings",
                 "commence_time": "2026-04-01T14:00:00Z",
-                "bookmakers": [
-                    {"name": "bet365", "home": 1.85, "away": 2.05, "draw": None}
-                ],
+                "bookmakers": [{"name": "bet365", "home": 1.85, "away": 2.05, "draw": None}],
             }
         ]
     }
@@ -66,17 +74,13 @@ async def test_team_filter_applied():
                 "event_id": "evt1",
                 "home": "Mumbai Indians",
                 "away": "Chennai Super Kings",
-                "bookmakers": [
-                    {"name": "bet365", "home": 1.85, "away": 2.05, "draw": None}
-                ],
+                "bookmakers": [{"name": "bet365", "home": 1.85, "away": 2.05, "draw": None}],
             },
             {
                 "event_id": "evt2",
                 "home": "Kolkata Knight Riders",
                 "away": "Delhi Capitals",
-                "bookmakers": [
-                    {"name": "bet365", "home": 1.9, "away": 1.95, "draw": None}
-                ],
+                "bookmakers": [{"name": "bet365", "home": 1.9, "away": 1.95, "draw": None}],
             },
         ]
     }

@@ -13,6 +13,7 @@ from contextlib import asynccontextmanager
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
+from sportiq import __version__
 from sportiq.config import settings
 from sportiq.core.cache import close_cache
 from sportiq.core.health import register_health_tool
@@ -40,6 +41,10 @@ async def _lifespan(_server):
 
 
 mcp = FastMCP("sportiq", lifespan=_lifespan)
+# FastMCP 1.27/1.28 does not forward version= to the low-level Server, so
+# initialize.serverInfo.version would be the SDK version. Bind the package
+# version explicitly.
+mcp._mcp_server.version = __version__
 
 register_health_tool(mcp)
 register_instructions_resource(mcp)
@@ -78,6 +83,14 @@ def main() -> None:
 
         mcp.settings.host = "0.0.0.0"  # nosec B104  # container must bind all interfaces
         mcp.settings.port = int(os.getenv("PORT", "8080"))
+        # Stateless streamable-HTTP: every POST stands alone, no server-side
+        # session table, no Mcp-Session-Id. The home server rebuilds the image
+        # in place (`docker compose up -d --build`), which restarts the process;
+        # with sessions, every live connector would hold a dead session id until
+        # the user removed and re-added the connector. SportIQ has no per-session
+        # state to lose — tools read the shared cache and return one envelope.
+        # json_response stays False: SSE framing is how tool results stream.
+        mcp.settings.stateless_http = True
         # DNS rebinding protection blocks Cloud Run host headers; disable it for
         # the remote deployment — Cloud Run's infrastructure handles perimeter security.
         mcp.settings.transport_security = TransportSecuritySettings(

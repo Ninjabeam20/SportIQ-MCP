@@ -18,8 +18,20 @@ def _header(scope: dict, name: bytes) -> str:
     return ""
 
 
-def _client_identity(scope: dict, *, trust_forwarded: bool) -> str:
-    """Use Cloud Run's rightmost XFF hop; ignore caller-supplied XFF locally."""
+def _truthy_env(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _client_identity(scope: dict, *, trust_forwarded: bool, trust_cloudflare: bool = False) -> str:
+    """Cloudflare CF-Connecting-IP, else Cloud Run rightmost XFF, else peer."""
+    if trust_cloudflare:
+        cf_ip = _header(scope, b"cf-connecting-ip").strip()
+        if cf_ip:
+            try:
+                return str(ipaddress.ip_address(cf_ip))
+            except ValueError:
+                pass
+
     if trust_forwarded:
         forwarded = _header(scope, b"x-forwarded-for")
         candidate = forwarded.rsplit(",", 1)[-1].strip()
@@ -35,9 +47,7 @@ def _client_identity(scope: dict, *, trust_forwarded: bool) -> str:
     return "unknown"
 
 
-async def _json_response(
-    send, status: int, message: str, retry_after: int | None = None
-) -> None:
+async def _json_response(send, status: int, message: str, retry_after: int | None = None) -> None:
     body = json.dumps({"error": message}, separators=(",", ":")).encode()
     headers = [
         (b"content-type", b"application/json"),
@@ -65,6 +75,7 @@ class RequestLimitMiddleware:
         self.per_client_per_minute = per_client_per_minute
         self.global_per_minute = global_per_minute
         self.trust_forwarded = bool(os.getenv("K_SERVICE"))
+        self.trust_cloudflare = _truthy_env("SPORTIQ_TRUST_CLOUDFLARE")
 
     async def __call__(self, scope, receive, send) -> None:
         if (
@@ -86,7 +97,11 @@ class RequestLimitMiddleware:
 
         cache = get_cache()
         window = int(time.time()) // 60
-        identity = _client_identity(scope, trust_forwarded=self.trust_forwarded)
+        identity = _client_identity(
+            scope,
+            trust_forwarded=self.trust_forwarded,
+            trust_cloudflare=self.trust_cloudflare,
+        )
         identity_hash = hashlib.blake2s(identity.encode(), digest_size=8).hexdigest()
         client_count = await cache.incr_counter(
             f"sportiq:http:client:{window}:{identity_hash}", ttl_seconds=120
@@ -95,9 +110,7 @@ class RequestLimitMiddleware:
             await _json_response(send, 429, "client rate limit exceeded", retry_after=60)
             return
 
-        global_count = await cache.incr_counter(
-            f"sportiq:http:global:{window}", ttl_seconds=120
-        )
+        global_count = await cache.incr_counter(f"sportiq:http:global:{window}", ttl_seconds=120)
         if global_count > self.global_per_minute:
             await _json_response(send, 429, "global rate limit exceeded", retry_after=60)
             return

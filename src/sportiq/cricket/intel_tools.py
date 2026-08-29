@@ -54,18 +54,14 @@ def _estimated_ownership_pct(credits: float) -> float:
     return max(1.0, min(99.0, pct))
 
 
-async def _candidate_pool(
-    team_a: str, team_b: str, venue_record: dict
-) -> tuple[list[dict], list]:
+async def _candidate_pool(team_a: str, team_b: str, venue_record: dict) -> tuple[list[dict], list]:
     """Compose the candidate list the solver/captain ranker consumes.
 
     Returns the candidate dicts plus the two squad ``FallbackResult``s so callers
     can aggregate freshness into ``meta`` (per fallback-contract.md).
     """
     # Independent fetches — gather so a cold cache costs one round-trip, not two.
-    a, b = await asyncio.gather(
-        squad_chain.fetch(team=team_a), squad_chain.fetch(team=team_b)
-    )
+    a, b = await asyncio.gather(squad_chain.fetch(team=team_a), squad_chain.fetch(team=team_b))
     candidates: list[dict] = []
     for squad_result in (a, b):
         squad = squad_result.value
@@ -129,9 +125,13 @@ async def cricket_build_dream11_team(
     if not team_a or not team_a.strip() or not team_b or not team_b.strip():
         return error_envelope(code="INVALID_INPUT", message="team_a and team_b must be non-empty.")
     if len(team_a) > 100:
-        return error_envelope(code="INVALID_INPUT", message="team_a must not exceed 100 characters.")
+        return error_envelope(
+            code="INVALID_INPUT", message="team_a must not exceed 100 characters."
+        )
     if len(team_b) > 100:
-        return error_envelope(code="INVALID_INPUT", message="team_b must not exceed 100 characters.")
+        return error_envelope(
+            code="INVALID_INPUT", message="team_b must not exceed 100 characters."
+        )
     if not venue or not venue.strip():
         return error_envelope(code="INVALID_INPUT", message="venue must be non-empty.")
     if len(venue) > 200:
@@ -192,12 +192,25 @@ async def cricket_captain_recommendation(
         team_b = resolved["team_b"]
         venue = venue or resolved["venue"]
 
-    if not team_a or not team_a.strip() or not team_b or not team_b.strip() or not venue or not venue.strip():
-        return error_envelope(code="INVALID_INPUT", message="team_a, team_b, venue must all be non-empty.")
+    if (
+        not team_a
+        or not team_a.strip()
+        or not team_b
+        or not team_b.strip()
+        or not venue
+        or not venue.strip()
+    ):
+        return error_envelope(
+            code="INVALID_INPUT", message="team_a, team_b, venue must all be non-empty."
+        )
     if len(team_a) > 100:
-        return error_envelope(code="INVALID_INPUT", message="team_a must not exceed 100 characters.")
+        return error_envelope(
+            code="INVALID_INPUT", message="team_a must not exceed 100 characters."
+        )
     if len(team_b) > 100:
-        return error_envelope(code="INVALID_INPUT", message="team_b must not exceed 100 characters.")
+        return error_envelope(
+            code="INVALID_INPUT", message="team_b must not exceed 100 characters."
+        )
     if len(venue) > 200:
         return error_envelope(code="INVALID_INPUT", message="venue must not exceed 200 characters.")
 
@@ -259,16 +272,31 @@ async def cricket_differential_picks(
         team_b = resolved["team_b"]
         venue = venue or resolved["venue"]
 
-    if not team_a or not team_a.strip() or not team_b or not team_b.strip() or not venue or not venue.strip():
-        return error_envelope(code="INVALID_INPUT", message="team_a, team_b, venue must all be non-empty.")
+    if (
+        not team_a
+        or not team_a.strip()
+        or not team_b
+        or not team_b.strip()
+        or not venue
+        or not venue.strip()
+    ):
+        return error_envelope(
+            code="INVALID_INPUT", message="team_a, team_b, venue must all be non-empty."
+        )
     if len(team_a) > 100:
-        return error_envelope(code="INVALID_INPUT", message="team_a must not exceed 100 characters.")
+        return error_envelope(
+            code="INVALID_INPUT", message="team_a must not exceed 100 characters."
+        )
     if len(team_b) > 100:
-        return error_envelope(code="INVALID_INPUT", message="team_b must not exceed 100 characters.")
+        return error_envelope(
+            code="INVALID_INPUT", message="team_b must not exceed 100 characters."
+        )
     if len(venue) > 200:
         return error_envelope(code="INVALID_INPUT", message="venue must not exceed 200 characters.")
     if not 0 <= ownership_threshold <= 100:
-        return error_envelope(code="INVALID_INPUT", message="ownership_threshold must be in [0, 100].")
+        return error_envelope(
+            code="INVALID_INPUT", message="ownership_threshold must be in [0, 100]."
+        )
 
     try:
         venue_result = await pitch_data_chain.fetch(venue=venue)
@@ -359,6 +387,8 @@ async def cricket_player_form_index(player_id: str) -> Envelope:
             message=f"Could not fetch stats for player {player_id!r}.",
             sources_tried=e.attempts,
         )
+    except NotFoundError as e:
+        return error_envelope(code="NOT_FOUND", message=str(e))
 
     avg, sr = _t20_career_numbers(stats_result.value)
     # Phase 2 has no per-innings recent stream from the upstreams — we only
@@ -461,6 +491,8 @@ async def cricket_head_to_head(team_a: str, team_b: str) -> Envelope:
             message="Could not fetch squad data.",
             sources_tried=e.attempts,
         )
+    except NotFoundError as e:
+        return error_envelope(code="NOT_FOUND", message=str(e))
 
     squad_a_players: list[dict] = squad_result_a.value.get("players", [])
     squad_b_players: list[dict] = squad_result_b.value.get("players", [])
@@ -561,12 +593,15 @@ async def cricket_find_value_bets(
             message="No cricket odds source available. Set THEODDS_KEY to enable.",
             sources_tried=e.attempts,
         )
+    except NotFoundError as e:
+        return error_envelope(code="NOT_FOUND", message=str(e))
 
     events = odds_result.value.get("events", [])
     if team and team.strip():
         needle = team.strip().lower()
         events = [
-            ev for ev in events
+            ev
+            for ev in events
             if needle in ev.get("home", "").lower() or needle in ev.get("away", "").lower()
         ]
 
@@ -622,7 +657,9 @@ async def cricket_player_matchup(player_a: str, player_b: str) -> Envelope:
             code="INVALID_INPUT", message="player identifiers must not exceed 200 characters."
         )
     if player_a.casefold() == player_b.casefold():
-        return error_envelope(code="INVALID_INPUT", message="player_a and player_b must be different.")
+        return error_envelope(
+            code="INVALID_INPUT", message="player_a and player_b must be different."
+        )
 
     stats_a_r, stats_b_r = await asyncio.gather(
         player_stats_chain.fetch(player_id=player_a),

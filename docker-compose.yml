@@ -1,0 +1,38 @@
+# Always-on idle (2026-08-30): the process listens; MCP only works on a tool
+# call. Do not add a keep-warm sidecar, cron hitting /mcp, or scale-to-zero.
+# Cold start of scipy/numpy is why Cloud Run needed sportiq-keepwarm — do not
+# copy that onto the Dell. restart and the Dockerfile HEALTHCHECK stay as-is.
+services:
+  sportiq:
+    build: .
+    container_name: sportiq
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPORTIQ_TRANSPORT: http
+      PORT: "8080"
+      SPORTIQ_LOG_FORMAT: json
+      SPORTIQ_TRUST_CLOUDFLARE: "1"
+      DISKCACHE_DIR: /var/cache/sportiq
+    volumes:
+      - sportiq-cache:/var/cache/sportiq
+    networks: [apps]
+    mem_limit: 1536m
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # NO ports: — Caddy reaches sportiq:8080 on the apps network only.
+
+networks:
+  apps:
+    external: true
+
+volumes:
+  sportiq-cache:

@@ -40,7 +40,7 @@ export const LINKS = {
   pypi: "https://pypi.org/project/sportiq-mcp/",
   github: "https://github.com/Ninjabeam20/SportIQ-MCP",
   registry: "https://registry.modelcontextprotocol.io",     // id: io.github.Ninjabeam20/sportiq-mcp
-  hostedMcp: "https://sportiq-mcp-329580761892.us-central1.run.app/mcp",
+  hostedMcp: "https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp", // live Cloud Run; do not swap to sportiq.utkarshgupta.org until Task 8 flip
   email: "utkarshgupta885@gmail.com",
 } as const;
 

@@ -1,23 +1,48 @@
 # GAPS.md — Honest audit of weaknesses
 
 > Written 2026-07-07 against v0.3.1 (commit `b7a1392`); status refreshed 2026-07-14 on
-> `codex_changes`. Ordered by severity, most important
-> first. Each entry: what it is, where it lives, why it matters, and a fix scoped small enough
-> to execute as a single task. Severity: **HIGH / MEDIUM / LOW**.
+> `codex_changes` and again **2026-08-13** on `grok_changes` (in-tree; PyPI tag is the
+> operator's final touch). Ordered by severity. Each remaining entry:
+> what it is, where it lives, why it matters. Severity: **HIGH / MEDIUM / LOW**.
 >
-> Context that shapes severity: the hosted instance is a free public Cloud Run service running
-> diskcache (no Redis), stdio installs are single-user, and the project has a hard zero-spend
-> constraint. Several "known limitations" below are documented in code comments — they are
-> listed anyway because a future contributor must know which ones are load-bearing accepted
-> trade-offs vs. genuine debt.
+> Context that shapes severity: the **live** hosted instance is still the free public
+> Cloud Run service (`sportiq-mcp-00035-vam`, diskcache, no Redis). Production **target**
+> is the Dell home server (`sportiq.utkarshgupta.org`, one Compose replica, no host ports, always-on idle)
+> — two systems, one public URL until Task 8 flip (hostname NXDOMAIN as of 2026-08-13). Stdio installs are
+> single-user. Hard zero-spend constraint. Several "known limitations" below are
+> documented in code comments — they are listed anyway because a future contributor
+> must know which ones are load-bearing accepted trade-offs vs. genuine debt.
+
+---
+
+## Status snapshot 2026-08-13
+
+| # | Item | Status |
+|---|---|---|
+| 1 | Hosted per-client rate limit | **DEPLOYED** 2026-07-14 on `sportiq-mcp-00035-vam` (`maxScale: 1`). CF-Connecting-IP path in-tree for home server |
+| 2 | Peek→fetch quota race | **RESOLVED IN TREE** — `reserve()` / `refund()` + `incr_counter_if_below` |
+| 3 | Uncaught `NotFoundError` | **RESOLVED** (football/F1 2026-07-14; cricket intel 2026-08-13) |
+| 4 | Relative `Location` redirects | **RESOLVED** 2026-07-14 |
+| 5 | Per-process state × N instances | **GUARDRAIL DEPLOYED** (`maxScale: 1`; Compose one replica). Redis still absent |
+| 6 | sdist leak | **RESOLVED** — allowlist, not a blocklist |
+| 7 | Dead server semaphore | **RESOLVED** 2026-07-14 |
+| 8 | Envelope vs Pydantic rule | **RESOLVED AS DOCUMENTATION** |
+| 9 | Stale conftest docstring | **RESOLVED** 2026-07-14 |
+| 10 | Redis downgrade never re-probes | **OPEN (LOW)** — defer until Redis exists |
+| 11 | Odds filter drops sibling keys | **RESOLVED IN TREE** 2026-08-13 |
+| 12 | `server.json` version drift | **RESOLVED IN TREE** — `check_release_build.py` asserts versions |
+| 13 | `server.py` HTTP wiring | **PARTIAL** — middleware-order test added; file still coverage-omitted |
 
 ---
 
 ## 1. HIGH — No per-client rate limiting on the hosted endpoint; shared upstream quotas are a public DoS surface
 
-- **Status 2026-07-14 (`codex_changes`): RESOLVED IN CODE, NOT DEPLOYED.** Pure-ASGI admission
-  now enforces 1 MiB POST bodies, 60 requests/client/minute, and 300 requests/process/minute.
-  Client keys are hashed and forwarded IPs are trusted only under Cloud Run. See ADR-0012.
+- **Status 2026-08-13: DEPLOYED** on Cloud Run revision `sportiq-mcp-00035-vam` (2026-07-14),
+  `autoscaling.knative.dev/maxScale: '1'`. Pure-ASGI admission enforces 1 MiB POST bodies,
+  60 requests/client/minute, and 300 requests/process/minute. Client keys are hashed.
+  Forwarded IPs: Cloud Run trusts rightmost `X-Forwarded-For` only when `K_SERVICE` is set;
+  home-server Compose sets `SPORTIQ_TRUST_CLOUDFLARE=1` and keys on `CF-Connecting-IP`
+  (never set `K_SERVICE` on the Dell — that would trust spoofable XFF). See ADR-0012.
 
 - **What:** The Cloud Run deployment serves `/mcp` with no authentication and no per-client
   throttling. Server-side keys are configured on the host (CRICAPI_KEY was added 2026-07-03;
@@ -40,9 +65,10 @@
 
 ## 2. HIGH — Rate-limit counters are non-atomic (read-modify-write) and the peek→consume gap allows double-spend
 
-- **Status 2026-07-14 (`codex_changes`): PARTIALLY RESOLVED.** Cache increments are atomic
-  (diskcache transaction; Redis Lua INCR + first expiry), so increments are no longer lost.
-  The provider `has_budget()` peek → upstream fetch → `consume()` admission race remains.
+- **Status 2026-08-13: RESOLVED IN TREE.** `reserve()` atomically admits before fetch;
+  `refund()` returns the token if fetch fails. `incr_counter_if_below` is transactional on
+  diskcache and Lua on Redis. Failed/missing-key calls still burn no quota. The old peek→fetch
+  race is gone; remaining risk is GAPS #5 (N Cloud Run instances).
 
 - **What:** `has_budget()` and `consume()` in `src/sportiq/core/ratelimit.py` do
   `get → compare/add → set`. Two concurrent requests both peek "1 token left", both fetch, both
@@ -112,9 +138,10 @@
 
 ## 5. MEDIUM — Stampede guard and cache/rate-limit state are per-process; multi-instance Cloud Run multiplies quota burn
 
-- **Status 2026-07-14 (`codex_changes`): PARTIAL GUARDRAIL, NOT DEPLOYED.** ADR-0012 and
-  `cloud.md` now require `--max-instances=1`, but no Cloud Run state was changed or verified.
-  Scaling above one still requires shared admission/cache state.
+- **Status 2026-08-13: GUARDRAIL DEPLOYED.** Cloud Run `maxScale: 1` was verified live.
+  Home-server Compose is one replica (`container_name: sportiq`, no `deploy.replicas`).
+  Scaling above one still requires shared admission/cache state (Redis). No Redis was
+  added (zero-spend). Do not start a second compose project for the same image.
 
 - **What:** three pieces of state assume one process: `FallbackChain._key_locks`
   (`src/sportiq/core/fallback.py:74,101-113`) serializes concurrent misses per key;
@@ -134,7 +161,11 @@
   ("budget math assumes a single instance"). Revisit Redis (Upstash free tier) only when traffic
   justifies it.
 
-## 6. MEDIUM — sdist safety is a hand-maintained blocklist; every new root doc is a potential leak into PyPI
+## 6. LOW — sdist safety is an allowlist (was a blocklist; resolved)
+
+- **Status 2026-08-13: RESOLVED.** `[tool.hatch.build.targets.sdist] include` is an allowlist;
+  `scripts/check_release_build.py` rejects any member not on it, plus `server.json` version
+  drift and a Dockerfile `--frozen` / `uv.lock` pin.
 
 - **What:** hatchling's sdist includes the whole tree minus `[tool.hatch.build.targets.sdist]
   exclude` (`pyproject.toml:68-93`), and the CI gate (`scripts/check_release_build.py`) checks a
@@ -225,6 +256,9 @@
 
 ## 11. LOW — `football_get_odds` team filter rebuilds the payload and drops any sibling keys
 
+- **Status 2026-08-13: RESOLVED IN TREE.** Both football and cricket odds tools mutate
+  `result.value["events"]` in place. Regression: `tests/tools/test_odds_tools.py` sibling-key cases.
+
 - **What:** `src/sportiq/football/tools.py:201-202` replaces the whole value with
   `{"events": [...]}` when a team filter is applied. Today the odds payload only has `events`,
   so nothing is lost — but if the adapter ever adds a sibling key (e.g. `fetched_at`,
@@ -237,6 +271,10 @@
 
 ## 12. LOW — Version must be bumped by hand in `server.json` (process gap, already bit once)
 
+- **Status 2026-08-13: RESOLVED IN TREE.** `scripts/check_release_build.py` asserts
+  `server.json` top-level and `packages[0].version` equal `pyproject.toml`. FastMCP
+  `serverInfo.version` is bound to `sportiq.__version__` in `server.py`.
+
 - **What:** the MCP registry manifest `server.json` carries its own version string, disconnected
   from `pyproject.toml`. It has already drifted two minors behind once (0.2.1 vs 0.3.0) before
   being caught. `__init__.__version__` was fixed to read package metadata dynamically; the
@@ -248,6 +286,11 @@
   `pyproject.toml`'s — fail the build on drift instead of relying on memory.
 
 ## 13. LOW — Coverage blind spots: `server.py` transport wiring and all of `scripts/` are untested
+
+- **Status 2026-08-13: PARTIAL.** `tests/unit/test_server_http_wiring.py` monkeypatches
+  `uvicorn.run`, asserts `LegacyKeyPathMiddleware` is outermost, and checks bind host/port.
+  `server.py` stays in the coverage omit list (stdio branch blocks forever). `scripts/` generators
+  remain untested except via committed JSON invariants.
 
 - **What:** `src/sportiq/server.py` is excluded from coverage (`pyproject.toml:113-117`) and has
   no direct tests — the stdio/HTTP branch of `main()`, middleware ordering (LegacyKeyPath must be

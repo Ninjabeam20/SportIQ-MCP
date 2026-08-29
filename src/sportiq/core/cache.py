@@ -48,9 +48,7 @@ class Cache:
             try:
                 import redis.asyncio as redis_async
 
-                self._redis = redis_async.from_url(
-                    settings.redis_url, decode_responses=True
-                )
+                self._redis = redis_async.from_url(settings.redis_url, decode_responses=True)
                 self.backend = "redis"
                 log.info("cache.backend.selected", backend="redis")
                 return
@@ -66,17 +64,13 @@ class Cache:
         settings.diskcache_dir.mkdir(parents=True, exist_ok=True)
         self._disk = diskcache.Cache(str(settings.diskcache_dir))
         self.backend = "diskcache"
-        log.info(
-            "cache.backend.selected", backend="diskcache", dir=str(settings.diskcache_dir)
-        )
+        log.info("cache.backend.selected", backend="diskcache", dir=str(settings.diskcache_dir))
 
     def _downgrade_to_disk(self, error: Exception) -> None:
         """redis.from_url is lazy (no I/O), so an unreachable daemon only fails
         at first use. Downgrade permanently for this process instead of letting
         the error crash every tool (the CLAUDE.md cache contract)."""
-        log.warning(
-            "cache.redis.unreachable_falling_back_to_diskcache", error=str(error)
-        )
+        log.warning("cache.redis.unreachable_falling_back_to_diskcache", error=str(error))
         self._init_disk()
 
     async def get(self, key: str) -> CachedEntry | None:
@@ -168,6 +162,77 @@ class Cache:
             if value == 1:
                 self._disk.expire(key, ttl_seconds)
         return int(value)
+
+    async def incr_counter_if_below(self, key: str, limit: int, ttl_seconds: int) -> int | None:
+        """Atomically increment ``key`` only when the current value is below ``limit``.
+
+        Returns the new value, or ``None`` if the counter is already at/over the
+        limit (no increment). Redis uses a GET/INCR Lua script; diskcache uses
+        a transaction. Legacy JSON-wrapped values are deleted and retried.
+        """
+        run_script = self._redis.eval if self.backend == "redis" else None
+        if run_script is not None:
+            try:
+                script = (
+                    "local raw=redis.call('GET',KEYS[1]); "
+                    "local v=tonumber(raw); "
+                    "if v==nil then "
+                    "  if raw then redis.call('DEL',KEYS[1]) end; "
+                    "  v=0; "
+                    "end; "
+                    "if v>=tonumber(ARGV[1]) then return -1 end; "
+                    "v=redis.call('INCR',KEYS[1]); "
+                    "if v==1 then redis.call('EXPIRE',KEYS[1],ARGV[2]) end; "
+                    "return v"
+                )
+                try:
+                    value = await run_script(script, 1, key, limit, ttl_seconds)
+                except ResponseError:
+                    await self._redis.delete(key)
+                    value = await run_script(script, 1, key, limit, ttl_seconds)
+                parsed = int(value)
+                return None if parsed < 0 else parsed
+            except Exception as e:
+                self._downgrade_to_disk(e)
+        with self._disk.transact():
+            raw = self._disk.get(key)
+            if isinstance(raw, int) and not isinstance(raw, bool):
+                current = raw
+            else:
+                current = 0
+                if raw is not None:
+                    self._disk.delete(key)
+            if current >= limit:
+                return None
+            value = self._disk.incr(key, delta=1, default=0)
+            if value == 1:
+                self._disk.expire(key, ttl_seconds)
+            return int(value)
+
+    async def decr_counter(self, key: str) -> int:
+        """Atomically decrement a raw counter; never goes below 0."""
+        run_script = self._redis.eval if self.backend == "redis" else None
+        if run_script is not None:
+            try:
+                script = (
+                    "local raw=redis.call('GET',KEYS[1]); "
+                    "local v=tonumber(raw); "
+                    "if v==nil or v<=0 then return 0 end; "
+                    "return redis.call('DECR',KEYS[1])"
+                )
+                try:
+                    value = await run_script(script, 1, key)
+                except ResponseError:
+                    await self._redis.delete(key)
+                    return 0
+                return max(0, int(value))
+            except Exception as e:
+                self._downgrade_to_disk(e)
+        with self._disk.transact():
+            raw = self._disk.get(key)
+            if not isinstance(raw, int) or isinstance(raw, bool) or raw <= 0:
+                return 0
+            return int(self._disk.decr(key, delta=1))
 
     async def delete(self, key: str) -> None:
         if self.backend == "redis":

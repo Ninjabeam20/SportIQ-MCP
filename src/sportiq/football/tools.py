@@ -2,6 +2,7 @@
 
 Thin wrappers: validate args -> call chain.fetch() -> return tool_response.
 """
+
 from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
@@ -199,7 +200,7 @@ async def football_get_odds(team: str | None = None) -> Envelope:
             suggestion="Set THEODDS_KEY to enable live odds.",
         )
     if team and team.strip():
-        result.value = {"events": _filter_events_by_team(result.value["events"], team)}
+        result.value["events"] = _filter_events_by_team(result.value["events"], team)
     return tool_response(result)
 
 

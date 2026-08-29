@@ -4,9 +4,18 @@ This is the runbook to put SportIQ online at a public URL so it works on **any**
 (claude.ai web, ChatGPT, phone apps) — not just desktop apps. The repo already has the
 `Dockerfile` and HTTP support; you just run the steps below.
 
-- **Why Cloud Run:** free tier, scales to zero ($0 when nobody's using it), enough memory.
+> **Hosting as of 2026-08-13:** production **target** is the home server
+> (`https://sportiq.utkarshgupta.org/mcp`), not Cloud Run. Two systems, one
+> public URL: this Cloud Run endpoint stays the live connector until Task 8
+> flip (`grok_changes12.md`). Task 7 only proves the Dell via curl. This file
+> remains the Cloud Run rollback/teardown runbook. Do not `gcloud run deploy`
+> unless you are deliberately failing back. The Dell is **always-on idle**
+> (`restart: unless-stopped`); do not copy `sportiq-keepwarm` there.
+
+- **Why Cloud Run (rollback):** free tier, scales to zero ($0 when nobody's using it), enough memory.
 - **What you get at the end:** a link like `https://sportiq-mcp-xxxx.a.run.app`, and your
-  MCP endpoint is that link **+ `/mcp`**.
+  MCP endpoint is that link **+ `/mcp`**. Current live rollback URL:
+  `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp`.
 
 ---
 
@@ -137,46 +146,31 @@ Use your `<URL>/mcp` link.
 
 ---
 
-## SportIQ Pro — hosted enforcement (V2a)
+## Canary deploy (current free edition)
 
-The hosted server can require a per-request **Pro key** for the 24 intelligence tools while
-keeping the free data tools (and an optional flagship) open. It is driven by two env vars — no
-code changes per deploy.
-
-### Env vars
-
-| Var | Effect |
-| --- | --- |
-| `SPORTIQ_VALID_KEYS` | Comma-separated set of valid Pro keys. **Set** → the gate validates the per-request key against this set (membership). **Unset** → presence check only (any non-blank key). On the host, set it to your issued key(s). |
-| `SPORTIQ_FREE_TOOLS` | Comma-separated tool names kept FREE even though they are paid (e.g. `football_simulate_bracket`). Use it to keep one flagship open as a discovery funnel. Leave **unset** on PyPI so local installs stay fully gated. |
-
-How a user supplies their key to the hosted server (claude.ai / ChatGPT have no key field):
-
-- **URL path (primary, universal):** add the connector URL `…/u/<key>/mcp` with **No
-  authentication**. Middleware reads the key from the path and rewrites it to `/mcp`.
-- **`Authorization: Bearer <key>` header:** works on Claude Desktop / IDEs / the API.
-
-### Deploy (canary pattern)
+The paywall was removed on 2026-07-01 (ADR-0011 reversed). `SPORTIQ_VALID_KEYS` /
+`SPORTIQ_FREE_TOOLS` **do not exist** in current code. Do not set them.
 
 ```bash
 # 1. build the image at the current commit
 gcloud builds submit --config cloudbuild.yaml --substitutions=_TAG=<git-sha> .
 
-# 2. deploy as a NO-TRAFFIC canary, adding the Pro env vars (existing env preserved)
+# 2. deploy as a NO-TRAFFIC canary (existing env preserved; --max-instances 1 required)
 gcloud run deploy sportiq-mcp \
   --image us-central1-docker.pkg.dev/sportiq-mcp-prod/cloud-run-source-deploy/sportiq-mcp:<git-sha> \
-  --region us-central1 --no-traffic --tag v2a --max-instances 1 \
-  --update-env-vars SPORTIQ_VALID_KEYS=<key>,SPORTIQ_FREE_TOOLS=football_simulate_bracket
+  --region us-central1 --no-traffic --tag grok --max-instances 1
 
-# 3. smoke-test the tagged canary URL (https://v2a---<service>.run.app/mcp): a gated tool must
-#    return SUBSCRIPTION_REQUIRED with no key, the free tool must run, and …/u/<key>/mcp unlocks.
+# 3. smoke-test the tagged URL (https://grok---<service>.run.app/mcp):
+#    initialize must return serverInfo.name=sportiq and serverInfo.version=<pyproject>
+#    (not the MCP SDK version). Then tools/call sportiq_health.
 
 # 4. promote to 100%
 gcloud run services update-traffic sportiq-mcp --region us-central1 --to-revisions=<new-rev>=100
 ```
 
 > Always use `--update-env-vars` (adds/updates) — `--set-env-vars` REPLACES all env and would
-> drop the existing ones (`FOOTBALLDATA_KEY`, `SPORTIQ_LOG_FORMAT`, `SPORTIQ_FOOTBALL_LIVE_ELO`).
+> drop the existing ones (`FOOTBALLDATA_KEY`, `SPORTIQ_LOG_FORMAT`, `SPORTIQ_FOOTBALL_LIVE_ELO`,
+> and any provider keys the operator has chosen to keep on the host).
 
 ### Rollback
 
@@ -184,8 +178,8 @@ gcloud run services update-traffic sportiq-mcp --region us-central1 --to-revisio
 gcloud run services update-traffic sportiq-mcp --region us-central1 --to-revisions=<previous-rev>=100
 ```
 
-### Notes
+Current rollback target until a newer revision is promoted: `sportiq-mcp-00035-vam` (tag `hardening`).
 
-- The key currently rides in the URL path, so it appears in Cloud Run HTTP access logs. Fine for a
-  shared key; scrub before issuing per-user keys.
-- Design + the V1→V2 boundary live in `docs/wiki/decisions/0011-pro-entitlement-gate.md`.
+Historical Pro-gate design lives in `docs/wiki/decisions/0011-pro-entitlement-gate.md`. The
+`/u/<key>/mcp` path still rewrites to `/mcp` so old connector URLs keep working; it no longer
+unlocks anything.

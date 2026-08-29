@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
+
+from sportiq.core.errors import AllSourcesFailedError
 from sportiq.core.fallback import FallbackChain
 from sportiq.core.ratelimit import Budget, remaining
 
@@ -77,3 +80,39 @@ async def test_chain_does_not_consume_budget_on_failed_fetch():
 
     rem = await remaining(Budget(source="chain_consume_test", per_day=5))
     assert rem["per_day"] == 5  # failed fetch burned no token
+
+
+async def test_concurrent_different_keys_cannot_overspend_budget():
+    class _OK:
+        name = "ok"
+        budget = Budget(source="chain_race_keys", per_day=5)
+        calls = 0
+
+        async def fetch(self, **kwargs) -> dict:
+            type(self).calls += 1
+            await asyncio.sleep(0.01)
+            return {"k": kwargs["q"]}
+
+        async def healthcheck(self) -> bool:
+            return True
+
+    chain = FallbackChain(
+        name="cricket:race_keys",
+        adapters=[_OK()],
+        cache_key_fn=_key,
+        fresh_ttl=0,
+        stale_ttl=0,
+    )
+
+    outcomes = await asyncio.gather(
+        *(chain.fetch(q=str(i)) for i in range(20)),
+        return_exceptions=True,
+    )
+
+    successes = [o for o in outcomes if not isinstance(o, BaseException)]
+    failures = [o for o in outcomes if isinstance(o, AllSourcesFailedError)]
+    assert len(successes) == 5
+    assert len(failures) == 15
+    assert _OK.calls == 5
+    rem = await remaining(Budget(source="chain_race_keys", per_day=5))
+    assert rem["per_day"] == 0

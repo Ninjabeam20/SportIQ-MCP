@@ -65,7 +65,9 @@ async def cricket_get_scorecard(match_id: str) -> Envelope:
     if not match_id or not match_id.strip():
         return error_envelope(code="INVALID_INPUT", message="match_id must not be empty.")
     if len(match_id) > 100:
-        return error_envelope(code="INVALID_INPUT", message="match_id must not exceed 100 characters.")
+        return error_envelope(
+            code="INVALID_INPUT", message="match_id must not exceed 100 characters."
+        )
     try:
         result = await scorecard_chain.fetch(match_id=match_id.strip())
     except NotFoundError:
@@ -95,7 +97,9 @@ async def cricket_get_points_table(series_id: str) -> Envelope:
     if not series_id or not series_id.strip():
         return error_envelope(code="INVALID_INPUT", message="series_id must not be empty.")
     if len(series_id) > 100:
-        return error_envelope(code="INVALID_INPUT", message="series_id must not exceed 100 characters.")
+        return error_envelope(
+            code="INVALID_INPUT", message="series_id must not exceed 100 characters."
+        )
     try:
         result = await standings_chain.fetch(series_id=series_id.strip())
     except NotFoundError:
@@ -204,7 +208,7 @@ async def cricket_get_live_odds(team: str | None = None) -> Envelope:
             suggestion="Set THEODDS_KEY to enable live odds.",
         )
     if team and team.strip():
-        result.value = {"events": _filter_events_by_team(result.value["events"], team)}
+        result.value["events"] = _filter_events_by_team(result.value["events"], team)
     return tool_response(result)
 
 

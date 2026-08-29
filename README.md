@@ -39,7 +39,7 @@ Raw-data tools are table stakes; the intelligence layer is the product. Three fl
 | **Cricket** (IPL) | live_matches, scorecard, points_table, schedule, squad, live_odds | **build_dream11_team**, captain_recommendation, differential_picks, player_form_index, pitch_report, head_to_head, player_matchup, find_value_bets |
 | **Cross-sport** | — | build_accumulator |
 
-Plus `sportiq_health` (cache backend + per-adapter status and remaining API quota).
+Plus `sportiq_health` (included in the 44; cache backend + per-adapter status and remaining API quota).
 
 **Data sources** (per chain, with keyless fallbacks): football → [API-Football](https://www.api-football.com) → [football-data.org](https://football-data.org) → bundled `wc2026.json`. F1 → [OpenF1](https://openf1.org) → [Jolpica](https://jolpi.ca) → `fastf1`. Cricket → CricAPI + static seeds (NDTV/Cricbuzz scrapers opt-in).
 
@@ -57,7 +57,7 @@ Anywhere that speaks MCP — Claude (Desktop + web), ChatGPT, Cursor, and any MC
 A public instance runs on Google Cloud Run. Add this as a custom connector with **No authentication**:
 
 ```
-https://sportiq-mcp-329580761892.us-central1.run.app/mcp
+https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp
 ```
 
 - **claude.ai (web):** Settings → Connectors → Add custom connector → paste URL → Save.
