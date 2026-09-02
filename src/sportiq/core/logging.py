@@ -1,9 +1,14 @@
+import json
 import logging
 import sys
+from pathlib import Path
 
 import structlog
 
 from sportiq.config import settings
+
+_ANALYTICS_EVENTS = frozenset({"tool_call", "mcp_request"})
+_ANALYTICS_JSONL_MAX_BYTES = 50 * 1024 * 1024
 
 
 def _redact_event_processor(logger: object, method: str, event_dict: dict) -> dict:
@@ -41,6 +46,32 @@ def _gcp_severity_processor(logger: object, method: str, event_dict: dict) -> di
     return event_dict
 
 
+def _analytics_jsonl_processor(logger: object, method: str, event_dict: dict) -> dict:
+    """Append tool_call / mcp_request lines to SPORTIQ_ANALYTICS_JSONL.
+
+    Best-effort: a full disk must not crash the MCP handler. Rotates to
+    ``.jsonl.1`` at 50 MiB. HEALTHCHECK GETs are still written; the dashboard
+    collector drops them on read.
+    """
+    dest = settings.sportiq_analytics_jsonl
+    if dest is None:
+        return event_dict
+    if event_dict.get("event") not in _ANALYTICS_EVENTS:
+        return event_dict
+    try:
+        path = Path(dest)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists() and path.stat().st_size > _ANALYTICS_JSONL_MAX_BYTES:
+            rotated = path.with_name(path.name + ".1")
+            rotated.unlink(missing_ok=True)
+            path.replace(rotated)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(event_dict, default=str) + "\n")
+    except OSError:
+        pass
+    return event_dict
+
+
 def configure_logging() -> None:
     """Configure structlog. Pretty in dev (default), JSON in prod."""
     level = getattr(logging, settings.sportiq_log_level.upper(), logging.INFO)
@@ -51,6 +82,7 @@ def configure_logging() -> None:
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso", utc=True),
+        _analytics_jsonl_processor,
     ]
 
     if settings.sportiq_log_format == "json":

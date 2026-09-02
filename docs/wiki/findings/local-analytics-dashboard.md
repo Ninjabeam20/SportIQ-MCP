@@ -3,8 +3,8 @@ title: Local Analytics Dashboard
 type: finding
 tags: [observability, dashboard, cloud-run, github, pypi, local-tooling]
 sources: [scripts/dashboard.py, src/sportiq/core/tool_telemetry.py]
-last_updated: 2026-06-16
-related: [[project-gcp-deploy]]
+last_updated: 2026-09-02
+related: [[product-hosting-arc]], [[home-server-cutover]]
 ---
 
 # Local Analytics Dashboard
@@ -64,16 +64,22 @@ Pub/Sub, or OpenTelemetry (the last is on the frozen-stack exclusion list).
 | Stars / forks | GitHub REST `/repos/{repo}` | none (public) |
 | Downloads/day | pypistats `/packages/{pkg}/overall` | none |
 
-GitHub daily views/clones are omitted: they require a repo-scoped token. Stars/
-forks need none. Add `GITHUB_TOKEN` later to light up the traffic charts.
+GitHub views/clones need a repo-scoped token. Sponsors GraphQL needs
+`read:user`. `scripts/dashboard.py` reads `GITHUB_TOKEN` from the environment,
+then repo `.env`, then `gh auth token`. A `gh` login that is only
+`gist/read:org/repo` cannot list sponsors.
 
 ## Run
 
 ```bash
-uv sync --extra analytics            # one-time: GCP client libs (dev-only extra)
-gcloud auth application-default login # one-time: GCP read access (ADC)
-uv run python scripts/dashboard.py   # writes + opens dashboard.html
+uv sync --extra dev --extra analytics
+gcloud auth application-default login
+uv run python scripts/dashboard.py
 ```
+
+Repo `.env` `GITHUB_TOKEN` is picked up automatically. Dell Compose writes
+`SPORTIQ_ANALYTICS_JSONL` to volume `sportiq-analytics`. Pull with
+`bash scripts/pull_home_analytics.sh` then re-run the dashboard.
 
 Without the `analytics` extra or ADC, the two GCP panels show `error` and fall
 back to cache; GitHub + PyPI still render live. `DASHBOARD_NO_OPEN=1` suppresses

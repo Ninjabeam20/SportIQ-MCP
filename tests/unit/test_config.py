@@ -66,6 +66,14 @@ def test_blank_scraper_toggle_is_off_not_crash(monkeypatch):
     assert s.enable_cricbuzz_scraper is False
 
 
+def test_analytics_jsonl_blank_is_none(monkeypatch):
+    monkeypatch.setenv("SPORTIQ_ANALYTICS_JSONL", "")
+    from sportiq.config import Settings
+
+    s = Settings(_env_file=None)
+    assert s.sportiq_analytics_jsonl is None
+
+
 def test_hosted_abuse_control_defaults():
     from sportiq.config import Settings
 

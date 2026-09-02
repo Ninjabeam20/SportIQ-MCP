@@ -7,6 +7,12 @@
     "url": "https://github.com/Ninjabeam20/SportIQ-MCP",
     "source": "github"
   },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://sportiq.utkarshgupta.org/mcp"
+    }
+  ],
   "packages": [
     {
       "registryType": "pypi",

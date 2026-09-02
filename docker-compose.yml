@@ -14,8 +14,10 @@ services:
       SPORTIQ_LOG_FORMAT: json
       SPORTIQ_TRUST_CLOUDFLARE: "1"
       DISKCACHE_DIR: /var/cache/sportiq
+      SPORTIQ_ANALYTICS_JSONL: /var/log/sportiq/events.jsonl
     volumes:
       - sportiq-cache:/var/cache/sportiq
+      - sportiq-analytics:/var/log/sportiq
     networks: [apps]
     mem_limit: 1536m
     pids_limit: 256
@@ -36,3 +38,4 @@ networks:
 
 volumes:
   sportiq-cache:
+  sportiq-analytics:

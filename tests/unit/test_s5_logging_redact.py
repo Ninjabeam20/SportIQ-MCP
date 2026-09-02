@@ -1,4 +1,5 @@
 """S.5a — Assert structlog processor redacts secrets from all log events."""
+
 from sportiq.core.logging import _gcp_severity_processor, _redact_event_processor
 
 
@@ -66,3 +67,25 @@ def test_gcp_severity_maps_level_to_cloud_logging_severity():
 
 def test_gcp_severity_noop_when_no_level():
     assert "severity" not in _gcp_severity_processor(None, "info", {"event": "x"})
+
+
+def test_analytics_jsonl_writes_tool_call_only(tmp_path, monkeypatch):
+    from sportiq import config as config_module
+    from sportiq.core.logging import _analytics_jsonl_processor
+
+    dest = tmp_path / "events.jsonl"
+    monkeypatch.setattr(config_module.settings, "sportiq_analytics_jsonl", dest)
+    _analytics_jsonl_processor(None, "info", {"event": "tool_call", "tool": "sportiq_health"})
+    _analytics_jsonl_processor(None, "info", {"event": "cache.hit"})
+    lines = dest.read_text().splitlines()
+    assert len(lines) == 1
+    assert "tool_call" in lines[0]
+
+
+def test_analytics_jsonl_noop_when_unset(monkeypatch, tmp_path):
+    from sportiq import config as config_module
+    from sportiq.core.logging import _analytics_jsonl_processor
+
+    monkeypatch.setattr(config_module.settings, "sportiq_analytics_jsonl", None)
+    _analytics_jsonl_processor(None, "info", {"event": "tool_call"})
+    assert list(tmp_path.iterdir()) == []

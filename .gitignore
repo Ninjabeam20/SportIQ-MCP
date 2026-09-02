@@ -115,6 +115,7 @@ datasets/
 # Read-only personal monitoring; never committed.
 .dashboard_cache/
 dashboard.html
+analytics-archive/
 
 # Local dev/process artifacts — repo is public; these expose calibration
 # methodology, the ops log, and in-progress planning. Kept local only.

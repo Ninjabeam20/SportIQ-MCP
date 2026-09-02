@@ -56,8 +56,21 @@ class Settings(BaseSettings):
 
     sportiq_log_level: str = "INFO"
     sportiq_log_format: Literal["pretty", "json"] = Field(default_factory=_default_log_format)
+    # Opt-in JSONL of tool_call / mcp_request lines for the local dashboard
+    # after Cloud Logging is gone. Compose sets this on the Dell.
+    sportiq_analytics_jsonl: Path | None = Field(
+        default=None,
+        validation_alias=AliasChoices("SPORTIQ_ANALYTICS_JSONL", "sportiq_analytics_jsonl"),
+    )
 
     diskcache_dir: Path = Path.home() / ".cache" / "sportiq"
+
+    @field_validator("sportiq_analytics_jsonl", mode="before")
+    @classmethod
+    def _blank_path_is_none(cls, v: object) -> object:
+        if v is None or (isinstance(v, str) and v.strip() == ""):
+            return None
+        return v
 
     @field_validator(
         "enable_cricbuzz_scraper", "enable_ndtv_scraper", "football_live_elo", mode="before"

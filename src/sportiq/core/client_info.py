@@ -126,6 +126,8 @@ class ClientInfoMiddleware:
                     user_agent=user_agent,
                     client_name=client_name,
                     client_version=None,
+                    method=scope.get("method"),
+                    path=scope.get("path"),
                 )
                 await self.app(scope, receive, send)
                 return
@@ -145,6 +147,8 @@ class ClientInfoMiddleware:
                     user_agent=user_agent,
                     client_name=(info or {}).get("name") or client_name,
                     client_version=(info or {}).get("version"),
+                    method=scope.get("method"),
+                    path=scope.get("path"),
                 )
 
             async def tee_receive() -> dict[str, Any]:

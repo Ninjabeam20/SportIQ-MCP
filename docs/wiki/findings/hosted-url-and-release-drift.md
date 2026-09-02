@@ -58,4 +58,9 @@ See [[home-server-cutover]] and [[product-hosting-arc]].
 The advertised connector is now `https://sportiq.utkarshgupta.org/mcp`.
 Cloud Run `ey2eariulq` is rollback only. Do **not** point docs back at
 `329580761892` (still NXDOMAIN). GCP teardown still needs `yes, delete GCP`.
-PyPI remains 0.3.1 until an owner tags `v0.3.2`.
+
+## Addendum — v0.3.2 (2026-09-02)
+
+`server.json` now declares `remotes` streamable-http
+`https://sportiq.utkarshgupta.org/mcp` next to the PyPI stdio package.
+Tag `v0.3.2` is the PyPI + official MCP registry publish.
