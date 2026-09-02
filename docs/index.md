@@ -27,7 +27,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[f1-get-sessions]] — Returns F1 sessions for a given year, optionally filtered by country.
 - [[f1-get-drivers]] — Returns the driver list for a given F1 session.
 - [[f1-get-lap-times]] — Returns per-driver lap times for a session (compound lives on stints, not laps).
-- [[f1-get-standings]] — Returns driver and constructor championship standings for a given F1 season.
+- [[f1-get-standings]] — Returns driver and constructor championship standings (who is leading the title race) for a given F1 season.
 - [[f1-get-race-results]] — Returns the final classification (finishing order, times, points) for one race, keyed by year + round.
 - [[f1-get-weather]] — Returns track weather data (temperature, rainfall, wind speed) for a session.
 - [[f1-tyre-degradation]] — Fits a linear tyre-degradation model per compound for a driver in a session.
@@ -46,12 +46,12 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[cricket-get-schedule]] — Returns upcoming match schedule, optionally filtered by series.
 - [[cricket-get-squad]] — Returns squad roster for a cricket team; always succeeds via static_seed fallback.
 - [[cricket-build-dream11-team]] — **Flagship**: optimal fantasy XI + C/VC via PuLP ILP.
-- [[cricket-captain-recommendation]] — Top-3 captain candidates by projected fantasy points.
+- [[cricket-captain-recommendation]] — Top-3 captain candidates by projected fantasy points (IPL venues; same-role ties at default form).
 - [[cricket-differential-picks]] — Low-ownership picks with positive projected upside (ownership estimated).
 - [[cricket-player-form-index]] — 0-100 form score derived from player stats chain.
 - [[cricket-get-pitch-report]] — Pitch-friendliness summary + recommendation for a venue.
-- [[cricket-get-live-odds]] — Live market h2h odds for IPL matches; optional team-name filter.
-- [[cricket-find-value-bets]] — Largest gaps between de-vigged market odds and the heuristic win model (form + H2H + venue).
+- [[cricket-get-live-odds]] — Live IPL h2h odds; empty list off-season is success, not an outage.
+- [[cricket-find-value-bets]] — IPL odds scan; `value_bets` is always empty until a cricket win model is wired (events_analysed still reported).
 - [[cricket-head-to-head]] — Head-to-head team comparison using squad form edges + win-probability estimate.
 - [[cricket-player-matchup]] — Analyse the head-to-head matchup between two players by role and career stats.
 
@@ -158,9 +158,10 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[cricapi-envelope-leak]] — CricAPI adapters leaked the request apikey and treated failure responses as empty successes (step8 live pass); fixed via `_unwrap` + `NotFoundError`.
 - [[error-envelope-secret-leak]] — Query-param API keys (CricAPI, TheOdds) leaked via the *error* envelope's `sources_tried` (httpx exception URL); fixed with `core/redact.py:scrub` at the fallback capture sites.
 - [[codex-changes-review-blockers]] — Four `codex_changes` merge blockers found on 2026-07-14 and fixed locally: SSE replay, FIFA tiebreak slot 3, Cloud Run XFF identity, and legacy atomic counters.
-- [[hosted-url-and-release-drift]] — 2026-08-13 audit: advertised connector URL was dead DNS; PyPI 0.3.1 lagged the host; FastMCP reported the SDK version as serverInfo. In-tree URL is `ey2eariulq`; PyPI tag still owner-gated.
-- [[home-server-cutover]] — two systems, one public URL: live Cloud Run until Task 8 `flip`; Dell hostname NXDOMAIN; live Caddy already has a sportiq block that must drop `header_up CF-Connecting-IP`; always-on idle.
-- [[mac-cutover-inventory]] — 2026-08-30 file-by-file list of the Mac worktree that ships 0.3.2 + home-server Compose without flipping the public URL.
+- [[hosted-url-and-release-drift]] — 2026-08-13 audit: advertised connector URL was dead DNS; post–Task 8 live URL is `sportiq.utkarshgupta.org`; PyPI tag still 0.3.1.
+- [[home-server-cutover]] — Task 8 flipped: live `https://sportiq.utkarshgupta.org/mcp`; Cloud Run rollback until Task 9; always-on idle; no Access on sportiq.
+- [[mac-cutover-inventory]] — Snapshot (2026-08-30, pre-flip) of the Mac worktree that shipped 0.3.2 + Compose while Cloud Run was still the advertised URL.
+- [[product-hosting-arc]] — GCP → paid plan → free on GCP → home server. Read this when hosting/product history is confusing. GCP delete still needs `yes, delete GCP`.
 
 ## Decisions (ADRs)
 

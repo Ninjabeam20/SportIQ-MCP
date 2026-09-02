@@ -4,12 +4,10 @@ This is the runbook to put SportIQ online at a public URL so it works on **any**
 (claude.ai web, ChatGPT, phone apps) — not just desktop apps. The repo already has the
 `Dockerfile` and HTTP support; you just run the steps below.
 
-> **Hosting as of 2026-08-13:** production **target** is the home server
-> (`https://sportiq.utkarshgupta.org/mcp`), not Cloud Run. Two systems, one
-> public URL: this Cloud Run endpoint stays the live connector until Task 8
-> flip (`grok_changes12.md`). Task 7 only proves the Dell via curl. This file
-> remains the Cloud Run rollback/teardown runbook. Do not `gcloud run deploy`
-> unless you are deliberately failing back. The Dell is **always-on idle**
+> **Hosting as of 2026-08-30:** production **live** is the home server
+> (`https://sportiq.utkarshgupta.org/mcp`). This Cloud Run endpoint is rollback
+> until Task 9 (`yes, delete GCP`). Do not `gcloud run deploy` unless you are
+> deliberately failing back. The Dell is **always-on idle**
 > (`restart: unless-stopped`); do not copy `sportiq-keepwarm` there.
 
 - **Why Cloud Run (rollback):** free tier, scales to zero ($0 when nobody's using it), enough memory.

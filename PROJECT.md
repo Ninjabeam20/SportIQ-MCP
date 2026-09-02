@@ -1,10 +1,10 @@
 # PROJECT.md — SportIQ MCP: The Full Picture
 
 > Deep knowledge-transfer document, written 2026-07-07 against v0.3.1 (commit `b7a1392`),
-> refreshed 2026-07-14 on `codex_changes`, and again **2026-08-13** on `grok_changes`
-> (package version 0.3.2 in tree; publish is the operator's final touch; production
-> **target** is the home server, Cloud Run still the live connector until Task 8 flip).
-> Read this first. For known weaknesses read `GAPS.md`. For operational rules read `CLAUDE.md`.
+> refreshed 2026-07-14 on `codex_changes`, and again **2026-08-30** after Task 8 flip
+> (package version 0.3.2; live connector is the Dell home server; Cloud Run is rollback
+> until Task 9). Read this first. For known weaknesses read `GAPS.md`. For operational
+> rules read `CLAUDE.md`.
 
 ---
 
@@ -14,10 +14,8 @@
 (Claude, ChatGPT, Cursor, …) into a sports analyst across three sports: **FIFA World Cup 2026
 football, Formula 1, and IPL cricket**. It exposes **44 AI-callable tools** (including the
 meta-tool `sportiq_health`) over stdio (local install via `uvx sportiq-mcp`) or streamable-HTTP (hosted
-on Google Cloud Run at `sportiq-mcp-ey2eariulq-uc.a.run.app/mcp`; production **target**
-after Task 8 flip is `https://sportiq.utkarshgupta.org/mcp` on the Dell home server —
-that hostname is NXDOMAIN until Task 7 publishes DNS, and stays unpublished in
-README/`links.ts` until the Dell is proven).
+on the Dell home server at `https://sportiq.utkarshgupta.org/mcp`. Cloud Run
+`https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` stays up as rollback until Task 9.
 
 **Who it's for:** end users are AI-assistant users who want live sports data and — the actual
 product — the *intelligence layer*. Raw data tools (fixtures, standings, lap times, scorecards)
@@ -33,7 +31,9 @@ are table stakes. Three flagship tools are the differentiator:
 preserved at git tag `v0.2.3` / Cloud Run rev `00023-kay`). Monetization is GitHub Sponsors
 donations. The project doubles as the author's portfolio piece. Hard constraint: **zero
 infrastructure spend until traffic justifies it** — BYO API keys, no Redis in prod, no
-min-instances, free tiers everywhere.
+min-instances, free tiers everywhere. Hosting/product timeline (GCP → paid → free on
+GCP → home server): `docs/wiki/findings/product-hosting-arc.md`. Check that page
+when GitHub, Cloud Run, and the Dell seem to disagree.
 
 **Ordering convention that permeates everything:** football → F1 → cricket. Headings, lists,
 tables, tool registration order — always that order.
@@ -302,11 +302,10 @@ analytics), `launch/` marketing copy, wiki lint tooling.
    per-instance rate-limit counters. Hosted limit math therefore requires **one replica**:
    Cloud Run `sportiq-mcp` has `autoscaling.knative.dev/maxScale: '1'` (verified 2026-08-13);
    home-server Compose is a single `sportiq` container (`mem_limit: 1536m`, no `deploy.replicas`).
-   The **live** public connector URL is `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` — the
-   older `…329580761892.us-central1.run.app` hostname does not resolve. Production **target**
-   is `https://sportiq.utkarshgupta.org/mcp` (NXDOMAIN until Task 7; stay off README
-   until Task 8 flip; see
-   `docs/superpowers/plans/2026-08-13-home-server-migration.md`). Behind Caddy, set
+   The **live** public connector URL is `https://sportiq.utkarshgupta.org/mcp`.
+   Cloud Run `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` is rollback until
+   Task 9. The older `…329580761892.us-central1.run.app` hostname does not resolve.
+   Behind Caddy, set
    `SPORTIQ_TRUST_CLOUDFLARE=1` and never `K_SERVICE`. Always-on idle on the Dell
    (`restart: unless-stopped`); do not copy Cloud Run `sportiq-keepwarm` and do
    not auto-sleep the container.

@@ -9,8 +9,8 @@ The marketing/landing website for **SportIQ**. This directory (`website/`, insid
 **SportIQ** is a hosted **MCP (Model Context Protocol) server** that gives Claude — and any MCP client (ChatGPT, Cursor, etc.) — live sports analytics across **football, F1, and cricket**: live scores, schedules, squads, standings, odds, value-bet detection, fantasy/Dream11 team building, and predictive models (xG, pit strategy, match predictor, Monte Carlo bracket simulation, etc.).
 
 - It is consumed as a **custom connector in Claude.ai** (Settings → Connectors → Add custom connector → paste the MCP URL), not run locally from this repo.
-- Production MCP endpoint (live): `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` (Google Cloud Run). Source of truth for this and all other external URLs is `src/config/links.ts`.
-- Production **target** after home-server cutover: `https://sportiq.utkarshgupta.org/mcp`. Do **not** swap `LINKS.hostedMcp` until Task 8 flip (Dell proven: initialize, tool call, SSE, 429s). The hostname is NXDOMAIN today; advertising it earlier repeats the dead-URL bug.
+- Production MCP endpoint (live): `https://sportiq.utkarshgupta.org/mcp` (Dell home server). Source of truth for this and all other external URLs is `src/config/links.ts`.
+- Cloud Run rollback until Task 9 teardown: `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp`. Do not point `LINKS.hostedMcp` back at Cloud Run unless failing back.
 - The site's job is to market SportIQ and walk users through adding it as a connector.
 
 ## Commands

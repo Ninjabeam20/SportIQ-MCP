@@ -3,13 +3,13 @@ title: cricket_captain_recommendation
 type: tool
 tags: [cricket, dream11, captain]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-02
 related: [[captain-score]], [[cricket-squad-chain]], [[cricket-pitch-data-chain]]
 ---
 
 # cricket_captain_recommendation
 
-Returns the top-3 captain candidates for a fixture by projected fantasy points. Designed for "who should I C?" queries that don't need a full XI.
+Returns the top-3 captain candidates for a fixture by projected fantasy points. Designed for "who should I C?" queries that don't need a full XI. **IPL venues only** (pitch seed is IPL grounds). Test/international matches fail rather than inventing a ranking. Same-role players often tie because form defaults to 55.
 
 ## Signature
 
@@ -19,7 +19,7 @@ async def cricket_captain_recommendation(team_a: str, team_b: str, venue: str) -
 
 ## How it ranks
 
-For every player in both squads, [[captain-score]]'s `expected_points` is computed against the venue's pitch profile, default opposition strength (0.5), and neutral form (55). The three highest scores win.
+For every player in both squads, [[captain-score]]'s `expected_points` is computed against the venue's pitch profile, default opposition strength (0.5), and **neutral form (55)** — not per-player history. Same-role players at the same venue therefore share a projected score. The three highest scores win (ties are possible).
 
 ## Returns
 

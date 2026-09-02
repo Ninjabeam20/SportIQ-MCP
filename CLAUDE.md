@@ -59,6 +59,7 @@ When you need to understand a domain question (scoring rules, API quirks, model 
 2. Open the 1–2 wiki pages the index points to. Do NOT grep the whole tree.
 3. Only read raw source files in `docs/raw/` if I explicitly say "read the raw file" or the index points there.
 4. For code questions spanning >3 modules, run `/graphify .` first and query the graph instead of reading raw files.
+5. Hosting/product progress or "why does GitHub say Cloud Run?": `docs/wiki/findings/product-hosting-arc.md`.
 
 ## Common commands
 
@@ -82,7 +83,9 @@ When you need to understand a domain question (scoring rules, API quirks, model 
 - **`GAPS.md`** — honest severity-ordered audit of known weaknesses, each with file paths and a
   single-task-scoped fix. Check it before "fixing" anything that looks wrong — several apparent
   bugs are documented accepted trade-offs (its final INFO section lists them).
-- Both are local/internal: excluded from the PyPI sdist (`pyproject.toml`), like the other
+- **`docs/wiki/findings/product-hosting-arc.md`** — GCP → paid → free on GCP → home server.
+  Check it when hosting/product history is confusing. GCP delete needs `yes, delete GCP`.
+- Both PROJECT/GAPS are local/internal: excluded from the PyPI sdist (`pyproject.toml`), like the other
   root-level planning docs.
 
 ## Conventions (the ones the code actually follows)
@@ -146,24 +149,24 @@ When you need to understand a domain question (scoring rules, API quirks, model 
   to a blocklist.
 - **`/u/<key>/mcp` paths must keep working** (`core/path_compat.py`) — sponsor connectors from
   the paid era are configured with them.
-- **Production target is home-server Compose**, not a Cloud Run canary. Repo-root
+- **Production live is home-server Compose**, not a Cloud Run canary. Repo-root
   `docker-compose.yml` joins Docker network `apps`, `container_name: sportiq`, **no** `ports:`.
   Plan: `docs/superpowers/plans/2026-08-13-home-server-migration.md`. Cloud Run (`cloud.md`)
-  is rollback until teardown. Apply/Caddy/Cloudflare need `yes`; connector/docs flip needs
-  `flip`; GCP teardown needs `yes, delete GCP`. Always-on idle: `restart: unless-stopped`,
-  no keep-warm cron on the Dell, no auto-sleep (Cloud Run `sportiq-keepwarm` exists only
-  because GCP scales to zero; delete it in Task 9, do not copy it).
+  is rollback until teardown. GCP teardown needs `yes, delete GCP`. Always-on idle:
+  `restart: unless-stopped`, no keep-warm cron on the Dell, no auto-sleep (Cloud Run
+  `sportiq-keepwarm` exists only because GCP scales to zero; delete it in Task 9, do not copy it).
 - **Never set `K_SERVICE` on the Dell.** That flag means Cloud Run and would trust spoofable
   `X-Forwarded-For`. Home-server Compose sets `SPORTIQ_TRUST_CLOUDFLARE=1` so 429s key on
   `CF-Connecting-IP`. Leave that env unset on Cloud Run and stdio.
-- **Live public connector URL** is still `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp`
-  until Task 8 flip (after Task 7 prove). The older `sportiq-mcp-329580761892.us-central1.run.app`
-  hostname does not resolve. Do **not** point README/`links.ts` at
-  `https://sportiq.utkarshgupta.org/mcp` until the Dell is proven (initialize, tool call,
-  SSE, 429s) and the owner says `flip`. Advertising it while NXDOMAIN repeats the dead-URL bug.
-- **Dockerfile must install with `uv pip install --system --frozen` against `uv.lock`.** Do not
-  revert to unpinned `pip install ".[f1]"`. `mcp` is `>=1.27.2,<2` — 2.0.0 removes
-  `mcp.server.fastmcp`. Do not combine the home-server move with SDK v2.
+- **Live public connector URL** is `https://sportiq.utkarshgupta.org/mcp`. Cloud Run
+  `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` is rollback until Task 9. The older
+  `sportiq-mcp-329580761892.us-central1.run.app` hostname does not resolve. Do **not**
+  advertise a hostname that is NXDOMAIN. Connector/docs flip already happened; GCP
+  teardown still needs `yes, delete GCP`.
+- **Dockerfile pins `ghcr.io/astral-sh/uv:0.12.6` and installs with `uv export --frozen`
+  then `uv pip install --system`.** Do not revert to `:latest` (`uv pip install --frozen`
+  is not a pip-interface flag) or unpinned `pip install ".[f1]"`. `mcp` is `>=1.27.2,<2`
+  — 2.0.0 removes `mcp.server.fastmcp`. Do not combine the home-server move with SDK v2.
 
 ## When you finish a coding task
 

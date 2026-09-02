@@ -3,63 +3,47 @@ title: cricket_find_value_bets
 type: tool
 tags: [cricket, odds, value-betting, ipl]
 sources: [theodds-cricket-adapter]
-last_updated: 2026-06-03
-related: [[cricket-win-probability-model]], [[football-find-value-bets]]
+last_updated: 2026-09-02
+related: [[cricket-win-probability-model]], [[football-find-value-bets]], [[cricket-get-live-odds]]
 ---
 
 # cricket_find_value_bets
 
-Returns +EV ("value") bets on upcoming IPL matches by comparing de-vigged
-bookmaker head-to-head odds to the server's heuristic win probability model.
+IPL-only odds scan. **`data.value_bets` is always `[]` today.** A cricket
+team-strength model is not wired into this tool (unlike football Elo/Poisson).
+Scoring edges against a neutral 50/50 prior would flag every market underdog,
+which would be misleading. The tool still reports `events_analysed` so callers
+know whether odds were available. For raw de-vigged prices use
+[[cricket-get-live-odds]]. Real edge detection lands when a cricket win model
+is wired (see [[cricket-head-to-head]] / [[cricket-win-probability-model]]).
 
 ## Parameters
 
 | Name | Type | Default | Notes |
 | :--- | :--- | :--- | :--- |
 | `team` | `str \| None` | `None` | Optional team filter (case-insensitive substring). |
-| `min_edge` | `float` | `0.05` | Minimum edge (model_prob − market_prob), 0..1. |
+| `min_edge` | `float` | `0.05` | Informational only until bets are emitted. |
 
 ## Response shape
 
 ```json
 {
   "data": {
-    "value_bets": [
-      {
-        "event_id": "string",
-        "home": "Mumbai Indians",
-        "away": "Chennai Super Kings",
-        "outcome": "home",
-        "model_prob": 0.52,
-        "fair_odds": 1.923,
-        "market_odds": 1.85,
-        "edge": 0.07,
-        "bookmaker": "bet365"
-      }
-    ],
+    "value_bets": [],
     "events_analysed": 8,
-    "min_edge": 0.05
+    "min_edge": 0.05,
+    "model": "neutral_baseline",
+    "note": "no bets emitted until a cricket win model is wired"
   },
   "meta": {
     "source": "theodds",
-    "is_stale": false,
-    "data_age_seconds": 12,
-    "fallback_used": false,
-    "duration_ms": 120,
     "estimated": true
   }
 }
 ```
 
-## Model
-
-Win probabilities come from `cricket/models/win_probability.py` — a weighted
-combination of form score (50%), H2H win rate (30%), and venue tilt (20%).
-When signals are unavailable, the model defaults to 50/50. `meta.estimated: true`
-is always set. See [[cricket-win-probability-model]].
-
-De-vig math is the multiplicative method shared with [[football-find-value-bets]]
-via `core/value_bet.py`.
+`events_analysed` is 0 outside the IPL season (~March–May) when The Odds API
+lists no IPL events. That is an empty market, not an outage.
 
 ## Error codes
 

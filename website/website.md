@@ -40,7 +40,7 @@ export const LINKS = {
   pypi: "https://pypi.org/project/sportiq-mcp/",
   github: "https://github.com/Ninjabeam20/SportIQ-MCP",
   registry: "https://registry.modelcontextprotocol.io",     // id: io.github.Ninjabeam20/sportiq-mcp
-  hostedMcp: "https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp", // live Cloud Run; do not swap to sportiq.utkarshgupta.org until Task 8 flip
+  hostedMcp: "https://sportiq.utkarshgupta.org/mcp", // live home server; Cloud Run is rollback until Task 9
   email: "utkarshgupta885@gmail.com",
 } as const;
 
@@ -259,7 +259,7 @@ Tabbed code block with copy buttons:
 }
 ```
 - **Unlock Pro:** add `"SPORTIQ_PRO_KEY": "sq_…"` to `env`.
-- Note: "No keys? It still runs on free seed + public-source data." + "No install? Add the hosted server as a custom connector: `…run.app/mcp`."
+- Note: "No keys? It still runs on free seed + public-source data." + "No install? Add the hosted server as a custom connector: `https://sportiq.utkarshgupta.org/mcp`."
 
 ### 4.11 Footer
 

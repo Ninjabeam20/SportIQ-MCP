@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
+import { LINKS } from "../config/links";
 
 export default function Quickstart() {
   const [copied, setCopied] = useState<string | null>(null);
@@ -85,7 +86,7 @@ export default function Quickstart() {
             <p className="text-white/90"><strong className="text-white">No keys?</strong> It still runs on free seed + public-source data.</p>
           </div>
           <div className="glass-panel-light p-4 rounded-xl">
-            <p className="text-white/90"><strong className="text-white">No install?</strong> Add the hosted server as a custom connector — every tool, including the full intelligence layer, is <strong className="text-white">free</strong>: <code className="bg-white/10 text-white px-1 py-0.5 rounded text-xs font-mono">…run.app/mcp</code></p>
+            <p className="text-white/90"><strong className="text-white">No install?</strong> Add the hosted server as a custom connector — every tool, including the full intelligence layer, is <strong className="text-white">free</strong>: <code className="bg-white/10 text-white px-1 py-0.5 rounded text-xs font-mono">{LINKS.hostedMcp}</code></p>
           </div>
         </div>
       </div>

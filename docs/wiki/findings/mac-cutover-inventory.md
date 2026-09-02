@@ -9,8 +9,13 @@ related: [[home-server-cutover]], [[hosted-url-and-release-drift]], [[0012-hoste
 
 # Mac worktree inventory before home-server apply
 
-Every in-tree change as of 2026-08-30, before commit/push. **Live connector stays
-Cloud Run.** Dell compose/Caddy/Cloudflare apply still needs owner `yes`.
+> **Snapshot (2026-08-30, pre-flip).** Do not treat this page as current
+> hosting state. Live connector is `https://sportiq.utkarshgupta.org/mcp`.
+> See [[home-server-cutover]] and [[product-hosting-arc]].
+
+Every in-tree change as of 2026-08-30, before commit/push. **At snapshot time
+the live connector was still Cloud Run.** Dell compose/Caddy/Cloudflare apply
+still needed owner `yes` (that apply later landed the same day).
 
 ## Parallel hosts (do not mix)
 

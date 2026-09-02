@@ -54,11 +54,15 @@ Anywhere that speaks MCP — Claude (Desktop + web), ChatGPT, Cursor, and any MC
 
 ### Hosted — no install
 
-A public instance runs on Google Cloud Run. Add this as a custom connector with **No authentication**:
+A public instance runs on the home server behind Cloudflare. Add this as a custom connector with **No authentication**:
 
 ```
-https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp
+https://sportiq.utkarshgupta.org/mcp
 ```
+
+Cloud Run `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` remains rollback until GCP teardown.
+
+Confused about hosting or why Cloud Run still exists? See [`docs/wiki/findings/product-hosting-arc.md`](docs/wiki/findings/product-hosting-arc.md) (GCP → paid plan → free on GCP → home server).
 
 - **claude.ai (web):** Settings → Connectors → Add custom connector → paste URL → Save.
 - **ChatGPT:** Settings → Apps & Connectors → enable **Developer mode** → Create app (MCP) → paste URL → No authentication → Connect.
@@ -71,9 +75,7 @@ All 44 tools register on the plain URL. Whether a live/provider-backed call can 
 | **Local, keyless** | All tools register; bundled seeds and keyless sources work where supported, while credential-only live sources are skipped. |
 | **Local, BYO keys** | The same tools can use the configured providers for fresher/live data, subject to provider quota. |
 
-The hosted HTTP boundary rejects request bodies over 1 MiB, limits traffic to 60 requests per client and 300 total requests per minute, and permits at most two concurrent expensive model/solver calls. These counters are per process, so the documented Cloud Run configuration requires one maximum instance.
-
-> First request after idle takes ~5–10s (the server scales to zero, so it wakes up); fast after that.
+The hosted HTTP boundary rejects request bodies over 1 MiB, limits traffic to 60 requests per client and 300 total requests per minute, and permits at most two concurrent expensive model/solver calls. These counters are per process, so the home-server Compose stack runs **one** replica (always-on idle; no scale-to-zero).
 
 ### Local install
 

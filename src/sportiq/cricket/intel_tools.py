@@ -172,11 +172,16 @@ async def cricket_captain_recommendation(
 ) -> Envelope:
     """Return the top-3 captain candidates ranked by projected points.
 
+    IPL venues only (pitch seed is IPL grounds). Test/international matches
+    and unknown venues fail rather than inventing a ranking. Same-role
+    players often tie: projections use default form 55 and default
+    opposition 0.5, not per-player history.
+
     Args:
         match_id: CricAPI match identifier; resolves team_a/team_b/venue automatically.
         team_a: First team code/name. Required if match_id is absent.
         team_b: Second team code/name. Required if match_id is absent.
-        venue: Venue key/name. Required if match_id is absent.
+        venue: Venue key/name (IPL ground, e.g. ``wankhede``). Required if match_id is absent.
 
     Returns:
         data.candidates: list of 3 dicts with name/role/team/projected_points.

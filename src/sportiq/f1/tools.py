@@ -2,6 +2,7 @@
 
 Thin wrappers: validate args → call chain.fetch() → return tool_response.
 """
+
 from __future__ import annotations
 
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
@@ -103,8 +104,12 @@ async def f1_get_lap_times(
 async def f1_get_standings(year: int) -> Envelope:
     """Return F1 driver and constructor championship standings for a year.
 
+    Use this for "who is leading / who will win the F1 championship this year".
+    There is no F1 title Monte Carlo — current points and position are the answer.
+    This is not a cricket or football tool.
+
     Args:
-        year: Championship year (e.g. 2025).
+        year: Championship year (e.g. 2026).
 
     Returns:
         data.driver_standings: driver championship positions and points.

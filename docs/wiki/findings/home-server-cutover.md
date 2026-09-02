@@ -4,35 +4,26 @@ type: finding
 tags: [home-server, cloudflare, caddy, cloud-run, deploy]
 sources: [chat]
 last_updated: 2026-08-30
-related: [[0012-hosted-abuse-controls]], [[hosted-url-and-release-drift]]
+related: [[0012-hosted-abuse-controls]], [[hosted-url-and-release-drift]], [[mac-cutover-inventory]], [[product-hosting-arc]]
 ---
 
 # Home-server cutover of the public MCP
 
-A 2026-08-13 decision, model locked 2026-08-23, inventory refreshed 2026-08-30:
-move the public SportIQ connector off Cloud Run onto the Dell home server at
-`https://sportiq.utkarshgupta.org/mcp`. **Advertised URL is still Cloud Run.**
-The public hostname is NXDOMAIN. There is no `sportiq` container and no
-`~/stacks/sportiq`. Live Caddy **already contains** a `sportiq.utkarshgupta.org`
-block, including the forbidden `header_up CF-Connecting-IP` line — Task 6 must
-strip that line, not append a second block. Cloudflare tunnel hostname and GCP
-are still untouched.
+Task 8 flipped 2026-08-30. **Live connector is**
+`https://sportiq.utkarshgupta.org/mcp`. Cloud Run
+`https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` stays as rollback until
+Task 9 (`yes, delete GCP`).
 
-## Operating model: two systems, one public URL
+Dell `sportiq` container is healthy on `apps`, Caddy block has
+`flush_interval -1` and **no** `header_up CF-Connecting-IP`, tunnel public
+hostname `sportiq` → `http://caddy:80`, no Access app on this hostname.
 
-Until the Dell is **proven**, Claude, ChatGPT, README, SECURITY.md, and
-`website/src/config/links.ts` stay on
-`https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp`.
+## Operating model after flip
 
-1. Keep Cloud Run as the advertised connector while the Dell is stood up.
-2. Build SportIQ on the Dell in parallel (compose, one Caddy block, tunnel hostname).
-   Invisible to Claude until DNS + tunnel + Caddy serve `/mcp`.
-3. Prove the Dell (initialize, tool call, SSE not buffered, 429s on `CF-Connecting-IP`).
-   Do not advertise `sportiq.utkarshgupta.org` while it is NXDOMAIN or unproven.
-4. Then flip connectors **and** public docs together. Cloud Run stays a day or two
-   as rollback.
-5. Then delete GCP — only after a second explicit `yes, delete GCP`: Scheduler
-   keep-warm → Cloud Run service → Artifact Registry. Not on the first 200 OK.
+1. Claude / ChatGPT / README / `links.ts` advertise the Dell URL.
+2. Cloud Run stays up a day or two as rollback (do not delete on the first 200).
+3. Delete GCP only after a second explicit `yes, delete GCP`: Scheduler
+   keep-warm → Cloud Run service → Artifact Registry.
 
 ## Locked shape
 

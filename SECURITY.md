@@ -39,9 +39,9 @@ also retain platform network/request metadata according to the operator's loggin
 configuration. Local stdio mode emits logs locally but sends no telemetry to a
 SportIQ-hosted service.
 
-## Hosted deployment (public Cloud Run instance)
+## Hosted deployment (public home-server instance)
 
-The public instance at `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` is an
+The public instance at `https://sportiq.utkarshgupta.org/mcp` is an
 unauthenticated, read-only data service. A hosted operator may configure provider
 credentials, so callers must not assume the host is secret-free; this repository does
 not claim the deployment's unverified current key inventory. Application logging

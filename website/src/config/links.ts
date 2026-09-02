@@ -4,7 +4,7 @@ export const LINKS = {
   // Install
   pypi: "https://pypi.org/project/sportiq-mcp/",
   // Free hosted demo server (custom connector) — every tool free right now
-  hostedMcp: "https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp",
+  hostedMcp: "https://sportiq.utkarshgupta.org/mcp",
   // Source
   github: "https://github.com/Ninjabeam20/SportIQ-MCP",
   registry: "https://registry.modelcontextprotocol.io",

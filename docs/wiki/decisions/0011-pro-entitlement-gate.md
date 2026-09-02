@@ -4,7 +4,7 @@ type: decision
 tags: [monetization, entitlements, gating]
 sources: [chat, v1.md, v2.md]
 last_updated: 2026-07-01
-related: [[error-envelope]], [[fastmcp-patterns]]
+related: [[error-envelope]], [[fastmcp-patterns]], [[product-hosting-arc]]
 ---
 
 # ADR 0011 — Pro-entitlement gate (V1 presence check + V2a hosted enforcement)

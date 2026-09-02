@@ -8,7 +8,10 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends coinor-cbc \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+# Pin uv. `:latest` dropped `uv pip install --frozen` (never a pip-interface
+# flag; `uv sync`/`uv export` own --frozen). Pin so Dell/Cloud Run builds do
+# not float onto a breaking CLI.
+COPY --from=ghcr.io/astral-sh/uv:0.12.6 /uv /bin/uv
 
 WORKDIR /app
 
@@ -20,7 +23,8 @@ WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 RUN mkdir -p src/sportiq \
     && : > src/sportiq/__init__.py \
-    && uv pip install --system --frozen ".[f1]"
+    && uv export --frozen --extra f1 --no-dev --no-emit-project -o /tmp/reqs.txt \
+    && uv pip install --system -r /tmp/reqs.txt
 
 # --- Source layer (fast) ----------------------------------------------------
 # Copy the real source and reinstall ONLY the project package (--no-deps), so

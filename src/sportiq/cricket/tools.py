@@ -184,6 +184,10 @@ async def cricket_get_squad(team: str, series_id: str | None = None) -> Envelope
 async def cricket_get_live_odds(team: str | None = None) -> Envelope:
     """Return live market head-to-head odds for upcoming/live IPL matches.
 
+    IPL only (~March-May). An empty ``events`` list outside that window is a
+    successful empty market, not an outage. Not international/Test/other T20
+    leagues. For World Cup 2026 football odds use ``football_get_odds``.
+
     Sourced from The Odds API (requires THEODDS_KEY). Without a key the call
     returns a clean ALL_SOURCES_FAILED envelope rather than crashing.
 
@@ -196,6 +200,7 @@ async def cricket_get_live_odds(team: str | None = None) -> Envelope:
     Returns:
         data.events: list of {event_id, home, away, commence_time, bookmakers:
             [{name, home, away}]} with decimal h2h prices per bookmaker.
+            Empty when no IPL events are listed (typical off-season).
         meta.source: adapter that served the data (theodds / cache:stale).
     """
     try:
