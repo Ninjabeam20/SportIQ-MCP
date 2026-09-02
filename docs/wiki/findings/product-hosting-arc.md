@@ -27,8 +27,17 @@ One-page timeline of how SportIQ was hosted and sold. Read this when GitHub and 
 | :--- | :--- |
 | Live connector | `https://sportiq.utkarshgupta.org/mcp` (Dell, stateless HTTP, package 0.3.2) |
 | Cloud Run / Artifact Registry / project | **deleted** — project `sportiq-mcp-prod` is `DELETE_REQUESTED`; billing account/card removed |
-| PyPI / `uvx sportiq-mcp` | **0.3.2**; registry remotes = Dell URL |
+| PyPI / `uvx sportiq-mcp` | **0.3.2**; official MCP registry remotes = Dell URL |
+| Glama listing | Dell URL after owner GitHub sync (2026-09-02) |
 | Product | every tool free; no SportIQ paywall |
+
+## Final check (2026-09-02)
+
+Dell git matches `origin/main`, one replica, `K_SERVICE` unset, scrapers off, Redis unset,
+JSONL on, Caddy `flush_interval -1` / no `header_up CF-Connecting-IP`. Public
+initialize 200 / 0.3.2 / stateless; GET `/mcp` 406; `sportiq_health` diskcache
+ok; 44 tools. `ey2eariulq` HTTP 404. Old `329580761892` host NXDOMAIN. Local
+`uv run pytest` green. Never set `K_SERVICE`. Never copy `sportiq-keepwarm`.
 
 ## Do not
 

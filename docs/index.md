@@ -161,7 +161,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[hosted-url-and-release-drift]] — 2026-08-13 audit: advertised connector URL was dead DNS; post–Task 8 live URL is `sportiq.utkarshgupta.org`; v0.3.2 lists that hosted remote.
 - [[home-server-cutover]] — Live `https://sportiq.utkarshgupta.org/mcp`; Task 9 deleted Cloud Run; always-on idle; no Access on sportiq.
 - [[mac-cutover-inventory]] — Snapshot (2026-08-30, pre-flip) of the Mac worktree that shipped 0.3.2 + Compose while Cloud Run was still the advertised URL.
-- [[product-hosting-arc]] — GCP → paid plan → free on GCP → home server. Task 9 teardown + project shutdown done 2026-09-02.
+- [[product-hosting-arc]] — GCP → paid plan → free on GCP → home server. Task 9 + billing card gone; Dell live; Glama synced 2026-09-02.
 - [[local-analytics-dashboard]] — Maintainer-local `scripts/dashboard.py`: GCP archive + GitHub/PyPI + Dell JSONL after compose rebuild.
 
 ## Decisions (ADRs)

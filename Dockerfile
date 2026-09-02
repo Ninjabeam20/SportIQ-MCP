@@ -1,5 +1,5 @@
-# Remote (HTTP) deployment of SportIQ MCP for Cloud Run rollback or
-# home-server Compose (Dell, network `apps`, no published host ports).
+# Remote (HTTP) deployment of SportIQ MCP for home-server Compose
+# (Dell, network `apps`, no published host ports). Cloud Run is gone.
 # Local install stays uvx/stdio; this image runs the same server over streamable-HTTP.
 FROM python:3.13-slim
 
@@ -9,7 +9,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Pin uv. `:latest` dropped `uv pip install --frozen` (never a pip-interface
-# flag; `uv sync`/`uv export` own --frozen). Pin so Dell/Cloud Run builds do
+# flag; `uv sync`/`uv export` own --frozen). Pin so Dell Compose builds do
 # not float onto a breaking CLI.
 COPY --from=ghcr.io/astral-sh/uv:0.12.6 /uv /bin/uv
 

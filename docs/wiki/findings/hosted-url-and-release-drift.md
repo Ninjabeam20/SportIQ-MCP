@@ -72,3 +72,10 @@ gone (`DELETE_REQUESTED`). Owner also removed the GCP billing card.
 `ey2eariulq` HTTP 404. Do **not** point docs at any `*.run.app` hostname.
 **Never** set `K_SERVICE` on the Dell. **Never** copy `sportiq-keepwarm`.
 Live URL is Dell only.
+
+## Addendum — listings (2026-09-02)
+
+GitHub README, Vercel `LINKS.hostedMcp`, official registry remotes, and Glama
+(owner-synced) all advertise `https://sportiq.utkarshgupta.org/mcp`. PyPI is
+**0.3.2**. mcp.so remains uvx-only (no hosted URL to go stale). PulseMCP has
+no SportIQ listing.
