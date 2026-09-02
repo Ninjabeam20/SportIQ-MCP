@@ -22,9 +22,8 @@ def test_enable_cricbuzz_scraper_via_documented_env_var(monkeypatch):
     assert s.enable_cricbuzz_scraper is True
 
 
-def test_log_format_defaults_json_on_cloud_run(monkeypatch):
-    """Cloud Run sets K_SERVICE; logs must default to JSON there so Cloud Logging
-    parses them into jsonPayload (the dashboard filters on jsonPayload.event)."""
+def test_log_format_defaults_json_when_k_service_set(monkeypatch):
+    """K_SERVICE (historical Cloud Run) still defaults logs to JSON."""
     monkeypatch.delenv("SPORTIQ_LOG_FORMAT", raising=False)
     monkeypatch.setenv("K_SERVICE", "sportiq-mcp")
     from sportiq.config import Settings
@@ -44,7 +43,7 @@ def test_log_format_defaults_pretty_locally(monkeypatch):
 
 
 def test_explicit_log_format_overrides_cloud_run_default(monkeypatch):
-    """An explicit SPORTIQ_LOG_FORMAT wins even on Cloud Run."""
+    """An explicit SPORTIQ_LOG_FORMAT wins even when K_SERVICE is set."""
     monkeypatch.setenv("K_SERVICE", "sportiq-mcp")
     monkeypatch.setenv("SPORTIQ_LOG_FORMAT", "pretty")
     from sportiq.config import Settings

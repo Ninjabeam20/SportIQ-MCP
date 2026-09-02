@@ -11,6 +11,7 @@ related: [[home-server-cutover]], [[hosted-url-and-release-drift]], [[0012-hoste
 
 > **Snapshot (2026-08-30, pre-flip).** Do not treat this page as current
 > hosting state. Live connector is `https://sportiq.utkarshgupta.org/mcp`.
+> Cloud Run and project `sportiq-mcp-prod` were deleted 2026-09-02.
 > See [[home-server-cutover]] and [[product-hosting-arc]].
 
 Every in-tree change as of 2026-08-30, before commit/push. **At snapshot time

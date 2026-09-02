@@ -30,9 +30,10 @@ no cost — run on demand and open in the browser.
 
 ## Per-tool telemetry (the goods *and* the bads)
 
-Cloud Run's `request_count` can't answer "which tool failed / was slow / was
-busiest" — every MCP call is HTTP 200 (errors live in the JSON envelope) and the
-HTTP layer has no tool name. So `core/tool_telemetry.py` wraps every tool at
+HTTP `request_count` (historically Cloud Run Monitoring) can't answer "which
+tool failed / was slow / was busiest" — every MCP call is HTTP 200 (errors live
+in the JSON envelope) and the HTTP layer has no tool name. So
+`core/tool_telemetry.py` wraps every tool at
 startup (`instrument_tools`, same registry walk as `apply_param_descriptions`)
 and emits one structured `tool_call` event per call:
 
@@ -49,18 +50,18 @@ these lines the dashboard builds: calls by tool, error rate by tool (+ error
 codes), latency by tool (avg/p99), calls by client, the client-by-tool matrix,
 and ok-vs-failed over time. `outcome` is `ok` | `error` (envelope) | `exception`.
 
-`core/logging.py` also maps the structlog `level` to Cloud Logging's `severity`
-(JSON/prod only) so failed tools surface in Error Reporting. All free: these are
-tiny JSON log lines, well under Cloud Logging's free ingest tier — no BigQuery,
-Pub/Sub, or OpenTelemetry (the last is on the frozen-stack exclusion list).
+Live per-tool rows on the Dell come from `SPORTIQ_ANALYTICS_JSONL` (Compose
+volume). `core/logging.py` still maps structlog `level` to Cloud Logging
+`severity` for historical GCP log lines; after project shutdown those collectors
+are archive-only. No BigQuery, Pub/Sub, or OpenTelemetry (frozen-stack exclusion).
 
 ## Sources
 
 | Panel | Source | Auth |
 | :--- | :--- | :--- |
-| Requests/day, latency p50/p99, status split | Cloud Monitoring (`run.googleapis.com/request_count`, `request_latencies`) | GCP ADC |
-| Per-tool: calls, error rate, latency, calls-by-client, client-by-tool matrix | Cloud Logging (`jsonPayload.event="tool_call"`) | GCP ADC |
-| AI-client breakdown | Cloud Logging (`mcp_request` clientInfo / `userAgent` on `/mcp`) | GCP ADC |
+| Per-tool: calls, error rate, latency, calls-by-client, client-by-tool matrix | Dell JSONL (`SPORTIQ_ANALYTICS_JSONL`) | SSH pull (`scripts/pull_home_analytics.sh`) |
+| Requests/day, latency, status split (archive) | Cloud Monitoring cache (project deleted 2026-09-02) | GCP ADC (fails; uses `.dashboard_cache/`) |
+| Historical per-tool / AI-client (archive) | Cloud Logging cache | GCP ADC (fails; uses `.dashboard_cache/`) |
 | Stars / forks | GitHub REST `/repos/{repo}` | none (public) |
 | Downloads/day | pypistats `/packages/{pkg}/overall` | none |
 
@@ -73,7 +74,7 @@ then repo `.env`, then `gh auth token`. A `gh` login that is only
 
 ```bash
 uv sync --extra dev --extra analytics
-gcloud auth application-default login
+bash scripts/pull_home_analytics.sh
 uv run python scripts/dashboard.py
 ```
 
@@ -81,9 +82,10 @@ Repo `.env` `GITHUB_TOKEN` is picked up automatically. Dell Compose writes
 `SPORTIQ_ANALYTICS_JSONL` to volume `sportiq-analytics`. Pull with
 `bash scripts/pull_home_analytics.sh` then re-run the dashboard.
 
-Without the `analytics` extra or ADC, the two GCP panels show `error` and fall
-back to cache; GitHub + PyPI still render live. `DASHBOARD_NO_OPEN=1` suppresses
-the browser pop (used in CI/headless).
+GCP Cloud Logging / Monitoring collectors will fail after project shutdown and
+fall back to `.dashboard_cache/` (the 2026-09-02 archive). GitHub + PyPI + Dell
+JSONL still render live. `DASHBOARD_NO_OPEN=1` suppresses the browser pop
+(used in CI/headless).
 
 ## Not shipped
 

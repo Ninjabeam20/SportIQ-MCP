@@ -91,8 +91,8 @@ def main() -> None:
         # state to lose — tools read the shared cache and return one envelope.
         # json_response stays False: SSE framing is how tool results stream.
         mcp.settings.stateless_http = True
-        # DNS rebinding protection blocks Cloud Run host headers; disable it for
-        # the remote deployment — Cloud Run's infrastructure handles perimeter security.
+        # DNS rebinding protection blocks real Host headers (Dell hostname, and
+        # historically Cloud Run); disable it — Cloudflare + Caddy is the perimeter.
         mcp.settings.transport_security = TransportSecuritySettings(
             enable_dns_rebinding_protection=False
         )

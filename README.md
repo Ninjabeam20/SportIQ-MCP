@@ -60,9 +60,7 @@ A public instance runs on the home server behind Cloudflare. Add this as a custo
 https://sportiq.utkarshgupta.org/mcp
 ```
 
-Cloud Run `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` remains rollback until GCP teardown.
-
-Confused about hosting or why Cloud Run still exists? See [`docs/wiki/findings/product-hosting-arc.md`](docs/wiki/findings/product-hosting-arc.md) (GCP → paid plan → free on GCP → home server).
+Hosting history (GCP Cloud Run → home server): [`docs/wiki/findings/product-hosting-arc.md`](docs/wiki/findings/product-hosting-arc.md). Old `*.run.app` connector URLs are gone.
 
 - **claude.ai (web):** Settings → Connectors → Add custom connector → paste URL → Save.
 - **ChatGPT:** Settings → Apps & Connectors → enable **Developer mode** → Create app (MCP) → paste URL → No authentication → Connect.
@@ -115,13 +113,13 @@ The server boots and registers every tool without keys. Seed/keyless fallbacks a
 | `RAPIDAPI_KEY` | Paid Cricbuzz fallback (player career stats) | plan-dependent |
 | `SPORTIQ_ENABLE_NDTV` / `SPORTIQ_ENABLE_CRICBUZZ` | Opt-in cricket scrapers (off by default — ToS) | — |
 | `REDIS_URL` | Shared cache backend (defaults to local diskcache) | — |
-| `SPORTIQ_TRANSPORT` | `stdio` (default, local) or `http` (remote/Cloud Run) | — |
+| `SPORTIQ_TRANSPORT` | `stdio` (default, local) or `http` (remote / home server) | — |
 
 > macOS arm64: the Dream11 solver needs CBC — `brew install cbc` (the binary bundled with PuLP is x86-only).
 
 ### Self-host
 
-Set `SPORTIQ_TRANSPORT=http` and the server serves the MCP endpoint at `/mcp` (binds `0.0.0.0:$PORT`). A ready-to-build `Dockerfile` is included; see **[`cloud.md`](cloud.md)** for a Google Cloud Run deploy (free tier). With your own keys set, the live-score and odds tools come online too.
+Set `SPORTIQ_TRANSPORT=http` and the server serves the MCP endpoint at `/mcp` (binds `0.0.0.0:$PORT`). A ready-to-build `Dockerfile` and home-server `docker-compose.yml` are included. `cloud.md` is the old Cloud Run runbook (historical). With your own keys set, the live-score and odds tools come online too.
 
 ## Support SportIQ
 
@@ -133,7 +131,7 @@ If SportIQ saves you time, **[sponsor the project at github.com/sponsors/Ninjabe
 
 - **Open source, MIT licensed**, published on [PyPI](https://pypi.org/project/sportiq-mcp/) with signed build attestations — read the code before you connect it.
 - **Read-only.** Tools only fetch and analyse public sports data — no write, delete, payment, email, or file-system tools.
-- **Limited operational telemetry.** HTTP mode logs client software name/version, User-Agent, tool name, outcome, latency, selected source, and staleness; Cloud Run may also retain platform network/request metadata. Local stdio emits local logs but sends no SportIQ-host telemetry.
+- **Limited operational telemetry.** HTTP mode logs client software name/version, User-Agent, tool name, outcome, latency, selected source, and staleness. The public host (Dell) can persist `tool_call` / `mcp_request` lines to a local JSONL volume. Local stdio emits local logs but sends no telemetry to a SportIQ-hosted service.
 - **Hosted abuse controls.** HTTP POST bodies are capped at 1 MiB; requests are limited to 60/client/minute and 300/process/minute; the five expensive simulation/strategy/solver tools share a concurrency limit of two.
 - **Credential-aware.** A hosted operator may configure provider credentials; the repository does not claim the public instance's current key inventory. Keys are redacted from application logs and envelopes.
 - Historical automated AI code-review results are documented in [`SECURITY.md`](SECURITY.md#independent-review); they are not a current third-party certification.
@@ -149,7 +147,7 @@ uv run ruff check .
 npx @modelcontextprotocol/inspector uv run python -m sportiq.server
 ```
 
-**Analytics dashboard** (read-only local usage view — Cloud Run / PyPI / GitHub). Same setup as above, then just run it:
+**Analytics dashboard** (read-only local usage view — Dell JSONL / archived GCP / PyPI / GitHub). Same setup as above, then just run it:
 
 ```bash
 uv run python scripts/dashboard.py     # writes dashboard.html and opens it; GITHUB_TOKEN optional (Sponsors panel)
@@ -157,7 +155,7 @@ uv run python scripts/dashboard.py     # writes dashboard.html and opens it; GIT
 
 > Note: the dashboard's HTML template (`scripts/dashboard_template.html`) is currently local-only maintainer tooling, so a fresh clone can't render it yet.
 
-**Repository layout:** `src/` is the MCP server (published to PyPI, deployed to Cloud Run); `website/` is the Next.js marketing site deployed to Vercel. The two ship independently — `website/` is excluded from the Python package and the backend container.
+**Repository layout:** `src/` is the MCP server (published to PyPI, hosted on the Dell at `https://sportiq.utkarshgupta.org/mcp`); `website/` is the Next.js marketing site deployed to Vercel. The two ship independently — `website/` is excluded from the Python package and the backend container.
 
 See `CLAUDE.md` for collaboration rules and `docs/index.md` for the wiki entry point.
 

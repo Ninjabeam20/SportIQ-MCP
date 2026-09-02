@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-The marketing/landing website for **SportIQ**. This directory (`website/`, inside the sportiq-mcp monorepo) is the public site only — the SportIQ product itself is the MCP server in the rest of the repo. The site ships independently: excluded from the PyPI sdist and the Cloud Run image, built by its own CI workflow (`.github/workflows/website.yml`), and deployed via Vercel with Root Directory = `website`.
+The marketing/landing website for **SportIQ**. This directory (`website/`, inside the sportiq-mcp monorepo) is the public site only — the SportIQ product itself is the MCP server in the rest of the repo. The site ships independently: excluded from the PyPI sdist and the backend container, built by its own CI workflow (`.github/workflows/website.yml`), and deployed via Vercel with Root Directory = `website`.
 
 **SportIQ** is a hosted **MCP (Model Context Protocol) server** that gives Claude — and any MCP client (ChatGPT, Cursor, etc.) — live sports analytics across **football, F1, and cricket**: live scores, schedules, squads, standings, odds, value-bet detection, fantasy/Dream11 team building, and predictive models (xG, pit strategy, match predictor, Monte Carlo bracket simulation, etc.).
 
 - It is consumed as a **custom connector in Claude.ai** (Settings → Connectors → Add custom connector → paste the MCP URL), not run locally from this repo.
 - Production MCP endpoint (live): `https://sportiq.utkarshgupta.org/mcp` (Dell home server). Source of truth for this and all other external URLs is `src/config/links.ts`.
-- Cloud Run rollback until Task 9 teardown: `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp`. Do not point `LINKS.hostedMcp` back at Cloud Run unless failing back.
+- Cloud Run was deleted Task 9 (2026-09-02). Do not point `LINKS.hostedMcp` at any `*.run.app` hostname.
 - The site's job is to market SportIQ and walk users through adding it as a connector.
 
 ## Commands

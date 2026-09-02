@@ -1,5 +1,12 @@
 # SportIQ Home-Server Migration Implementation Plan
 
+> **STATUS 2026-09-02: DONE.** Live connector is
+> `https://sportiq.utkarshgupta.org/mcp` (Dell). Tasks 5–8 applied. Task 9
+> deleted Cloud Run / scheduler / Artifact Registry. Project `sportiq-mcp-prod`
+> is `DELETE_REQUESTED` (billing unlinked). Do not `gcloud run deploy`. Do not
+> advertise `*.run.app`. The body below is the original apply plan (keep as
+> history). Rollback to Cloud Run is no longer possible.
+
 > **Grok overlay (2026-08-13, model locked 2026-08-23):** `grok_changes8.md` (index + agent brief + Task 0 inventory) → `grok_changes9.md` (identity) → `grok_changes10.md` (Compose/HEALTHCHECK) → `grok_changes11.md` (vault + steel docs) → `grok_changes12.md` (gated Dell / flip / GCP). Stay on tree `mcp>=1.27.2,<2`; do not pin `mcp==1.27.1`. HEALTHCHECK uses exec-form `python -c` (Docker flattens the draft's `def _ok()`). **Two systems, one public URL** until Task 8 — see Operating model.
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

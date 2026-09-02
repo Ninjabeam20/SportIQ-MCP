@@ -55,12 +55,18 @@ See [[home-server-cutover]] and [[product-hosting-arc]].
 
 ## Addendum — Task 8 flip (2026-08-30)
 
-The advertised connector is now `https://sportiq.utkarshgupta.org/mcp`.
-Cloud Run `ey2eariulq` is rollback only. Do **not** point docs back at
-`329580761892` (still NXDOMAIN). GCP teardown still needs `yes, delete GCP`.
+The advertised connector became `https://sportiq.utkarshgupta.org/mcp`.
+Cloud Run `ey2eariulq` was rollback until Task 9. Do **not** point docs at
+`329580761892` (already NXDOMAIN then).
 
 ## Addendum — v0.3.2 (2026-09-02)
 
 `server.json` now declares `remotes` streamable-http
 `https://sportiq.utkarshgupta.org/mcp` next to the PyPI stdio package.
 Tag `v0.3.2` is the PyPI + official MCP registry publish.
+
+## Addendum — Task 9 (2026-09-02)
+
+Scheduler, Cloud Run, Artifact Registry, and project `sportiq-mcp-prod` are
+gone (`DELETE_REQUESTED`, billing unlinked). `ey2eariulq` HTTP 404.
+Do **not** point docs at any `*.run.app` hostname. Live URL is Dell only.

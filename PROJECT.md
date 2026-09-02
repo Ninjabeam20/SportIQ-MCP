@@ -2,8 +2,8 @@
 
 > Deep knowledge-transfer document, written 2026-07-07 against v0.3.1 (commit `b7a1392`),
 > refreshed 2026-07-14 on `codex_changes`, and again **2026-08-30** after Task 8 flip
-> (package version 0.3.2; live connector is the Dell home server; Cloud Run is rollback
-> until Task 9). Read this first. For known weaknesses read `GAPS.md`. For operational
+> (package version 0.3.2; live connector is the Dell home server; Task 9 deleted
+> Cloud Run 2026-09-02). Read this first. For known weaknesses read `GAPS.md`. For operational
 > rules read `CLAUDE.md`.
 
 ---
@@ -14,8 +14,8 @@
 (Claude, ChatGPT, Cursor, …) into a sports analyst across three sports: **FIFA World Cup 2026
 football, Formula 1, and IPL cricket**. It exposes **44 AI-callable tools** (including the
 meta-tool `sportiq_health`) over stdio (local install via `uvx sportiq-mcp`) or streamable-HTTP (hosted
-on the Dell home server at `https://sportiq.utkarshgupta.org/mcp`. Cloud Run
-`https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` stays up as rollback until Task 9.
+on the Dell home server at `https://sportiq.utkarshgupta.org/mcp`. Cloud Run was
+deleted in Task 9 (2026-09-02); old `*.run.app` URLs 404.
 
 **Who it's for:** end users are AI-assistant users who want live sports data and — the actual
 product — the *intelligence layer*. Raw data tools (fixtures, standings, lap times, scorecards)
@@ -33,7 +33,7 @@ donations. The project doubles as the author's portfolio piece. Hard constraint:
 infrastructure spend until traffic justifies it** — BYO API keys, no Redis in prod, no
 min-instances, free tiers everywhere. Hosting/product timeline (GCP → paid → free on
 GCP → home server): `docs/wiki/findings/product-hosting-arc.md`. Check that page
-when GitHub, Cloud Run, and the Dell seem to disagree.
+when GitHub and the Dell seem to disagree.
 
 **Ordering convention that permeates everything:** football → F1 → cricket. Headings, lists,
 tables, tool registration order — always that order.
@@ -57,7 +57,7 @@ tables, tool registration order — always that order.
 | Testing | pytest + pytest-asyncio (auto mode) + respx | ADR-0006: no live HTTP in tests, ever; cassettes in `tests/fixtures/` |
 | Lint | ruff (line 100, E/F/I/W/UP/B/SIM/RUF) | |
 | Logging | structlog — JSON on hosted HTTP (`SPORTIQ_LOG_FORMAT=json` in Compose; Cloud Run auto-detects via `K_SERVICE`), pretty locally | Cloud Logging / docker json-file rotation |
-| Deploy | Docker Compose on the Dell (`apps` network, no host ports) is the production **target**; Cloud Run + Kaniko remains the rollback runbook (`cloud.md`) | Stub-package trick in Dockerfile keeps the heavy scipy/pandas layer cached across source edits |
+| Deploy | Docker Compose on the Dell (`apps` network, no host ports) is production. `cloud.md` is the old Cloud Run runbook (deleted 2026-09-02) | Stub-package trick in Dockerfile keeps the heavy scipy/pandas layer cached across source edits |
 | Publish | GitHub Actions OIDC Trusted Publishing to PyPI on `v*` tags | ADR-0010: no long-lived PyPI token in secrets |
 
 **Deliberately excluded** (do not add): OR-Tools, SQLAlchemy, FastAPI, OpenTelemetry, any
@@ -71,7 +71,7 @@ database other than Redis/diskcache.
 
 ```
 MCP client (Claude / Cursor / ChatGPT)
-        │  stdio (uvx)  or  streamable-HTTP (/mcp — Cloud Run live, home server target)
+        │  stdio (uvx)  or  streamable-HTTP (/mcp — Dell live)
         ▼
 src/sportiq/server.py ── FastMCP("sportiq")
         │   registration order = relevance: health → instructions → prompts
@@ -300,12 +300,11 @@ analytics), `launch/` marketing copy, wiki lint tooling.
    the portal's sample tab, scrapers from one dev-time live fetch (scrub Set-Cookie first).
 9. **The hosted deployment runs diskcache, not Redis** (zero-spend rule) — per-instance cache,
    per-instance rate-limit counters. Hosted limit math therefore requires **one replica**:
-   Cloud Run `sportiq-mcp` has `autoscaling.knative.dev/maxScale: '1'` (verified 2026-08-13);
    home-server Compose is a single `sportiq` container (`mem_limit: 1536m`, no `deploy.replicas`).
+   Cloud Run historically used `maxScale: 1`; that service is gone.
    The **live** public connector URL is `https://sportiq.utkarshgupta.org/mcp`.
-   Cloud Run `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` is rollback until
-   Task 9. The older `…329580761892.us-central1.run.app` hostname does not resolve.
-   Behind Caddy, set
+   Cloud Run was deleted Task 9 (2026-09-02); former `ey2eariulq` / `329580761892`
+   hosts are gone. Behind Caddy, set
    `SPORTIQ_TRUST_CLOUDFLARE=1` and never `K_SERVICE`. Always-on idle on the Dell
    (`restart: unless-stopped`); do not copy Cloud Run `sportiq-keepwarm` and do
    not auto-sleep the container.
@@ -317,9 +316,9 @@ analytics), `launch/` marketing copy, wiki lint tooling.
     `monetization-*.md`, `v2*.md`, `free-rollback-plan.md`, …). They are variously gitignored or
     committed-but-sdist-excluded. Never reference them from shipped code, never let a new one leak
     into dist (check `check_release_build.py`), and never commit `step*.md`.
-13. **DNS-rebinding protection is intentionally disabled** on the HTTP transport — Cloud Run's
-    host headers trip it, and `sportiq.utkarshgupta.org` will too. The perimeter is
-    Cloud Run today and Cloudflare Tunnel + Caddy after cutover. Not a security hole to "fix"
-    by publishing host ports.
+13. **DNS-rebinding protection is intentionally disabled** on the HTTP transport —
+    `sportiq.utkarshgupta.org` (and historically Cloud Run) host headers trip the
+    SDK's localhost-only allowlist. The perimeter is Cloudflare Tunnel + Caddy.
+    Not a security hole to "fix" by publishing host ports.
 14. **`docs/log.md` is a hard-rule journal** — every meaningful operation appends an entry.
     If you're wondering "what happened recently", read its tail before anything else.

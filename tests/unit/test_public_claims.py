@@ -14,7 +14,7 @@ def test_security_docs_describe_enforced_request_and_actual_output_limits():
     assert "Tools cap list payloads at 200 items" not in security
     assert "1 MiB application-level MCP request-body limit" in security
     assert "60 POST `/mcp` requests per client and 300 total per" in security
-    assert "--max-instances=1" in security
+    assert "single Compose `sportiq` container" in security
 
 
 def test_security_reporting_discourages_public_disclosure():

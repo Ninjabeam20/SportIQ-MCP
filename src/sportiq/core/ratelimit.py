@@ -1,7 +1,7 @@
 """Per-source token bucket. Counters stored in the unified cache.
 
-Budget math assumes a single process: Cloud Run must keep --max-instances=1
-until counters live in shared Redis.
+Budget math assumes a single process: the Dell Compose stack keeps one
+``sportiq`` replica until counters live in shared Redis.
 """
 
 from __future__ import annotations

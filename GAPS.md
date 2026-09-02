@@ -2,13 +2,13 @@
 
 > Written 2026-07-07 against v0.3.1 (commit `b7a1392`); status refreshed 2026-07-14 on
 > `codex_changes`, **2026-08-13** on `grok_changes`, and **2026-09-02** after the home-server
-> flip (in-tree; PyPI tag is still the operator's final touch). Ordered by severity. Each remaining entry:
+> flip and GCP teardown (PyPI **0.3.2**). Ordered by severity. Each remaining entry:
 > what it is, where it lives, why it matters. Severity: **HIGH / MEDIUM / LOW**.
 >
 > Context that shapes severity: the **live** hosted instance is the Dell home
 > server (`https://sportiq.utkarshgupta.org/mcp`, one Compose replica, no host
-> ports, always-on idle, diskcache). Cloud Run (`sportiq-mcp-00035-vam`) stays
-> as rollback until Task 9 (`yes, delete GCP`). Product/hosting timeline:
+> ports, always-on idle, diskcache). Task 9 (2026-09-02) deleted Cloud Run,
+> `sportiq-keepwarm`, and Artifact Registry. Product/hosting timeline:
 > `docs/wiki/findings/product-hosting-arc.md`. Stdio installs are
 > single-user. Hard zero-spend constraint. Several "known limitations" below are
 > documented in code comments — they are listed anyway because a future contributor
@@ -139,10 +139,11 @@
 
 ## 5. MEDIUM — Stampede guard and cache/rate-limit state are per-process; multi-instance Cloud Run multiplies quota burn
 
-- **Status 2026-08-13: GUARDRAIL DEPLOYED.** Cloud Run `maxScale: 1` was verified live.
-  Home-server Compose is one replica (`container_name: sportiq`, no `deploy.replicas`).
-  Scaling above one still requires shared admission/cache state (Redis). No Redis was
-  added (zero-spend). Do not start a second compose project for the same image.
+- **Status 2026-09-02: GUARDRAIL DEPLOYED on Dell.** One Compose replica
+  (`container_name: sportiq`, no `deploy.replicas`). Cloud Run `maxScale: 1` was the
+  old guardrail; that service is deleted. Scaling above one still requires shared
+  admission/cache state (Redis). No Redis was added (zero-spend). Do not start a
+  second compose project for the same image.
 
 - **What:** three pieces of state assume one process: `FallbackChain._key_locks`
   (`src/sportiq/core/fallback.py:74,101-113`) serializes concurrent misses per key;
@@ -313,8 +314,7 @@ Not debt, but each looks like a bug to fresh eyes:
 - **diskcache pickle CVE (CVE-2025-69872) is deliberately ignored** in pip-audit
   (`.github/workflows/security.yml`) — the cache is local-only, values are self-produced JSON.
 - **DNS-rebinding protection disabled** on HTTP transport (`server.py:72-74`) — required for
-  custom Host headers; live perimeter is Cloudflare Tunnel + Caddy (Cloud Run rollback
-  still uses the platform's own host). Not a hole to "fix".
+  custom Host headers; live perimeter is Cloudflare Tunnel + Caddy. Not a hole to "fix".
 - **`time_budget_s=12` cannot preempt sync-blocking adapters** (fastf1) — documented in
   `fallback.py:66-70`.
 - **Scrapers ship disabled** (ADR-0007) and must stay opt-in via env flags.

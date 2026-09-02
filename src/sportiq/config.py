@@ -7,12 +7,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def _default_log_format() -> Literal["pretty", "json"]:
-    """Default to JSON logs on Cloud Run, pretty locally.
+    """Default to JSON logs when ``K_SERVICE`` is set (historical Cloud Run), pretty locally.
 
-    Cloud Run always sets ``K_SERVICE``. Emitting JSON there lets Cloud Logging
-    parse each line into ``jsonPayload`` (so the analytics dashboard can filter on
-    ``jsonPayload.event``); the ANSI ConsoleRenderer would land as opaque
-    ``textPayload``. An explicit ``SPORTIQ_LOG_FORMAT`` env var still overrides this.
+    The Dell Compose stack must not set ``K_SERVICE``; it sets ``SPORTIQ_LOG_FORMAT=json``
+    instead so docker json-file / the JSONL dashboard can parse events. An explicit
+    ``SPORTIQ_LOG_FORMAT`` env var still overrides this default.
     """
     return "json" if os.getenv("K_SERVICE") else "pretty"
 

@@ -159,9 +159,9 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[error-envelope-secret-leak]] — Query-param API keys (CricAPI, TheOdds) leaked via the *error* envelope's `sources_tried` (httpx exception URL); fixed with `core/redact.py:scrub` at the fallback capture sites.
 - [[codex-changes-review-blockers]] — Four `codex_changes` merge blockers found on 2026-07-14 and fixed locally: SSE replay, FIFA tiebreak slot 3, Cloud Run XFF identity, and legacy atomic counters.
 - [[hosted-url-and-release-drift]] — 2026-08-13 audit: advertised connector URL was dead DNS; post–Task 8 live URL is `sportiq.utkarshgupta.org`; v0.3.2 lists that hosted remote.
-- [[home-server-cutover]] — Task 8 flipped: live `https://sportiq.utkarshgupta.org/mcp`; Cloud Run rollback until Task 9; always-on idle; no Access on sportiq.
+- [[home-server-cutover]] — Live `https://sportiq.utkarshgupta.org/mcp`; Task 9 deleted Cloud Run; always-on idle; no Access on sportiq.
 - [[mac-cutover-inventory]] — Snapshot (2026-08-30, pre-flip) of the Mac worktree that shipped 0.3.2 + Compose while Cloud Run was still the advertised URL.
-- [[product-hosting-arc]] — GCP → paid plan → free on GCP → home server. Read this when hosting/product history is confusing. GCP delete still needs `yes, delete GCP`.
+- [[product-hosting-arc]] — GCP → paid plan → free on GCP → home server. Task 9 teardown + project shutdown done 2026-09-02.
 - [[local-analytics-dashboard]] — Maintainer-local `scripts/dashboard.py`: GCP archive + GitHub/PyPI + Dell JSONL after compose rebuild.
 
 ## Decisions (ADRs)

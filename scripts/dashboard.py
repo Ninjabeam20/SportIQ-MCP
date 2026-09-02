@@ -4,12 +4,12 @@ Read-only. Pulls the longest window each source still has, archives a snapshot
 under ``analytics-archive/``, renders ``dashboard.html``. Run::
 
     uv sync --extra dev --extra analytics
-    gcloud auth application-default login
+    bash scripts/pull_home_analytics.sh   # Dell JSONL
     uv run python scripts/dashboard.py
 
-Cloud Logging ``_Default`` is 30 days. Cloud Monitoring still holds this
-service's full request history (~from first Cloud Run revision). The dashboard
-labels each panel with the window that actually came back.
+Live telemetry is Dell JSONL (``SPORTIQ_ANALYTICS_JSONL``). GCP Cloud Logging /
+Monitoring collectors fail after project ``sportiq-mcp-prod`` was shut down
+(2026-09-02) and fall back to ``.dashboard_cache/``. GitHub + PyPI still live.
 """
 
 from __future__ import annotations
@@ -1121,13 +1121,14 @@ def collect_gcp_inventory() -> dict[str, Any]:
         "logging_buckets": buckets,
         "scheduler": scheduler,
         "artifact_registry_mb": artifacts_mb,
-        "cloud_run_url": "https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp",
+        "cloud_run_url": None,
         "live_url": "https://sportiq.utkarshgupta.org/mcp",
         "service_start": SERVICE_START.strftime("%Y-%m-%d"),
         "logging_retention_days": LOGGING_RETENTION_DAYS,
         "note": (
-            "Application logs live in _Default (30d). _Required keeps audit logs 400d, "
-            "not tool_call lines. Monitoring request_count still covers the full Cloud Run life."
+            "GCP project sportiq-mcp-prod is DELETE_REQUESTED (2026-09-02); Cloud Run "
+            "is gone. Live telemetry is Dell JSONL. Cached GCP Monitoring/Logging "
+            "panels are archive-only."
         ),
     }
 

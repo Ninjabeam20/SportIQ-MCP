@@ -59,7 +59,7 @@ When you need to understand a domain question (scoring rules, API quirks, model 
 2. Open the 1–2 wiki pages the index points to. Do NOT grep the whole tree.
 3. Only read raw source files in `docs/raw/` if I explicitly say "read the raw file" or the index points there.
 4. For code questions spanning >3 modules, run `/graphify .` first and query the graph instead of reading raw files.
-5. Hosting/product progress or "why does GitHub say Cloud Run?": `docs/wiki/findings/product-hosting-arc.md`.
+5. Hosting/product progress: `docs/wiki/findings/product-hosting-arc.md` (Dell live; GCP gone).
 
 ## Common commands
 
@@ -84,7 +84,7 @@ When you need to understand a domain question (scoring rules, API quirks, model 
   single-task-scoped fix. Check it before "fixing" anything that looks wrong — several apparent
   bugs are documented accepted trade-offs (its final INFO section lists them).
 - **`docs/wiki/findings/product-hosting-arc.md`** — GCP → paid → free on GCP → home server.
-  Check it when hosting/product history is confusing. GCP delete needs `yes, delete GCP`.
+  Check it when hosting/product history is confusing. Task 9 GCP teardown is done (2026-09-02).
 - Both PROJECT/GAPS are local/internal: excluded from the PyPI sdist (`pyproject.toml`), like the other
   root-level planning docs.
 
@@ -149,20 +149,19 @@ When you need to understand a domain question (scoring rules, API quirks, model 
   to a blocklist.
 - **`/u/<key>/mcp` paths must keep working** (`core/path_compat.py`) — sponsor connectors from
   the paid era are configured with them.
-- **Production live is home-server Compose**, not a Cloud Run canary. Repo-root
-  `docker-compose.yml` joins Docker network `apps`, `container_name: sportiq`, **no** `ports:`.
-  Plan: `docs/superpowers/plans/2026-08-13-home-server-migration.md`. Cloud Run (`cloud.md`)
-  is rollback until teardown. GCP teardown needs `yes, delete GCP`. Always-on idle:
-  `restart: unless-stopped`, no keep-warm cron on the Dell, no auto-sleep (Cloud Run
-  `sportiq-keepwarm` exists only because GCP scales to zero; delete it in Task 9, do not copy it).
+- **Production live is home-server Compose.** Repo-root `docker-compose.yml` joins
+  Docker network `apps`, `container_name: sportiq`, **no** `ports:`. Plan:
+  `docs/superpowers/plans/2026-08-13-home-server-migration.md`. Task 9 (2026-09-02)
+  deleted Cloud Run, `sportiq-keepwarm`, and Artifact Registry. `cloud.md` is
+  historical. Always-on idle: `restart: unless-stopped`; no keep-warm cron on the
+  Dell; no auto-sleep. Project `sportiq-mcp-prod` is `DELETE_REQUESTED` (billing
+  unlinked 2026-09-02).
 - **Never set `K_SERVICE` on the Dell.** That flag means Cloud Run and would trust spoofable
   `X-Forwarded-For`. Home-server Compose sets `SPORTIQ_TRUST_CLOUDFLARE=1` so 429s key on
-  `CF-Connecting-IP`. Leave that env unset on Cloud Run and stdio.
-- **Live public connector URL** is `https://sportiq.utkarshgupta.org/mcp`. Cloud Run
-  `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` is rollback until Task 9. The older
-  `sportiq-mcp-329580761892.us-central1.run.app` hostname does not resolve. Do **not**
-  advertise a hostname that is NXDOMAIN. Connector/docs flip already happened; GCP
-  teardown still needs `yes, delete GCP`.
+  `CF-Connecting-IP`. Leave that env unset on stdio.
+- **Live public connector URL** is `https://sportiq.utkarshgupta.org/mcp`. Former
+  Cloud Run hosts (`ey2eariulq`, `329580761892`) are gone — do **not** advertise
+  `*.run.app`.
 - **Dockerfile pins `ghcr.io/astral-sh/uv:0.12.6` and installs with `uv export --frozen`
   then `uv pip install --system`.** Do not revert to `:latest` (`uv pip install --frozen`
   is not a pip-interface flag) or unpinned `pip install ".[f1]"`. `mcp` is `>=1.27.2,<2`

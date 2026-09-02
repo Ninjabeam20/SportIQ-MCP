@@ -4,16 +4,15 @@ This is the runbook to put SportIQ online at a public URL so it works on **any**
 (claude.ai web, ChatGPT, phone apps) — not just desktop apps. The repo already has the
 `Dockerfile` and HTTP support; you just run the steps below.
 
-> **Hosting as of 2026-08-30:** production **live** is the home server
-> (`https://sportiq.utkarshgupta.org/mcp`). This Cloud Run endpoint is rollback
-> until Task 9 (`yes, delete GCP`). Do not `gcloud run deploy` unless you are
-> deliberately failing back. The Dell is **always-on idle**
-> (`restart: unless-stopped`); do not copy `sportiq-keepwarm` there.
-
-- **Why Cloud Run (rollback):** free tier, scales to zero ($0 when nobody's using it), enough memory.
-- **What you get at the end:** a link like `https://sportiq-mcp-xxxx.a.run.app`, and your
-  MCP endpoint is that link **+ `/mcp`**. Current live rollback URL:
-  `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp`.
+> **HISTORICAL (Task 9, 2026-09-02).** Cloud Run `sportiq-mcp`, scheduler
+> `sportiq-keepwarm`, and Artifact Registry `cloud-run-source-deploy` were
+> deleted. Production is only the Dell: `https://sportiq.utkarshgupta.org/mcp`.
+> The old `*.run.app` URLs 404. This file is the old Cloud Run runbook — do
+> **not** `gcloud run deploy` unless the owner recreates GCP on purpose.
+> Always-on idle on the Dell (`restart: unless-stopped`); do not copy
+> `sportiq-keepwarm` there. Project `sportiq-mcp-prod` is `DELETE_REQUESTED`
+> (billing unlinked 2026-09-02). Recover with `gcloud projects undelete sportiq-mcp-prod`
+> only within Google's ~30-day window.
 
 ---
 

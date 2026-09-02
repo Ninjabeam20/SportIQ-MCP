@@ -40,7 +40,7 @@ export const LINKS = {
   pypi: "https://pypi.org/project/sportiq-mcp/",
   github: "https://github.com/Ninjabeam20/SportIQ-MCP",
   registry: "https://registry.modelcontextprotocol.io",     // id: io.github.Ninjabeam20/sportiq-mcp
-  hostedMcp: "https://sportiq.utkarshgupta.org/mcp", // live home server; Cloud Run is rollback until Task 9
+  hostedMcp: "https://sportiq.utkarshgupta.org/mcp", // live home server (Dell); Cloud Run deleted Task 9
   email: "utkarshgupta885@gmail.com",
 } as const;
 

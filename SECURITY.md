@@ -34,10 +34,10 @@ through response metadata.
 ## Operational telemetry
 
 HTTP mode emits structured application logs containing client software name/version,
-User-Agent, tool name, outcome, latency, selected source, and staleness. Cloud Run may
-also retain platform network/request metadata according to the operator's logging
-configuration. Local stdio mode emits logs locally but sends no telemetry to a
-SportIQ-hosted service.
+User-Agent, tool name, outcome, latency, selected source, and staleness. The public
+Dell host may also append `tool_call` / `mcp_request` lines to a local JSONL volume
+(`SPORTIQ_ANALYTICS_JSONL`). Local stdio mode emits logs locally but sends no telemetry
+to a SportIQ-hosted service.
 
 ## Hosted deployment (public home-server instance)
 
@@ -58,19 +58,18 @@ capture is capped at 64 KiB, and the five expensive simulation/strategy/solver t
 concurrency limit of two.
 
 Rate counters are per process. The hosted policy therefore requires **one replica**
-(Cloud Run `--max-instances=1`, or a single Compose `sportiq` container). Increasing that
-value multiplies the effective global limit and must be accompanied by a shared
-admission-control design. Revision `sportiq-mcp-00035-vam` (2026-07-14, tag `hardening`)
-deployed these controls at 100% traffic with `maxScale: 1` (re-verified 2026-08-13). The
-home-server hostname is the production target and is not live until cutover.
+(a single Compose `sportiq` container). Increasing that value multiplies the effective
+global limit and must be accompanied by a shared admission-control design. Cloud Run
+revision `sportiq-mcp-00035-vam` (2026-07-14, tag `hardening`) first shipped these
+controls at 100% traffic with `maxScale: 1`; that service was deleted 2026-09-02.
+The live host is `https://sportiq.utkarshgupta.org/mcp`.
 
 In HTTP transport mode the server disables FastMCP's DNS-rebinding protection
 (`enable_dns_rebinding_protection=False` in `server.py`). This is intentional and required:
-Cloud Run (and the home-server public hostname after cutover) forwards a real `Host` header
+Cloudflare Tunnel + Caddy (and historically Cloud Run) forwards a real `Host` header
 that the default `localhost`-only allowlist rejects.
-The deployment perimeter (Cloud Run's HTTPS front end today; Cloudflare Tunnel + Caddy after
-cutover) handles transport security; the tools themselves are read-only and stateless, so there
-is no rebinding-sensitive surface to protect.
+The deployment perimeter (Cloudflare Tunnel + Caddy) handles transport security; the tools
+themselves are read-only and stateless, so there is no rebinding-sensitive surface to protect.
 Self-hosters who expose the HTTP endpoint on an untrusted network should put it behind the same
 kind of managed HTTPS perimeter. Do not publish app ports on the host.
 
