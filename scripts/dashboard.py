@@ -1126,9 +1126,10 @@ def collect_gcp_inventory() -> dict[str, Any]:
         "service_start": SERVICE_START.strftime("%Y-%m-%d"),
         "logging_retention_days": LOGGING_RETENTION_DAYS,
         "note": (
-            "GCP project sportiq-mcp-prod is DELETE_REQUESTED (2026-09-02); Cloud Run "
-            "is gone. Live telemetry is Dell JSONL. Cached GCP Monitoring/Logging "
-            "panels are archive-only."
+            "GCP project sportiq-mcp-prod is DELETE_REQUESTED (2026-09-02); billing "
+            "card removed. Cloud Run is gone. Never set K_SERVICE on the Dell. Never "
+            "copy sportiq-keepwarm. Live telemetry is Dell JSONL. Cached GCP "
+            "Monitoring/Logging panels are archive-only."
         ),
     }
 

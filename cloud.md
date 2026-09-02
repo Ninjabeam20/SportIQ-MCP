@@ -8,11 +8,10 @@ This is the runbook to put SportIQ online at a public URL so it works on **any**
 > `sportiq-keepwarm`, and Artifact Registry `cloud-run-source-deploy` were
 > deleted. Production is only the Dell: `https://sportiq.utkarshgupta.org/mcp`.
 > The old `*.run.app` URLs 404. This file is the old Cloud Run runbook — do
-> **not** `gcloud run deploy` unless the owner recreates GCP on purpose.
-> Always-on idle on the Dell (`restart: unless-stopped`); do not copy
-> `sportiq-keepwarm` there. Project `sportiq-mcp-prod` is `DELETE_REQUESTED`
-> (billing unlinked 2026-09-02). Recover with `gcloud projects undelete sportiq-mcp-prod`
-> only within Google's ~30-day window.
+> **not** `gcloud run deploy`. Do not re-enable a GCP billing card.
+> Always-on idle on the Dell (`restart: unless-stopped`). **Never** set
+> `K_SERVICE` on the Dell. **Never** copy `sportiq-keepwarm` there.
+> Project `sportiq-mcp-prod` is `DELETE_REQUESTED`; the billing card is gone.
 
 ---
 

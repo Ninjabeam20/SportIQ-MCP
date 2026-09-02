@@ -12,7 +12,8 @@ related: [[0012-hosted-abuse-controls]], [[hosted-url-and-release-drift]], [[mac
 Task 8 flipped 2026-08-30. **Live connector is**
 `https://sportiq.utkarshgupta.org/mcp`. Task 9 (2026-09-02) deleted Cloud Run
 `sportiq-mcp`, scheduler `sportiq-keepwarm`, and Artifact Registry
-`cloud-run-source-deploy`. Former `*.run.app` URLs 404.
+`cloud-run-source-deploy`. Former `*.run.app` URLs 404. GCP billing card
+removed by the owner the same day.
 
 Dell `sportiq` container is healthy on `apps`, Caddy block has
 `flush_interval -1` and **no** `header_up CF-Connecting-IP`, tunnel public
@@ -31,13 +32,13 @@ container `sportiq:8080` on Docker network `apps`. No host ports, no router
 forward, **no Cloudflare Access** (Claude/ChatGPT connectors cannot complete
 Access login). Jarvis stays behind Access.
 
-Rate limits trust `CF-Connecting-IP` via `SPORTIQ_TRUST_CLOUDFLARE=1`. Do not set
-`K_SERVICE` on the Dell. Do not add Caddy `header_up CF-Connecting-IP` (empties
+Rate limits trust `CF-Connecting-IP` via `SPORTIQ_TRUST_CLOUDFLARE=1`. **Never**
+set `K_SERVICE` on the Dell. **Never** copy `sportiq-keepwarm` (no cron, sidecar,
+or `/mcp` pinger). Do not add Caddy `header_up CF-Connecting-IP` (empties
 the header on non-tunnel requests and collapses every client into one 429 bucket).
 One replica, diskcache volume, scrapers off, no Redis.
-Always-on idle (`restart: unless-stopped`): MCP only computes on a tool call;
-do not add a keep-warm cron on the Dell and do not auto-sleep. Cloud Run
-`sportiq-keepwarm` was deleted with Task 9; do not copy it.
+Always-on idle (`restart: unless-stopped`): MCP only computes on a tool call.
+Cloud Run `sportiq-keepwarm` was deleted with Task 9.
 Stay on MCP SDK 1.x Streamable HTTP; SDK v2 is a follow-up after the hostname
 is proven. Stateless HTTP is already landed (`grok_changes13.md`).
 

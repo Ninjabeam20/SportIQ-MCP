@@ -53,7 +53,8 @@ hashed before entering cache keys. The validated rightmost `X-Forwarded-For` add
 by Cloud Run is trusted only when its `K_SERVICE` marker is present. When
 `SPORTIQ_TRUST_CLOUDFLARE` is on (home-server Compose), identity is the validated
 `CF-Connecting-IP` and `X-Forwarded-For` is ignored. Other environments use the ASGI peer
-address. Do not set `K_SERVICE` on the home-server container. Initialize-body telemetry
+address. Do not set `K_SERVICE` on the home-server container. Do not copy
+`sportiq-keepwarm` (no cron, sidecar, or `/mcp` pinger). Initialize-body telemetry
 capture is capped at 64 KiB, and the five expensive simulation/strategy/solver tools share a
 concurrency limit of two.
 

@@ -3,7 +3,8 @@
 > **STATUS 2026-09-02: DONE.** Live connector is
 > `https://sportiq.utkarshgupta.org/mcp` (Dell). Tasks 5–8 applied. Task 9
 > deleted Cloud Run / scheduler / Artifact Registry. Project `sportiq-mcp-prod`
-> is `DELETE_REQUESTED` (billing unlinked). Do not `gcloud run deploy`. Do not
+> is `DELETE_REQUESTED`; the GCP billing card is gone. Do not `gcloud run deploy`.
+> Do not set `K_SERVICE` on the Dell. Do not copy `sportiq-keepwarm`. Do not
 > advertise `*.run.app`. The body below is the original apply plan (keep as
 > history). Rollback to Cloud Run is no longer possible.
 

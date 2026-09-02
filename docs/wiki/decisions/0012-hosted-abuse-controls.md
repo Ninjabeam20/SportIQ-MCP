@@ -33,7 +33,7 @@ also used a non-atomic read-modify-write sequence.
 - The validated rightmost `X-Forwarded-For` IP appended by Cloud Run is trusted only when its
   `K_SERVICE` marker exists. Home-server Compose sets `SPORTIQ_TRUST_CLOUDFLARE` and trusts
   a valid `CF-Connecting-IP` instead (XFF is ignored on that path). Never set `K_SERVICE` on
-  the Dell. Other environments use the ASGI peer IP; raw identities never enter counter keys.
+  the Dell. Never copy `sportiq-keepwarm`. Other environments use the ASGI peer IP; raw identities never enter counter keys.
 - `core/cache.py` provides atomic raw counters: diskcache transaction locally and Redis
   INCR/first-expiry Lua when configured.
 - `core/client_info.py` captures at most 64 KiB for initialize inspection while forwarding every

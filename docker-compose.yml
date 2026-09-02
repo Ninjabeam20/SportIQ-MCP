@@ -1,7 +1,8 @@
-# Always-on idle (2026-08-30): the process listens; MCP only works on a tool
-# call. Do not add a keep-warm sidecar, cron hitting /mcp, or scale-to-zero.
-# Cold start of scipy/numpy is why Cloud Run needed sportiq-keepwarm — do not
-# copy that onto the Dell. restart and the Dockerfile HEALTHCHECK stay as-is.
+# Always-on idle: the process listens; MCP only works on a tool call.
+# HARD RULES for the Dell (never violate):
+#   - Do not set K_SERVICE (that flag means Cloud Run and trusts spoofable XFF).
+#   - Do not copy sportiq-keepwarm (no sidecar, no cron hitting /mcp, no pinger).
+# Dockerfile HEALTHCHECK is local liveness, not a keep-warm. restart stays as-is.
 services:
   sportiq:
     build: .
@@ -9,6 +10,7 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
+      # K_SERVICE must stay absent. SPORTIQ_LOG_FORMAT=json is the Dell JSON path.
       SPORTIQ_TRANSPORT: http
       PORT: "8080"
       SPORTIQ_LOG_FORMAT: json

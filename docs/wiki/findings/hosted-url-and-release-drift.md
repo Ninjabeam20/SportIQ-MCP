@@ -68,5 +68,7 @@ Tag `v0.3.2` is the PyPI + official MCP registry publish.
 ## Addendum — Task 9 (2026-09-02)
 
 Scheduler, Cloud Run, Artifact Registry, and project `sportiq-mcp-prod` are
-gone (`DELETE_REQUESTED`, billing unlinked). `ey2eariulq` HTTP 404.
-Do **not** point docs at any `*.run.app` hostname. Live URL is Dell only.
+gone (`DELETE_REQUESTED`). Owner also removed the GCP billing card.
+`ey2eariulq` HTTP 404. Do **not** point docs at any `*.run.app` hostname.
+**Never** set `K_SERVICE` on the Dell. **Never** copy `sportiq-keepwarm`.
+Live URL is Dell only.

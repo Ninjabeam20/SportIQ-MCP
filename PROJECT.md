@@ -306,8 +306,8 @@ analytics), `launch/` marketing copy, wiki lint tooling.
    Cloud Run was deleted Task 9 (2026-09-02); former `ey2eariulq` / `329580761892`
    hosts are gone. Behind Caddy, set
    `SPORTIQ_TRUST_CLOUDFLARE=1` and never `K_SERVICE`. Always-on idle on the Dell
-   (`restart: unless-stopped`); do not copy Cloud Run `sportiq-keepwarm` and do
-   not auto-sleep the container.
+   (`restart: unless-stopped`). Never copy `sportiq-keepwarm` (no cron/sidecar/`/mcp`
+   pinger). GCP billing card is gone; do not re-link billing.
 10. **CBC must exist on PATH** for the Dream11 solver — `brew install cbc` (macOS),
     `apt-get install coinor-cbc` (CI/Docker do this explicitly).
 11. **Coverage gate lives in the CI command, not pyproject `addopts`** — deliberately, so partial

@@ -8,7 +8,8 @@
 > Context that shapes severity: the **live** hosted instance is the Dell home
 > server (`https://sportiq.utkarshgupta.org/mcp`, one Compose replica, no host
 > ports, always-on idle, diskcache). Task 9 (2026-09-02) deleted Cloud Run,
-> `sportiq-keepwarm`, and Artifact Registry. Product/hosting timeline:
+> `sportiq-keepwarm`, and Artifact Registry; the GCP billing card is gone.
+> Never set `K_SERVICE` on the Dell. Never copy `sportiq-keepwarm`. Product/hosting timeline:
 > `docs/wiki/findings/product-hosting-arc.md`. Stdio installs are
 > single-user. Hard zero-spend constraint. Several "known limitations" below are
 > documented in code comments — they are listed anyway because a future contributor

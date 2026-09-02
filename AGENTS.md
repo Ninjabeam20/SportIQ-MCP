@@ -153,12 +153,13 @@ When you need to understand a domain question (scoring rules, API quirks, model 
   Docker network `apps`, `container_name: sportiq`, **no** `ports:`. Plan:
   `docs/superpowers/plans/2026-08-13-home-server-migration.md`. Task 9 (2026-09-02)
   deleted Cloud Run, `sportiq-keepwarm`, and Artifact Registry. `cloud.md` is
-  historical. Always-on idle: `restart: unless-stopped`; no keep-warm cron on the
-  Dell; no auto-sleep. Project `sportiq-mcp-prod` is `DELETE_REQUESTED` (billing
-  unlinked 2026-09-02).
-- **Never set `K_SERVICE` on the Dell.** That flag means Cloud Run and would trust spoofable
-  `X-Forwarded-For`. Home-server Compose sets `SPORTIQ_TRUST_CLOUDFLARE=1` so 429s key on
-  `CF-Connecting-IP`. Leave that env unset on stdio.
+  historical. Always-on idle: `restart: unless-stopped`; no auto-sleep. GCP
+  project is `DELETE_REQUESTED`; the billing card is gone too.
+- **Never set `K_SERVICE` on the Dell. Never copy `sportiq-keepwarm`.**
+  `K_SERVICE` means Cloud Run and would trust spoofable `X-Forwarded-For`.
+  Keep-warm was a Cloud Run scale-to-zero hack — no cron, sidecar, or `/mcp`
+  pinger on Compose. Home-server Compose sets `SPORTIQ_TRUST_CLOUDFLARE=1` so
+  429s key on `CF-Connecting-IP`. Leave `K_SERVICE` unset on stdio too.
 - **Live public connector URL** is `https://sportiq.utkarshgupta.org/mcp`. Former
   Cloud Run hosts (`ey2eariulq`, `329580761892`) are gone — do **not** advertise
   `*.run.app`.
