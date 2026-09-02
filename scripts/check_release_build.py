@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import fnmatch
 import json
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -201,6 +202,17 @@ def main() -> int:
             f"OK — 1 wheel + 1 sdist for v{version}; every member allowlisted, "
             f"under {MAX_ARCHIVE_BYTES // (1024 * 1024)} MiB, uvx entry point + package data present."
         )
+
+        # release.yml's pypa publish step reads repo-root dist/. Validation
+        # happens in a temp dir so a stale dist/ cannot sneak through; only a
+        # passing check may copy artifacts into place.
+        dist = root / "dist"
+        if dist.exists():
+            shutil.rmtree(dist)
+        dist.mkdir()
+        for archive in (*wheels, *sdists):
+            shutil.copy2(archive, dist / archive.name)
+        print(f"Copied {', '.join(a.name for a in (*wheels, *sdists))} → dist/")
     return 0
 
 
