@@ -93,3 +93,15 @@ def test_predict_none_rainfall_does_not_raise():
         total_laps=57,
     )
     assert "INTER" not in result["compound_sequence"]
+
+
+def test_predict_non_numeric_rainfall_does_not_raise():
+    stints = _make_stints("MEDIUM")
+    result = predict(
+        laps=_make_laps(10, compound="MEDIUM"),
+        stints=stints,
+        weather=[{"rainfall": "oops"}],
+        current_lap=20,
+        total_laps=57,
+    )
+    assert "INTER" not in result["compound_sequence"]

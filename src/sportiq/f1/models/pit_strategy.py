@@ -12,6 +12,17 @@ from sportiq.f1.models.tyre_deg import fit_degradation
 _DEFAULT_PIT_LOSS_S = 22.0  # seconds (typical pit-lane loss; circuits vary)
 
 
+def _rainfall_mm(entry: dict) -> float:
+    """Coerce OpenF1 rainfall to mm; None or non-numeric → dry (0.0)."""
+    raw = entry.get("rainfall")
+    if raw is None:
+        return 0.0
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def predict(
     laps: list[dict],
     stints: list[dict],
@@ -65,9 +76,7 @@ def predict(
             deg_models[c] = model
 
     # Check rainfall — if any rain recorded, recommend intermediates
-    has_rain = any(
-        (0.0 if w.get("rainfall") is None else float(w.get("rainfall", 0))) > 0 for w in weather
-    )
+    has_rain = any(_rainfall_mm(w) > 0 for w in weather)
 
     # Simple 1-stop or 2-stop decision based on remaining laps + degradation slope
     try:
