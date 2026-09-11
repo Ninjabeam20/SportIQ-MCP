@@ -30,6 +30,17 @@ from sportiq.f1.models.undercut import undercut_window
 _F1_LAP_SEMAPHORE = asyncio.Semaphore(5)
 
 
+def _rainfall_mm(entry: dict) -> float:
+    """Coerce OpenF1 rainfall to mm; None or non-numeric → dry (0.0)."""
+    raw = entry.get("rainfall")
+    if raw is None:
+        return 0.0
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 async def _fetch_driver_laps(session_key: int, driver_number: int):
     """Fetch laps for one driver, gated by the per-driver concurrency cap."""
     async with _F1_LAP_SEMAPHORE:
@@ -289,7 +300,7 @@ async def f1_weather_strategy_impact(session_key: int) -> Envelope:
         )
 
     weather = weather_result.value.get("weather", [])
-    has_rain = any(float(w.get("rainfall", 0)) > 0 for w in weather)
+    has_rain = any(_rainfall_mm(w) > 0 for w in weather)
     temps = [float(w["track_temperature"]) for w in weather if w.get("track_temperature") is not None]
     avg_temp = round(sum(temps) / len(temps), 1) if temps else None
 
@@ -554,19 +565,22 @@ async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -
     )
 
     # Laps are required; stints are best-effort
-    if isinstance(laps_a_r, Exception) or isinstance(laps_b_r, Exception):
-        attempts = []
-        code = "ALL_SOURCES_FAILED"
-        for exc in (laps_a_r, laps_b_r):
-            if isinstance(exc, AllSourcesFailedError):
-                attempts.extend(exc.attempts)
-            elif isinstance(exc, NotFoundError):
-                code = "NOT_FOUND"
-        return error_envelope(
-            code=code,
-            message="Could not fetch lap data for one or both drivers.",
-            sources_tried=attempts,
-        )
+    for laps_r in (laps_a_r, laps_b_r):
+        if isinstance(laps_r, (AllSourcesFailedError, NotFoundError)):
+            attempts: list = []
+            code = "ALL_SOURCES_FAILED"
+            for exc in (laps_a_r, laps_b_r):
+                if isinstance(exc, AllSourcesFailedError):
+                    attempts.extend(exc.attempts)
+                elif isinstance(exc, NotFoundError):
+                    code = "NOT_FOUND"
+            return error_envelope(
+                code=code,
+                message="Could not fetch lap data for one or both drivers.",
+                sources_tried=attempts,
+            )
+        if isinstance(laps_r, BaseException):
+            raise laps_r
 
     laps_a = laps_a_r.value.get("laps", [])
     stints_a = stints_a_r.value.get("stints", []) if not isinstance(stints_a_r, Exception) else []

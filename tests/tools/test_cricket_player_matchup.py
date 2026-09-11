@@ -1,7 +1,9 @@
 """Tool-layer tests for cricket_player_matchup (stubs chains, no live HTTP)."""
 
+import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from sportiq.core.errors import AllSourcesFailedError
 from sportiq.cricket.intel_tools import cricket_player_matchup
 
 
@@ -72,21 +74,31 @@ async def test_same_player_trimmed_casefold_rejected_before_chain():
 # --- ALL_SOURCES_FAILED ---
 
 async def test_all_sources_failed_player_a():
-    """If player_a fetch raises, return ALL_SOURCES_FAILED."""
+    """If player_a fetch raises AllSourcesFailedError, return ALL_SOURCES_FAILED."""
     mock_b = _mock_stats_result("Bumrah", role="bowler", bowling_avg=22.0)
+    exc = AllSourcesFailedError("upstream down", attempts=[])
     with patch("sportiq.cricket.intel_tools.player_stats_chain") as mock_chain:
-        mock_chain.fetch = AsyncMock(side_effect=[Exception("upstream down"), mock_b])
+        mock_chain.fetch = AsyncMock(side_effect=[exc, mock_b])
         result = await cricket_player_matchup("bad_id", "bumrah")
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
 
 
 async def test_all_sources_failed_player_b():
-    """If player_b fetch raises, return ALL_SOURCES_FAILED."""
+    """If player_b fetch raises AllSourcesFailedError, return ALL_SOURCES_FAILED."""
     mock_a = _mock_stats_result("Rohit", role="batter", batting_avg=50.0)
+    exc = AllSourcesFailedError("timeout", attempts=[])
     with patch("sportiq.cricket.intel_tools.player_stats_chain") as mock_chain:
-        mock_chain.fetch = AsyncMock(side_effect=[mock_a, Exception("timeout")])
+        mock_chain.fetch = AsyncMock(side_effect=[mock_a, exc])
         result = await cricket_player_matchup("rohit", "bad_id")
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+async def test_player_matchup_unexpected_stats_error_reraises():
+    mock_b = _mock_stats_result("Bumrah", role="bowler", bowling_avg=22.0)
+    with patch("sportiq.cricket.intel_tools.player_stats_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(side_effect=[TypeError("boom"), mock_b])
+        with pytest.raises(TypeError, match="boom"):
+            await cricket_player_matchup("bad_id", "bumrah")
 
 
 # --- NOT_FOUND (genuinely unknown player, distinct from a source outage) ---

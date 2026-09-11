@@ -1,4 +1,5 @@
 """F1 INTEL tool tests — chains stubbed, envelope shape asserted."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
@@ -21,8 +22,7 @@ def _fr(value, source="openf1"):
 def _laps_payload(n: int = 10, slope: float = 0.08) -> dict:
     return {
         "laps": [
-            {"lap_duration": 83.0 + slope * i, "compound": "SOFT", "tyre_life": i}
-            for i in range(n)
+            {"lap_duration": 83.0 + slope * i, "compound": "SOFT", "tyre_life": i} for i in range(n)
         ]
     }
 
@@ -207,9 +207,7 @@ async def test_f1_matchup_and_lap_order_validation_stop_before_chains():
         results = [
             await intel_tools.f1_undercut_window(9877, 1, 1, 25),
             await intel_tools.f1_head_to_head_pace(9877, 1, 1),
-            await intel_tools.f1_predict_pit_strategy(
-                9877, 1, current_lap=50, total_laps=49
-            ),
+            await intel_tools.f1_predict_pit_strategy(9877, 1, current_lap=50, total_laps=49),
         ]
         assert all(result["error"]["code"] == "INVALID_INPUT" for result in results)
         laps.fetch.assert_not_awaited()
@@ -223,9 +221,7 @@ async def test_f1_head_to_head_pace_returns_delta():
 
     with patch("sportiq.f1.intel_tools.f1_laps_chain") as mock:
         mock.fetch = AsyncMock(return_value=_fr(_laps_payload()))
-        result = await intel_tools.f1_head_to_head_pace(
-            session_key=9877, driver_a=1, driver_b=16
-        )
+        result = await intel_tools.f1_head_to_head_pace(session_key=9877, driver_a=1, driver_b=16)
     assert "data" in result
     assert "delta_s" in result["data"]
 
@@ -235,9 +231,7 @@ async def test_f1_head_to_head_pace_all_sources_failed():
 
     with patch("sportiq.f1.intel_tools.f1_laps_chain") as mock:
         mock.fetch = AsyncMock(side_effect=AllSourcesFailedError("failed", attempts=[]))
-        result = await intel_tools.f1_head_to_head_pace(
-            session_key=9877, driver_a=1, driver_b=16
-        )
+        result = await intel_tools.f1_head_to_head_pace(session_key=9877, driver_a=1, driver_b=16)
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
 
 
@@ -247,9 +241,7 @@ async def test_f1_head_to_head_pace_tie_has_no_faster_driver():
 
     with patch("sportiq.f1.intel_tools.f1_laps_chain") as mock:
         mock.fetch = AsyncMock(return_value=_fr(_laps_payload()))
-        result = await intel_tools.f1_head_to_head_pace(
-            session_key=9877, driver_a=1, driver_b=16
-        )
+        result = await intel_tools.f1_head_to_head_pace(session_key=9877, driver_a=1, driver_b=16)
     assert result["data"]["delta_s"] == 0.0
     assert result["data"]["faster_driver"] is None
 
@@ -279,6 +271,28 @@ async def test_f1_weather_strategy_impact_rain_recommends_inter():
     assert result["data"]["compound_recommendation"] == "INTER"
 
 
+async def test_weather_strategy_none_rainfall_does_not_raise():
+    from sportiq.f1 import intel_tools
+
+    weather_payload = {"weather": [{"rainfall": None, "track_temperature": 38.0}]}
+    with patch("sportiq.f1.intel_tools.f1_weather_chain") as mock:
+        mock.fetch = AsyncMock(return_value=_fr(weather_payload))
+        result = await intel_tools.f1_weather_strategy_impact(session_key=9877)
+    assert "data" in result
+    assert result["data"]["has_rain"] is False
+
+
+async def test_weather_strategy_non_numeric_rainfall_does_not_raise():
+    from sportiq.f1 import intel_tools
+
+    weather_payload = {"weather": [{"rainfall": "oops", "track_temperature": 38.0}]}
+    with patch("sportiq.f1.intel_tools.f1_weather_chain") as mock:
+        mock.fetch = AsyncMock(return_value=_fr(weather_payload))
+        result = await intel_tools.f1_weather_strategy_impact(session_key=9877)
+    assert "data" in result
+    assert result["data"]["has_rain"] is False
+
+
 # -- f1_predict_pit_strategy (flagship) ----------------------------------------
 
 
@@ -287,8 +301,7 @@ async def test_f1_predict_pit_strategy_returns_stop_laps():
 
     laps_p = {
         "laps": [
-            {"lap_duration": 83.0 + 0.08 * i, "compound": "SOFT", "tyre_life": i}
-            for i in range(25)
+            {"lap_duration": 83.0 + 0.08 * i, "compound": "SOFT", "tyre_life": i} for i in range(25)
         ]
     }
     stints_p = {"stints": [{"compound": "SOFT", "lap_start": 1, "lap_end": 25}]}
@@ -349,3 +362,19 @@ async def test_f1_predict_pit_strategy_all_sources_failed():
         mock_weather.fetch = AsyncMock(return_value=_fr({"weather": []}))
         result = await intel_tools.f1_predict_pit_strategy(session_key=9877, driver_number=1)
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+async def test_f1_predict_pit_strategy_laps_not_found_returns_envelope():
+    from sportiq.f1 import intel_tools
+
+    with (
+        patch("sportiq.f1.intel_tools.f1_laps_chain") as mock_laps,
+        patch("sportiq.f1.intel_tools.f1_stints_chain") as mock_stints,
+        patch("sportiq.f1.intel_tools.f1_weather_chain") as mock_weather,
+        patch("sportiq.f1.intel_tools._resolve_circuit_profile", AsyncMock(return_value=None)),
+    ):
+        mock_laps.fetch = AsyncMock(side_effect=NotFoundError("no laps"))
+        mock_stints.fetch = AsyncMock(return_value=_fr({"stints": []}))
+        mock_weather.fetch = AsyncMock(return_value=_fr({"weather": []}))
+        result = await intel_tools.f1_predict_pit_strategy(session_key=9877, driver_number=1)
+    assert result["error"]["code"] == "NOT_FOUND"

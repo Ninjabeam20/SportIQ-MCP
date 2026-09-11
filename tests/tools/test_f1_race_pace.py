@@ -1,4 +1,5 @@
 """Tool-layer tests for f1_race_pace_compare."""
+import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from sportiq.core.errors import AllSourcesFailedError
@@ -56,6 +57,17 @@ async def test_all_sources_failed():
         mock_stints.fetch = AsyncMock(return_value=_make_stints_result())
         result = await f1_race_pace_compare(session_key=9222, driver_a=1, driver_b=44)
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+async def test_race_pace_unexpected_laps_error_reraises():
+    with patch(
+        "sportiq.f1.intel_tools._fetch_driver_laps",
+        new_callable=AsyncMock,
+        side_effect=TypeError("boom"),
+    ), patch("sportiq.f1.intel_tools.f1_stints_chain") as mock_stints:
+        mock_stints.fetch = AsyncMock(return_value=_make_stints_result())
+        with pytest.raises(TypeError, match="boom"):
+            await f1_race_pace_compare(session_key=9222, driver_a=1, driver_b=44)
 
 
 async def test_valid_returns_envelope():

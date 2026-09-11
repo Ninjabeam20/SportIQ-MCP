@@ -1,10 +1,13 @@
 """Tests for the pit strategy predictor."""
+
 from __future__ import annotations
 
 from sportiq.f1.models.pit_strategy import predict
 
 
-def _make_laps(n: int, base_time: float = 83.0, slope: float = 0.08, compound: str = "SOFT") -> list[dict]:
+def _make_laps(
+    n: int, base_time: float = 83.0, slope: float = 0.08, compound: str = "SOFT"
+) -> list[dict]:
     return [
         {"lap_duration": base_time + slope * i, "compound": compound, "tyre_life": i}
         for i in range(n)
@@ -54,3 +57,51 @@ def test_zero_remaining_laps():
     result = predict(laps=[], stints=[], weather=[], current_lap=57, total_laps=57)
     assert result["stop_laps"] == []
     assert result["confidence"] == 0.0
+
+
+def test_predict_none_compound_does_not_raise():
+    stints = [{"compound": None, "lap_start": 1, "lap_end": 20}]
+    result = predict(
+        laps=_make_laps(10, compound="MEDIUM"),
+        stints=stints,
+        weather=[],
+        current_lap=20,
+        total_laps=57,
+    )
+    assert result["compound_sequence"][0] == "MEDIUM"
+
+
+def test_predict_unknown_compound_does_not_raise():
+    stints = [{"compound": "UNKNOWN", "lap_start": 1, "lap_end": 20}]
+    result = predict(
+        laps=_make_laps(10, compound="MEDIUM"),
+        stints=stints,
+        weather=[],
+        current_lap=20,
+        total_laps=57,
+    )
+    assert result["compound_sequence"][0] == "MEDIUM"
+
+
+def test_predict_none_rainfall_does_not_raise():
+    stints = _make_stints("MEDIUM")
+    result = predict(
+        laps=_make_laps(10, compound="MEDIUM"),
+        stints=stints,
+        weather=[{"rainfall": None}],
+        current_lap=20,
+        total_laps=57,
+    )
+    assert "INTER" not in result["compound_sequence"]
+
+
+def test_predict_non_numeric_rainfall_does_not_raise():
+    stints = _make_stints("MEDIUM")
+    result = predict(
+        laps=_make_laps(10, compound="MEDIUM"),
+        stints=stints,
+        weather=[{"rainfall": "oops"}],
+        current_lap=20,
+        total_laps=57,
+    )
+    assert "INTER" not in result["compound_sequence"]

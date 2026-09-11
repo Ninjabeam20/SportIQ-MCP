@@ -87,6 +87,11 @@ class APIFootballStandingsAdapter:
             params={"league": league, "season": season},
             headers=_headers(),
         )
+        # Same empty-response guard as fixtures — free plan returns [] for uncovered seasons.
+        if not data.get("response"):
+            raise NotFoundError(
+                f"api_football returned no standings for league={league} season={season}"
+            )
         standings = []
         response = data.get("response", [])
         if response:
@@ -180,6 +185,10 @@ class APIFootballScorersAdapter:
             params={"league": league, "season": season},
             headers=_headers(),
         )
+        if not data.get("response"):
+            raise NotFoundError(
+                f"api_football returned no scorers for league={league} season={season}"
+            )
         scorers = []
         for item in data.get("response", []):
             player = item.get("player", {})

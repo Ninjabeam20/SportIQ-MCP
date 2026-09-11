@@ -1,9 +1,11 @@
 """football-data.org adapter tests — all HTTP mocked with respx."""
+
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
+import pytest
 import respx
 from httpx import Response
 
@@ -24,9 +26,7 @@ async def test_fixtures_adapter_normalises_shape():
     match["id"] = 67890
     match["stage"] = "LAST_16"
     match["score"]["winner"] = "AWAY_TEAM"
-    respx.get(f"{_BASE}/competitions/WC/matches").mock(
-        return_value=Response(200, json=payload)
-    )
+    respx.get(f"{_BASE}/competitions/WC/matches").mock(return_value=Response(200, json=payload))
     result = await FootballDataOrgFixturesAdapter().fetch()
     assert result["fixtures"][0]["home"] == "Argentina"
     assert result["fixtures"][0]["away"] == "Mexico"
@@ -83,3 +83,53 @@ async def test_no_token_does_not_raise():
         )
         result = await FootballDataOrgScorersAdapter().fetch()
     assert "scorers" in result
+
+
+@respx.mock
+async def test_fixtures_adapter_empty_matches_raises_not_found():
+
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters.football_data_org import FootballDataOrgFixturesAdapter
+
+    respx.get(f"{_BASE}/competitions/WC/matches").mock(
+        return_value=Response(200, json={"matches": []})
+    )
+    with pytest.raises(NotFoundError):
+        await FootballDataOrgFixturesAdapter().fetch()
+
+
+@respx.mock
+async def test_standings_adapter_empty_table_raises_not_found():
+
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters.football_data_org import FootballDataOrgStandingsAdapter
+
+    respx.get(f"{_BASE}/competitions/WC/standings").mock(
+        return_value=Response(200, json={"standings": []})
+    )
+    with pytest.raises(NotFoundError):
+        await FootballDataOrgStandingsAdapter().fetch()
+
+
+@respx.mock
+async def test_fd_org_scorers_empty_raises_not_found():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters.football_data_org import FootballDataOrgScorersAdapter
+
+    respx.get(f"{_BASE}/competitions/WC/scorers").mock(
+        return_value=Response(200, json={"scorers": []})
+    )
+    with pytest.raises(NotFoundError):
+        await FootballDataOrgScorersAdapter().fetch()
+
+
+@respx.mock
+async def test_fd_org_standings_null_table_raises_not_found():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters.football_data_org import FootballDataOrgStandingsAdapter
+
+    respx.get(f"{_BASE}/competitions/WC/standings").mock(
+        return_value=Response(200, json={"standings": [{"group": "GROUP_A", "table": None}]})
+    )
+    with pytest.raises(NotFoundError):
+        await FootballDataOrgStandingsAdapter().fetch()

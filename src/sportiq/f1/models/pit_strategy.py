@@ -3,12 +3,24 @@
 predict() walks a synthetic race lap-by-lap, choosing stops where
 projected lap-time savings exceed pit-lane loss.
 """
+
 from __future__ import annotations
 
 from sportiq.f1.data.tyres import TYRE_SPECS, TyreCompound
 from sportiq.f1.models.tyre_deg import fit_degradation
 
 _DEFAULT_PIT_LOSS_S = 22.0  # seconds (typical pit-lane loss; circuits vary)
+
+
+def _rainfall_mm(entry: dict) -> float:
+    """Coerce OpenF1 rainfall to mm; None or non-numeric → dry (0.0)."""
+    raw = entry.get("rainfall")
+    if raw is None:
+        return 0.0
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def predict(
@@ -49,7 +61,11 @@ def predict(
     current_compound = "MEDIUM"
     if stints:
         latest = max(stints, key=lambda s: s.get("lap_start", 0))
-        current_compound = latest.get("compound", "MEDIUM").upper()
+        raw_compound = latest.get("compound", "MEDIUM")
+        if raw_compound is None or (isinstance(raw_compound, str) and not raw_compound.strip()):
+            current_compound = "MEDIUM"
+        else:
+            current_compound = str(raw_compound).upper()
 
     # Fit degradation per compound from available laps
     compounds = list({lap.get("compound", "").upper() for lap in laps if lap.get("compound")})
@@ -60,10 +76,15 @@ def predict(
             deg_models[c] = model
 
     # Check rainfall — if any rain recorded, recommend intermediates
-    has_rain = any(float(w.get("rainfall", 0)) > 0 for w in weather)
+    has_rain = any(_rainfall_mm(w) > 0 for w in weather)
 
     # Simple 1-stop or 2-stop decision based on remaining laps + degradation slope
-    current_spec = TYRE_SPECS.get(TyreCompound(current_compound), TYRE_SPECS[TyreCompound.MEDIUM])
+    try:
+        compound_enum = TyreCompound(current_compound)
+    except ValueError:
+        compound_enum = TyreCompound.MEDIUM
+        current_compound = "MEDIUM"
+    current_spec = TYRE_SPECS.get(compound_enum, TYRE_SPECS[TyreCompound.MEDIUM])
     deg_model = deg_models.get(current_compound, {"slope": current_spec.degradation_rate_s_per_lap})
     slope = deg_model.get("slope", current_spec.degradation_rate_s_per_lap)
 
@@ -75,12 +96,11 @@ def predict(
 
     stop_laps: list[int] = []
     compound_sequence: list[str] = [current_compound]
-    confidence = min(1.0, (deg_model.get("sample_count", 0) if "sample_count" in deg_model else 0) / 20.0)
-
-    stop_warranted = (
-        projected_loss > pit_loss_s
-        or remaining > current_spec.safe_window_laps
+    confidence = min(
+        1.0, (deg_model.get("sample_count", 0) if "sample_count" in deg_model else 0) / 20.0
     )
+
+    stop_warranted = projected_loss > pit_loss_s or remaining > current_spec.safe_window_laps
 
     if has_rain:
         # Rain: stop as soon as possible for intermediates

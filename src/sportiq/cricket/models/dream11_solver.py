@@ -59,9 +59,7 @@ def solve(candidates: list[dict], strategy: str = "balanced") -> dict:
             f"Unknown strategy {strategy!r}; choices: {sorted(_STRATEGY_ROLE_BOUNDS)}"
         )
     if len(candidates) < 11:
-        raise InvalidInputError(
-            f"Need >=11 candidates; got {len(candidates)}"
-        )
+        raise InvalidInputError(f"Need >=11 candidates; got {len(candidates)}")
 
     # pulp pulls in CBC bindings at import; deferred to the solver body so it
     # stays off the Cloud Run cold-start path (only this one tool needs it).
@@ -120,16 +118,18 @@ def solve(candidates: list[dict], strategy: str = "balanced") -> dict:
     v_bonus = SCORING.vice_captain_multiplier - 1.0
     pp = [float(c.get("projected_points", 0)) for c in candidates]
     prob += lpSum(
-        pp[i] * x[i] + pp[i] * cap[i] * c_bonus + pp[i] * vc[i] * v_bonus
-        for i in range(n)
+        pp[i] * x[i] + pp[i] * cap[i] * c_bonus + pp[i] * vc[i] * v_bonus for i in range(n)
     )
 
     # COIN_CMD picks the `cbc` binary off PATH (brew install cbc on macOS arm64).
-    status = prob.solve(COIN_CMD(msg=False))
-    if LpStatus[status] != "Optimal":
+    try:
+        status = prob.solve(COIN_CMD(msg=False))
+    except Exception as exc:
         raise InvalidInputError(
-            f"No feasible Dream11 XI under constraints: {LpStatus[status]}"
-        )
+            f"Dream11 solver failed (ensure coinor-cbc is on PATH): {exc}"
+        ) from exc
+    if LpStatus[status] != "Optimal":
+        raise InvalidInputError(f"No feasible Dream11 XI under constraints: {LpStatus[status]}")
 
     picked_idx = [i for i in range(n) if (x[i].value() or 0) > 0.5]
     captain_idx = next(i for i in range(n) if (cap[i].value() or 0) > 0.5)

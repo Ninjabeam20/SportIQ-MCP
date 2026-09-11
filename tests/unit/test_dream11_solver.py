@@ -107,7 +107,9 @@ def test_solver_raises_when_credit_cap_unsatisfiable():
     pool = []
     for i in range(22):
         team = "A" if i < 11 else "B"
-        role = ["BAT", "BAT", "BAT", "BAT", "ALL", "ALL", "WK-BAT", "BOWL", "BOWL", "BOWL", "BOWL"][i % 11]
+        role = ["BAT", "BAT", "BAT", "BAT", "ALL", "ALL", "WK-BAT", "BOWL", "BOWL", "BOWL", "BOWL"][
+            i % 11
+        ]
         pool.append(_candidate(f"P{i}", role, 11.0, 50, team))
     with pytest.raises(InvalidInputError):
         solve(pool)
@@ -118,7 +120,9 @@ def test_solver_raises_when_no_wk_in_pool():
     pool = []
     for i in range(22):
         team = "A" if i < 11 else "B"
-        role = ["BAT", "BAT", "BAT", "BAT", "BAT", "ALL", "ALL", "BOWL", "BOWL", "BOWL", "BOWL"][i % 11]
+        role = ["BAT", "BAT", "BAT", "BAT", "BAT", "ALL", "ALL", "BOWL", "BOWL", "BOWL", "BOWL"][
+            i % 11
+        ]
         pool.append(_candidate(f"P{i}", role, 8.0, 50, team))
     with pytest.raises(InvalidInputError):
         solve(pool)
@@ -127,7 +131,13 @@ def test_solver_raises_when_no_wk_in_pool():
 def test_solver_raises_when_team_cap_unsatisfiable():
     # All 22 candidates on the same team → can't pick 11 without >7 from one team.
     pool = [
-        _candidate(f"P{i}", "BAT" if i < 6 else ("BOWL" if i < 14 else ("ALL" if i < 18 else "WK-BAT")), 8.0, 50, "OnlyTeam")
+        _candidate(
+            f"P{i}",
+            "BAT" if i < 6 else ("BOWL" if i < 14 else ("ALL" if i < 18 else "WK-BAT")),
+            8.0,
+            50,
+            "OnlyTeam",
+        )
         for i in range(22)
     ]
     with pytest.raises(InvalidInputError):
@@ -137,3 +147,14 @@ def test_solver_raises_when_team_cap_unsatisfiable():
 def test_solver_rejects_unknown_strategy():
     with pytest.raises(InvalidInputError):
         solve(_synthetic_pool(), strategy="moonshot")
+
+
+def test_solver_missing_cbc_raises_invalid_input(monkeypatch):
+    import pulp
+
+    def patched_solve(self, *args, **kwargs):
+        raise Exception("cbc not found")
+
+    monkeypatch.setattr(pulp.LpProblem, "solve", patched_solve)
+    with pytest.raises(InvalidInputError, match="cbc"):
+        solve(_synthetic_pool())

@@ -675,8 +675,12 @@ async def cricket_player_matchup(player_a: str, player_b: str) -> Envelope:
     if isinstance(stats_a_r, NotFoundError) or isinstance(stats_b_r, NotFoundError):
         nf = stats_a_r if isinstance(stats_a_r, NotFoundError) else stats_b_r
         return error_envelope(code="NOT_FOUND", message=str(nf))
-    if isinstance(stats_a_r, Exception) or isinstance(stats_b_r, Exception):
+    if isinstance(stats_a_r, AllSourcesFailedError) or isinstance(stats_b_r, AllSourcesFailedError):
         return error_envelope(code="ALL_SOURCES_FAILED", message="Could not fetch player stats.")
+    if isinstance(stats_a_r, BaseException):
+        raise stats_a_r
+    if isinstance(stats_b_r, BaseException):
+        raise stats_b_r
 
     result = _compute_matchup(stats_a_r.value, stats_b_r.value)
     return {
