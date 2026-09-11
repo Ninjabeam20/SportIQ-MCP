@@ -271,6 +271,28 @@ async def test_f1_weather_strategy_impact_rain_recommends_inter():
     assert result["data"]["compound_recommendation"] == "INTER"
 
 
+async def test_weather_strategy_none_rainfall_does_not_raise():
+    from sportiq.f1 import intel_tools
+
+    weather_payload = {"weather": [{"rainfall": None, "track_temperature": 38.0}]}
+    with patch("sportiq.f1.intel_tools.f1_weather_chain") as mock:
+        mock.fetch = AsyncMock(return_value=_fr(weather_payload))
+        result = await intel_tools.f1_weather_strategy_impact(session_key=9877)
+    assert "data" in result
+    assert result["data"]["has_rain"] is False
+
+
+async def test_weather_strategy_non_numeric_rainfall_does_not_raise():
+    from sportiq.f1 import intel_tools
+
+    weather_payload = {"weather": [{"rainfall": "oops", "track_temperature": 38.0}]}
+    with patch("sportiq.f1.intel_tools.f1_weather_chain") as mock:
+        mock.fetch = AsyncMock(return_value=_fr(weather_payload))
+        result = await intel_tools.f1_weather_strategy_impact(session_key=9877)
+    assert "data" in result
+    assert result["data"]["has_rain"] is False
+
+
 # -- f1_predict_pit_strategy (flagship) ----------------------------------------
 
 

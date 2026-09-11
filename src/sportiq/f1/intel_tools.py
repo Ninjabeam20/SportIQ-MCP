@@ -30,6 +30,17 @@ from sportiq.f1.models.undercut import undercut_window
 _F1_LAP_SEMAPHORE = asyncio.Semaphore(5)
 
 
+def _rainfall_mm(entry: dict) -> float:
+    """Coerce OpenF1 rainfall to mm; None or non-numeric → dry (0.0)."""
+    raw = entry.get("rainfall")
+    if raw is None:
+        return 0.0
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 async def _fetch_driver_laps(session_key: int, driver_number: int):
     """Fetch laps for one driver, gated by the per-driver concurrency cap."""
     async with _F1_LAP_SEMAPHORE:
@@ -289,7 +300,7 @@ async def f1_weather_strategy_impact(session_key: int) -> Envelope:
         )
 
     weather = weather_result.value.get("weather", [])
-    has_rain = any(float(w.get("rainfall", 0)) > 0 for w in weather)
+    has_rain = any(_rainfall_mm(w) > 0 for w in weather)
     temps = [float(w["track_temperature"]) for w in weather if w.get("track_temperature") is not None]
     avg_temp = round(sum(temps) / len(temps), 1) if temps else None
 
