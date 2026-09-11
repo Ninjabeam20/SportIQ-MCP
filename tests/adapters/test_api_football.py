@@ -88,6 +88,28 @@ async def test_scorers_adapter_shape():
 
 
 @respx.mock
+async def test_standings_adapter_empty_response_raises_not_found():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters.api_football import APIFootballStandingsAdapter
+
+    respx.get(f"{_BASE}/standings").mock(return_value=Response(200, json={"response": []}))
+    with pytest.raises(NotFoundError):
+        await APIFootballStandingsAdapter().fetch()
+
+
+@respx.mock
+async def test_scorers_adapter_empty_response_raises_not_found():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters.api_football import APIFootballScorersAdapter
+
+    respx.get(f"{_BASE}/players/topscorers").mock(
+        return_value=Response(200, json={"response": []})
+    )
+    with pytest.raises(NotFoundError):
+        await APIFootballScorersAdapter().fetch()
+
+
+@respx.mock
 async def test_squad_adapter_empty_response_raises_not_found():
     from sportiq.core.errors import NotFoundError
     from sportiq.football.adapters.api_football import APIFootballSquadAdapter
