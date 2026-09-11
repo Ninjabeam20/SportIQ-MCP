@@ -115,7 +115,7 @@ Optional full `uv run pytest` before stopping; CI still owns `--cov-fail-under=8
 
 ## Checklist
 
-- [ ] SQ-D1 docs after each GREEN finding
-- [ ] V1–V6
-- [ ] Rollback understood (`bot` only)
-- [ ] No merge to `main` / no deploy
+- [x] SQ-D1 docs after each GREEN finding
+- [x] V1–V6
+- [x] Rollback understood (`bot` only)
+- [x] No merge to `main` / no deploy

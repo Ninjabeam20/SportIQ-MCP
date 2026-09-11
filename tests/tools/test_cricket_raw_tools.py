@@ -32,6 +32,7 @@ def _stale_result(payload: dict) -> FallbackResult:
 
 # -- cricket_get_live_matches -------------------------------------------------
 
+
 async def test_get_live_matches_success():
     from sportiq.cricket import tools
 
@@ -62,7 +63,9 @@ async def test_get_live_matches_stale_surfaces_in_meta():
 async def test_get_live_matches_all_sources_failed():
     from sportiq.cricket import tools
 
-    err = AllSourcesFailedError("all down", attempts=[{"name": "cricapi", "status": "error", "error": "401"}])
+    err = AllSourcesFailedError(
+        "all down", attempts=[{"name": "cricapi", "status": "error", "error": "401"}]
+    )
     with patch("sportiq.cricket.tools.live_score_chain") as mock_chain:
         mock_chain.fetch = AsyncMock(side_effect=err)
         response = await tools.cricket_get_live_matches()
@@ -72,7 +75,18 @@ async def test_get_live_matches_all_sources_failed():
     assert len(response["error"]["sources_tried"]) == 1
 
 
+async def test_get_live_matches_not_found_returns_envelope():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.cricket import tools
+
+    with patch("sportiq.cricket.tools.live_score_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(side_effect=NotFoundError("no live matches"))
+        response = await tools.cricket_get_live_matches()
+    assert response["error"]["code"] == "NOT_FOUND"
+
+
 # -- cricket_get_scorecard ----------------------------------------------------
+
 
 async def test_get_scorecard_success():
     from sportiq.cricket import tools
@@ -94,6 +108,7 @@ async def test_get_scorecard_empty_id_returns_invalid_input():
 
 # -- cricket_get_points_table -------------------------------------------------
 
+
 async def test_get_points_table_success():
     from sportiq.cricket import tools
 
@@ -113,6 +128,7 @@ async def test_get_points_table_empty_series_id():
 
 
 # -- cricket_get_schedule -----------------------------------------------------
+
 
 async def test_get_schedule_success():
     from sportiq.cricket import tools
@@ -137,7 +153,18 @@ async def test_get_schedule_off_season_empty_list():
     assert "error" not in response
 
 
+async def test_get_schedule_not_found_returns_envelope():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.cricket import tools
+
+    with patch("sportiq.cricket.tools.fixtures_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(side_effect=NotFoundError("series not found"))
+        response = await tools.cricket_get_schedule(series_id="missing")
+    assert response["error"]["code"] == "NOT_FOUND"
+
+
 # -- cricket_get_squad --------------------------------------------------------
+
 
 async def test_get_squad_from_static_seed():
     from sportiq.cricket import tools
@@ -175,6 +202,16 @@ async def test_cricket_get_squad_unknown_team_returns_envelope(monkeypatch):
     assert response["meta"]["source"] == "static_seed"
 
 
+async def test_get_squad_not_found_returns_envelope():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.cricket import tools
+
+    with patch("sportiq.cricket.tools.squad_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(side_effect=NotFoundError("squad not found"))
+        response = await tools.cricket_get_squad("IND")
+    assert response["error"]["code"] == "NOT_FOUND"
+
+
 async def test_get_scorecard_not_found_returns_envelope():
     from sportiq.core.errors import NotFoundError
     from sportiq.cricket import tools
@@ -192,4 +229,14 @@ async def test_get_points_table_not_found_returns_envelope():
     with patch("sportiq.cricket.tools.standings_chain") as mock_chain:
         mock_chain.fetch = AsyncMock(side_effect=NotFoundError("series not found"))
         response = await tools.cricket_get_points_table("missing-series")
+    assert response["error"]["code"] == "NOT_FOUND"
+
+
+async def test_get_live_odds_not_found_returns_envelope():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.cricket import tools
+
+    with patch("sportiq.cricket.tools.odds_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(side_effect=NotFoundError("no odds"))
+        response = await tools.cricket_get_live_odds()
     assert response["error"]["code"] == "NOT_FOUND"

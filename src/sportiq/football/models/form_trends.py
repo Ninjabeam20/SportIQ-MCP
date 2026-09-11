@@ -2,7 +2,10 @@
 
 No I/O. Input is the ``fixtures`` list from ``football_fixtures_chain``.
 """
+
 from __future__ import annotations
+
+from sportiq.football.models.results_state import _FINISHED_STATUSES
 
 
 def compute_form_trends(fixtures: list[dict], team: str) -> dict:
@@ -32,6 +35,14 @@ def compute_form_trends(fixtures: list[dict], team: str) -> dict:
         hs = fx.get("home_goals")
         as_ = fx.get("away_goals")
         if hs is None or as_ is None:
+            continue
+        try:
+            int(hs)
+            int(as_)
+        except (TypeError, ValueError):
+            continue
+        status = fx.get("status")
+        if status is not None and str(status).upper() not in _FINISHED_STATUSES:
             continue
         completed.append(fx)
 

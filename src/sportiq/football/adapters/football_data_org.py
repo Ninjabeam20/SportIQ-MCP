@@ -7,9 +7,11 @@ constructor still never raises on a missing key: without one the adapter simply
 403s and the chain walks past it to the keyless openfootball / static-seed
 fallbacks. Outputs are normalised to the common per-chain shapes (see base.py).
 """
+
 from __future__ import annotations
 
 from sportiq.config import settings
+from sportiq.core.errors import NotFoundError
 from sportiq.core.http import get_json
 from sportiq.core.ratelimit import Budget
 from sportiq.football.adapters.base import _FD_COMPETITION, _FOOTBALLDATA_BASE
@@ -55,6 +57,10 @@ class FootballDataOrgFixturesAdapter:
                     "winner": winner,
                 }
             )
+        if not fixtures:
+            raise NotFoundError(
+                f"football_data_org returned no fixtures for competition={competition}"
+            )
         return {"fixtures": fixtures}
 
     async def healthcheck(self) -> bool:
@@ -84,6 +90,10 @@ class FootballDataOrgStandingsAdapter:
                         "goals_diff": row.get("goalDifference"),
                     }
                 )
+        if not standings:
+            raise NotFoundError(
+                f"football_data_org returned no standings for competition={competition}"
+            )
         return {"standings": standings}
 
     async def healthcheck(self) -> bool:

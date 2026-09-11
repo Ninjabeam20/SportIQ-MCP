@@ -3,7 +3,7 @@ title: Value-Bet Detector
 type: model
 tags: [football, odds, betting, value, devig]
 sources: [the-odds-api, poisson-xg-model]
-last_updated: 2026-05-30
+last_updated: 2026-09-11
 related: [[football-find-value-bets]], [[football-match-predictor]], [[the-odds-api]], [[poisson-xg-model]]
 ---
 
@@ -30,9 +30,11 @@ exceeds the de-vigged market probability by a threshold, the bet is +EV.
   proportionally across outcomes. Adequate for a comparison baseline (we need a
   yardstick, not a calibrated fair price). Empty / all-zero input returns `{}`.
 - `find_value(model_probs, bookmaker, min_edge) -> list[dict]` — for each outcome
-  that carries a price: `edge = model_prob - devigged_market_prob`; emit
+  that carries a valid price: `edge = model_prob - devigged_market_prob`; emit
   `{outcome, model_prob, fair_odds (1/model_prob), market_odds, edge, bookmaker}`
-  where `edge >= min_edge`. Outcomes with a missing (None) price are skipped.
+  where `edge >= min_edge`. Outcomes with a missing (`None`), non-positive, or
+  non-numeric price are skipped. Direct calls to `implied_prob` still raise on
+  `<= 0` by design.
 
 ## Why multiplicative de-vig
 

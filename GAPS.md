@@ -92,32 +92,19 @@
 
 ## 3. MEDIUM — `NotFoundError` from chains is uncaught in football and F1 raw/intel tools (latent envelope-contract crash)
 
-- **Status 2026-07-14 (`codex_changes`): RESOLVED.** Football and F1 raw/intelligence boundaries
-  convert expected misses to `NOT_FOUND` envelopes; focused contract tests cover both sports.
+- **Status 2026-07-14 (`codex_changes`): RESOLVED** for football/F1 boundaries; **2026-09-11 (`bot`):**
+  cricket RAW tools (`live_matches`, `schedule`, `squad`, `live_odds`) now catch
+  `NotFoundError` like scorecard/points_table (regression tests in
+  `tests/tools/test_cricket_raw_tools.py`).
 
-- **What:** `FallbackChain.fetch()` can raise `NotFoundError` (fallback.py:221). Cricket tools
-  catch it everywhere (regression-locked per the NOT_FOUND-invariant finding), but
-  `src/sportiq/football/tools.py` catches only `AllSourcesFailedError` (all 7 tools), as do
-  `src/sportiq/f1/tools.py` (all 6) and most of `src/sportiq/football/intel_tools.py`.
-  Today this is *latent*, not live: football chains that contain a NotFound-raising adapter
-  (api_football fixtures/squad) also contain a non-NotFound-failing or terminating adapter, so
-  the "every adapter raised NotFoundError" condition can't currently be met; F1 adapters never
-  raise it. But the invariant is one adapter-edit away from breaking: e.g. giving
-  `FootballDataOrgTeamStatsAdapter` an empty-payload NotFound guard (mirroring the api_football
-  fix from 2026-07-03 — a *recommended* pattern per that incident) would make
-  `football_get_match_stats` crash with a raw exception instead of a `NOT_FOUND` envelope.
-- **Where:** `src/sportiq/football/tools.py` (every `except AllSourcesFailedError`),
-  `src/sportiq/f1/tools.py` (same), `src/sportiq/football/intel_tools.py` (lines 125, 171, 218,
-  262, 292, 425).
-- **Why it matters:** "Every tool returns either `{data, meta}` or `{error}` — never neither"
-  is the core contract (`.claude/rules/error-envelope.md`). An uncaught exception surfaces as a
-  generic FastMCP error, breaking clients that branch on the envelope, and the failure mode only
-  appears when a specific entity is missing — i.e. rarely and in production.
-- **Suggested fix (single task):** in the three files, widen each handler to
-  `except (AllSourcesFailedError, NotFoundError) as e:` and emit `code="NOT_FOUND"` when
-  `isinstance(e, NotFoundError)` (cricket tools show the exact pattern to copy —
-  `src/sportiq/cricket/tools.py:71,101`). Add one regression test per sport in `tests/tools/`
-  with a stub chain raising `NotFoundError`.
+- **What (historical):** Before 2026-07-14, football/F1 tool boundaries could leak raw
+  `NotFoundError` exceptions. That sport-level gap is closed. On `bot` (2026-09-11), the
+  remaining cricket RAW gap (live/schedule/squad/odds) is also closed; scorecard/points_table
+  already caught `NotFoundError` since 2026-08-13.
+- **Where (football/F1 latent edge, unchanged):** Some football RAW chains still contain
+  adapters that do not raise `NotFoundError` on empty payloads; adding guards without widening
+  tool handlers would re-open the envelope contract. Mirror the api_football empty-fix pattern
+  when touching those adapters.
 
 ## 4. MEDIUM — Redirect handling in the shared HTTP client breaks on relative `Location` headers
 

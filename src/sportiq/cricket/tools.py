@@ -42,6 +42,11 @@ async def cricket_get_live_matches() -> Envelope:
     """
     try:
         result = await live_score_chain.fetch()
+    except NotFoundError:
+        return error_envelope(
+            code="NOT_FOUND",
+            message="No live cricket matches are available right now.",
+        )
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
@@ -144,6 +149,11 @@ async def cricket_get_schedule(
         return error_envelope(code="INVALID_INPUT", message="offset must be >= 0.")
     try:
         result = await fixtures_chain.fetch(series_id=series_id)
+    except NotFoundError:
+        return error_envelope(
+            code="NOT_FOUND",
+            message="No schedule available for the requested series.",
+        )
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
@@ -172,6 +182,11 @@ async def cricket_get_squad(team: str, series_id: str | None = None) -> Envelope
         return error_envelope(code="INVALID_INPUT", message="team must not exceed 100 characters.")
     try:
         result = await squad_chain.fetch(team=team.strip(), series_id=series_id)
+    except NotFoundError:
+        return error_envelope(
+            code="NOT_FOUND",
+            message=f"No squad available for team {team!r}.",
+        )
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
@@ -205,6 +220,11 @@ async def cricket_get_live_odds(team: str | None = None) -> Envelope:
     """
     try:
         result = await odds_chain.fetch()
+    except NotFoundError:
+        return error_envelope(
+            code="NOT_FOUND",
+            message="No cricket odds are available right now.",
+        )
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",

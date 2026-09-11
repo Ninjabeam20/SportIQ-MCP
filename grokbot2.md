@@ -184,11 +184,11 @@ Original text said “proven RED on base.” Static recheck: **not true for A2/A
 
 ## Checklist
 
-- [ ] SQ-A1 pit dirty telemetry
-- [ ] SQ-A2 gather envelopes (verify-only)
-- [ ] SQ-A3 cricket RAW NotFound catch
-- [ ] SQ-A4 Dream11 missing CBC
-- [ ] SQ-A5 value-bet skip illegal odds
-- [ ] SQ-A6 form-trends coerce + finished-status (with B3)
-- [ ] Tier A residuals GREEN on `bot`
-- [ ] `main` untouched
+- [x] SQ-A1 pit dirty telemetry
+- [x] SQ-A2 gather envelopes (verify-only)
+- [x] SQ-A3 cricket RAW NotFound catch
+- [x] SQ-A4 Dream11 missing CBC
+- [x] SQ-A5 value-bet skip illegal odds
+- [x] SQ-A6 form-trends coerce + finished-status (with B3)
+- [x] Tier A residuals GREEN on `bot`
+- [x] `main` untouched

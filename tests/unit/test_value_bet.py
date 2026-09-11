@@ -1,4 +1,5 @@
 """Value-bet math — implied prob, de-vig (sum-to-1), edge detection."""
+
 from __future__ import annotations
 
 import pytest
@@ -62,3 +63,17 @@ def test_find_value_skips_missing_price():
     bookmaker = {"name": "Partial", "home": 2.0, "draw": 3.0, "away": None}
     picks = find_value(model, bookmaker, min_edge=0.01)
     assert all(p["outcome"] != "away" for p in picks)
+
+
+def test_find_value_skips_nonpositive_odds():
+    model = {"home_win": 0.60, "draw": 0.20, "away_win": 0.20}
+    bookmaker = {"name": "Bad", "home": 0, "draw": 3.0, "away": -1}
+    picks = find_value(model, bookmaker, min_edge=0.01)
+    assert isinstance(picks, list)
+
+
+def test_find_value_skips_non_numeric_odds():
+    model = {"home_win": 0.60, "draw": 0.20, "away_win": 0.20}
+    bookmaker = {"name": "Bad", "home": "bad", "draw": 3.0, "away": 4.0}
+    picks = find_value(model, bookmaker, min_edge=0.01)
+    assert isinstance(picks, list)

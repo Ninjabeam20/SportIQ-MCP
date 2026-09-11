@@ -3,7 +3,7 @@ title: Pit Strategy Predictor
 type: model
 tags: [f1, pit-stop, strategy]
 sources: [f1db]
-last_updated: 2026-06-11
+last_updated: 2026-09-11
 related: [[f1-predict-pit-strategy]], [[tyre-degradation-model]], [[undercut-model]], [[f1db]]
 ---
 
@@ -25,6 +25,9 @@ circuit resolves; unknown circuit → `22.0` default with `meta.circuit_profile:
 3. If rainfall detected → immediate stop for INTER.
 4. If projected lap-time loss > pit_loss_s OR remaining > safe_window_laps → 1 stop.
 5. If remaining > 35 laps and slope > 0.07 → consider 2 stops.
+
+Dirty telemetry is coerced defensively: `None`/blank stint compound or unknown enum
+strings fall back to `MEDIUM`; `None` rainfall is treated as `0` (dry).
 
 ## Returns
 - `stop_laps` — recommended pit lap numbers

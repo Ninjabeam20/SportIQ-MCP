@@ -1,4 +1,5 @@
 """Unit tests for compute_form_trends — pure model, no I/O."""
+
 from __future__ import annotations
 
 from sportiq.football.models.form_trends import compute_form_trends
@@ -18,11 +19,11 @@ def _future(home: str, away: str, date: str = "2026-12-01") -> dict:
 def test_form_string_correct():
     """5 completed matches produce correct W/D/L letters in chronological order."""
     fixtures = [
-        _fx("Brazil", "Germany", 2, 1, "2026-01-01"),   # W (home)
-        _fx("France", "Brazil", 1, 1, "2026-01-02"),    # D (away)
-        _fx("Brazil", "Spain", 0, 2, "2026-01-03"),     # L (home)
-        _fx("Argentina", "Brazil", 0, 3, "2026-01-04"), # W (away)
-        _fx("Brazil", "Italy", 1, 1, "2026-01-05"),     # D (home)
+        _fx("Brazil", "Germany", 2, 1, "2026-01-01"),  # W (home)
+        _fx("France", "Brazil", 1, 1, "2026-01-02"),  # D (away)
+        _fx("Brazil", "Spain", 0, 2, "2026-01-03"),  # L (home)
+        _fx("Argentina", "Brazil", 0, 3, "2026-01-04"),  # W (away)
+        _fx("Brazil", "Italy", 1, 1, "2026-01-05"),  # D (home)
     ]
     result = compute_form_trends(fixtures, "Brazil")
     assert result["form_string"] == "WDLWD"
@@ -120,3 +121,23 @@ def test_case_insensitive_team_match():
     result = compute_form_trends(fixtures, "brazil")
     assert result["matches_analysed"] == 1
     assert result["wins"] == 1
+
+
+def test_non_int_goals_skipped_not_crashed():
+    fixtures = [
+        _fx("Brazil", "Germany", "W", 1, "2026-01-01", status="FINISHED"),
+        _fx("Brazil", "France", 2, 1, "2026-01-02", status="FINISHED"),
+    ]
+    result = compute_form_trends(fixtures, "Brazil")
+    assert result["matches_analysed"] == 1
+    assert result["wins"] == 1
+
+
+def test_in_play_scores_not_counted_as_form():
+    fixtures = [
+        _fx("Brazil", "Germany", 2, 1, "2026-01-01", status="IN_PLAY"),
+        _fx("Brazil", "France", 1, 0, "2026-01-02", status="FINISHED"),
+    ]
+    result = compute_form_trends(fixtures, "Brazil")
+    assert result["matches_analysed"] == 1
+    assert result["form_string"] == "W"

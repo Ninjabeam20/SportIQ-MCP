@@ -93,8 +93,8 @@ Same as grokbot1. Adapter empty-that-means-miss → `NotFoundError` so the chain
 
 ## Checklist
 
-- [ ] SQ-B1 FD.org empty → NotFoundError
-- [ ] SQ-B2 CricAPI unwrap (verify-only)
-- [ ] SQ-B3 IN_PLAY via form_trends (with A6); results_state already GREEN
-- [ ] Tier B residuals GREEN
-- [ ] `main` untouched
+- [x] SQ-B1 FD.org empty → NotFoundError
+- [x] SQ-B2 CricAPI unwrap (verify-only)
+- [x] SQ-B3 IN_PLAY via form_trends (with A6); results_state already GREEN
+- [x] Tier B residuals GREEN
+- [x] `main` untouched

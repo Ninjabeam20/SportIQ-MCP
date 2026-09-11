@@ -120,6 +120,6 @@ Environment vs original operating-mode text:
 ## Checklist
 
 - [x] Recheck grokbot2–4 against tree (this pass)
-- [ ] Composer 2.5: read grokbot2–4 before coding
-- [ ] Worktree/branch == `bot`; `main` SHA unchanged
-- [ ] No Cloud Run / merge to `main` / deploy
+- [x] Composer 2.5: read grokbot2–4 before coding
+- [x] Worktree/branch == `bot`; `main` SHA unchanged
+- [x] No Cloud Run / merge to `main` / deploy

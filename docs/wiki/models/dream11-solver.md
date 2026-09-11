@@ -3,7 +3,7 @@ title: Dream11 Solver (PuLP ILP)
 type: model
 tags: [cricket, dream11, ilp, pulp, cbc]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-11
 related: [[cricket-build-dream11-team]], [[dream11-scoring]], [[captain-score]], [[0002-pulp-over-ortools]]
 ---
 
@@ -47,7 +47,10 @@ where `pp_i` is `projected_points` (from [[captain-score]]) and the bonus coeffi
 
 ## Solver
 
-PuLP's `COIN_CMD` backend, which picks up the system `cbc` binary off PATH (on macOS arm64: `brew install cbc`). The bundled `PULP_CBC_CMD` falls over on Apple Silicon — see commit notes.
+PuLP's `COIN_CMD` backend, which picks up the system `cbc` binary off PATH (on macOS arm64: `brew install cbc`; on Debian/Ubuntu: `coinor-cbc`). The bundled `PULP_CBC_CMD` falls over on Apple Silicon — see commit notes.
+
+If `cbc` is missing or the solver aborts, `solve()` raises `InvalidInputError` with a
+message naming CBC on PATH; the tool maps that to the `INVALID_INPUT` envelope.
 
 ## Infeasibility raises
 

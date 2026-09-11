@@ -9,6 +9,7 @@ the implied probabilities back to sum 1 so they're comparable to a true probabil
 Where ``model_prob`` exceeds the de-vigged market probability by ``min_edge``, the
 bet is +EV ("value").
 """
+
 from __future__ import annotations
 
 # Map a market outcome key to the model's probability key.
@@ -56,11 +57,18 @@ def find_value(
         Outcomes with a missing (None) price are skipped.
     """
     # Implied probs only for outcomes that carry a price.
-    implied = {
-        outcome: implied_prob(bookmaker[outcome])
-        for outcome in _OUTCOME_TO_MODEL
-        if bookmaker.get(outcome) is not None
-    }
+    implied: dict[str, float] = {}
+    for outcome in _OUTCOME_TO_MODEL:
+        raw = bookmaker.get(outcome)
+        if raw is None:
+            continue
+        try:
+            price = float(raw)
+        except (TypeError, ValueError):
+            continue
+        if price <= 0:
+            continue
+        implied[outcome] = implied_prob(price)
     devigged = devig(implied)
 
     picks: list[dict] = []
