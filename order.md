@@ -228,3 +228,10 @@ These files were scanned and contain no executable work for this batch. Recorded
 - **Next first unchecked in order:** 1b (PARTIAL/CONFLICT — resolve vs R7 before forcing), else 1e sim-model errors.
 - 2026-09-11 (bot work session): **1b SKIPPED per instruction — R7 stands** (race-pace/player-matchup re-raise unknowns `0534834`; do not force envelope tick). **1e DONE** — `football_simulate_group`/`football_simulate_bracket`/`football_knockout_path` catch `(ValueError, KeyError)` → `INVALID_INPUT` (`intel_tools.py`); 4 tool-level tests in `tests/tools/test_football_tools.py` (malformed draw ×3 + KeyError combo ×1). **Phase 2 remainder DONE** — AF TeamStats empty-guard; FD TeamStats always-`NotFoundError` (wrong endpoint/ID space, walks off chain); openfootball empty-`matches` raise; static_seed groups/fixtures missing-file raise (squad terminator untouched); derived_standings via lazy `football_fixtures_chain.fetch()` + health registration. New adapter tests: AF TeamStats, FD TeamStats, openfootball empty, static_seed missing ×2, derived chain-routing. Evidence: targeted gate `tests/tools + pit + dream11 + group_sim + bracket_sim` **338 passed**; adapter+chain gate **39 passed**; full `uv run pytest` **824 passed** (baseline 814 + 10 new); `ruff check` clean. 2b (OpenF1/jolpica, R6 SKIPPED), 1b, Phase 3–6, Phase 7 push, Phase 8 deploy remain open.
 
+## Checkpoint 2026-09-11 — Grok Bot post–OpenCode 1e + Phase2 remainder
+
+- Tip `af21767` on `bot` (ahead of `origin/bot` by 2). **Not pushed.** `main` untouched.
+- Operator suite claim accepted: **824 passed** (was 814). Ruff clean.
+- Direction: **ON TRACK.** 1b correctly left open (R7 stands). 1e + AF/FD/openfootball/static_seed/derived via fixtures chain match order.md Phase 2 intent.
+- Corrective / next tasks already in order.md: **3a** player-stat extractor (next behavior-visible); then 3c skill; Phase 4 observability; Phase 5 steel docs; Phase 6 hygiene. Still skip 2b/R6 unless cassette; Phase 7/8 hard-stop.
+- Next OpenCode slice: **Phase 3a** (cassette-shape tests first), one commit.
