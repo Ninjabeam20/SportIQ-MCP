@@ -133,6 +133,35 @@ def test_non_int_goals_skipped_not_crashed():
     assert result["wins"] == 1
 
 
+def test_form_trends_non_numeric_xg_skipped_not_crashed():
+    fixtures = [
+        _fx(
+            "Brazil",
+            "Germany",
+            2,
+            1,
+            "2026-01-01",
+            status="FINISHED",
+            xg_home="n/a",
+            xg_away=0.9,
+        ),
+        _fx(
+            "Brazil",
+            "France",
+            2,
+            1,
+            "2026-01-02",
+            status="FINISHED",
+            xg_home=1.5,
+            xg_away=1.0,
+        ),
+    ]
+    result = compute_form_trends(fixtures, "Brazil")
+    assert result["matches_analysed"] == 2
+    assert result["wins"] == 2
+    assert result["xg_for"] == 1.5
+
+
 def test_in_play_scores_not_counted_as_form():
     fixtures = [
         _fx("Brazil", "Germany", 2, 1, "2026-01-01", status="IN_PLAY"),

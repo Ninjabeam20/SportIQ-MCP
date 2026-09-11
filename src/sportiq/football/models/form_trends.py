@@ -83,10 +83,14 @@ def compute_form_trends(fixtures: list[dict], team: str) -> dict:
         xg_h = fx.get("xg_home")
         xg_a = fx.get("xg_away")
         if xg_h is not None and xg_a is not None:
-            xg_for_raw = float(xg_h) if is_home else float(xg_a)
-            xg_against_raw = float(xg_a) if is_home else float(xg_h)
-            xg_for_total = (xg_for_total or 0.0) + xg_for_raw
-            xg_against_total = (xg_against_total or 0.0) + xg_against_raw
+            try:
+                xg_for_raw = float(xg_h) if is_home else float(xg_a)
+                xg_against_raw = float(xg_a) if is_home else float(xg_h)
+            except (TypeError, ValueError):
+                pass
+            else:
+                xg_for_total = (xg_for_total or 0.0) + xg_for_raw
+                xg_against_total = (xg_against_total or 0.0) + xg_against_raw
 
     # recent_trend: compare avg goals in last 3 vs the 3 before that.
     # NOTE: when len(goal_list) is 4 or 5, prior3 contains only 1 or 2 matches
