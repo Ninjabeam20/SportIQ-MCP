@@ -9,7 +9,8 @@ related: [[football-find-value-bets]], [[football-match-predictor]], [[the-odds-
 
 # Value-Bet Detector
 
-Pure-function probability math (`football/models/value_bet.py`) that flags +EV
+Pure-function probability math (`src/sportiq/core/value_bet.py`; re-exported from
+`football/models/value_bet.py`) that flags +EV
 ("value") bets by comparing **de-vigged** bookmaker odds to a model's probabilities.
 
 ## The idea

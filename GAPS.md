@@ -17,13 +17,13 @@
 
 ---
 
-## Status snapshot 2026-08-13
+## Status snapshot 2026-09-11
 
 | # | Item | Status |
 |---|---|---|
 | 1 | Hosted per-client rate limit | **DEPLOYED** 2026-07-14 on `sportiq-mcp-00035-vam` (`maxScale: 1`). CF-Connecting-IP path in-tree for home server |
 | 2 | Peek→fetch quota race | **RESOLVED IN TREE** — `reserve()` / `refund()` + `incr_counter_if_below` |
-| 3 | Uncaught `NotFoundError` | **RESOLVED** (football/F1 2026-07-14; cricket intel 2026-08-13) |
+| 3 | Uncaught `NotFoundError` | **RESOLVED** (football/F1 2026-07-14; cricket RAW 2026-09-11; api_football standings/scorers empty guards 2026-09-11) |
 | 4 | Relative `Location` redirects | **RESOLVED** 2026-07-14 |
 | 5 | Per-process state × N instances | **GUARDRAIL DEPLOYED** (`maxScale: 1`; Compose one replica). Redis still absent |
 | 6 | sdist leak | **RESOLVED** — allowlist, not a blocklist |
@@ -101,10 +101,10 @@
   `NotFoundError` exceptions. That sport-level gap is closed. On `bot` (2026-09-11), the
   remaining cricket RAW gap (live/schedule/squad/odds) is also closed; scorecard/points_table
   already caught `NotFoundError` since 2026-08-13.
-- **Where (football/F1 latent edge, unchanged):** Some football RAW chains still contain
-  adapters that do not raise `NotFoundError` on empty payloads; adding guards without widening
-  tool handlers would re-open the envelope contract. Mirror the api_football empty-fix pattern
-  when touching those adapters.
+- **Where (adapter empty-payload guards):** Football standings/scorers tools already catch
+  `(AllSourcesFailedError, NotFoundError)` — adding api_football / football-data.org empty
+  guards does **not** require a `tools.py` change. Mirror the fixtures empty-`response`
+  `NotFoundError` pattern when touching other adapters in those chains.
 
 ## 4. MEDIUM — Redirect handling in the shared HTTP client breaks on relative `Location` headers
 

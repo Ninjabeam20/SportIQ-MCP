@@ -54,7 +54,7 @@ def find_value(
     Returns:
         One dict per value outcome:
         ``{outcome, model_prob, fair_odds, market_odds, edge, bookmaker}``.
-        Outcomes with a missing (None) price are skipped.
+        Outcomes with a missing (None), non-positive, or non-numeric price are skipped.
     """
     # Implied probs only for outcomes that carry a price.
     implied: dict[str, float] = {}

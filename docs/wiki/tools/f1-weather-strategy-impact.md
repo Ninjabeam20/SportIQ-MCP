@@ -3,7 +3,7 @@ title: f1_weather_strategy_impact
 type: tool
 tags: [f1, weather, strategy, intel]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-11
 related: [[f1-weather-chain]]
 ---
 
@@ -25,16 +25,16 @@ async def f1_weather_strategy_impact(session_key: int) -> dict
 ```json
 {
   "data": {
-    "rainfall_detected": false,
+    "has_rain": false,
     "avg_track_temp_c": 42.1,
-    "recommended_compound": "MEDIUM",
-    "rationale": "Dry track, moderate temperature — MEDIUM offers best balance of pace and life."
+    "compound_recommendation": "MEDIUM",
+    "recommendation": "Nominal conditions — MEDIUM is the baseline choice."
   },
-  "meta": {"source": "openf1", "is_stale": false}
+  "meta": {"source": "openf1", "is_stale": false, "estimated": true}
 }
 ```
 
-When `rainfall_detected` is true, `recommended_compound` is `INTER` or `WET`.
+When `has_rain` is true, `compound_recommendation` is `INTER`.
 
 ## Chain
 
