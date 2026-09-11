@@ -79,7 +79,7 @@ class FootballDataOrgStandingsAdapter:
         standings = []
         for block in data.get("standings", []):
             group = block.get("group")
-            for row in block.get("table", []):
+            for row in block.get("table") or []:
                 standings.append(
                     {
                         "rank": row.get("position"),
@@ -138,6 +138,10 @@ class FootballDataOrgScorersAdapter:
                     "goals": item.get("goals"),
                     "assists": item.get("assists"),
                 }
+            )
+        if not scorers:
+            raise NotFoundError(
+                f"football_data_org returned no scorers for competition={competition}"
             )
         return {"scorers": scorers}
 

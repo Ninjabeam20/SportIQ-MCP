@@ -109,3 +109,27 @@ async def test_standings_adapter_empty_table_raises_not_found():
     )
     with pytest.raises(NotFoundError):
         await FootballDataOrgStandingsAdapter().fetch()
+
+
+@respx.mock
+async def test_fd_org_scorers_empty_raises_not_found():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters.football_data_org import FootballDataOrgScorersAdapter
+
+    respx.get(f"{_BASE}/competitions/WC/scorers").mock(
+        return_value=Response(200, json={"scorers": []})
+    )
+    with pytest.raises(NotFoundError):
+        await FootballDataOrgScorersAdapter().fetch()
+
+
+@respx.mock
+async def test_fd_org_standings_null_table_raises_not_found():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters.football_data_org import FootballDataOrgStandingsAdapter
+
+    respx.get(f"{_BASE}/competitions/WC/standings").mock(
+        return_value=Response(200, json={"standings": [{"group": "GROUP_A", "table": None}]})
+    )
+    with pytest.raises(NotFoundError):
+        await FootballDataOrgStandingsAdapter().fetch()
