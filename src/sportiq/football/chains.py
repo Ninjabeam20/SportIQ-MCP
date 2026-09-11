@@ -60,7 +60,7 @@ _seed_squad = StaticSeedSquadAdapter()
 _theodds_football = TheOddsFootballAdapter()
 
 # Register one healthcheck per upstream identity (deduped by name).
-for _a in [_af_fixtures, _fd_fixtures, _openfootball_fixtures, _seed_groups, _theodds_football]:
+for _a in [_af_fixtures, _fd_fixtures, _openfootball_fixtures, _seed_groups, _theodds_football, _derived_standings]:
     register_adapter_for_health(_a)
 
 # -- Chain singletons ---------------------------------------------------------

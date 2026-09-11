@@ -58,3 +58,15 @@ async def test_fixtures_shape_matches_chain_contract():
     )
     result = await OpenFootballFixturesAdapter().fetch()
     assert set(result["fixtures"][0]) >= {"home", "away", "status", "home_goals", "away_goals"}
+
+
+@respx.mock
+async def test_empty_matches_raises_not_found():
+    import pytest
+
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters.openfootball import OpenFootballFixturesAdapter
+
+    respx.get(_OPENFOOTBALL_URL).mock(return_value=Response(200, json={"matches": []}))
+    with pytest.raises(NotFoundError):
+        await OpenFootballFixturesAdapter().fetch()

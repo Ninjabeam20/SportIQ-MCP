@@ -135,3 +135,13 @@ async def test_healthcheck_false_without_key(monkeypatch):
 
     monkeypatch.setattr(settings, "apifootball_key", None)
     assert await APIFootballFixturesAdapter().healthcheck() is False
+
+
+@respx.mock
+async def test_team_stats_adapter_empty_response_raises_not_found():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters.api_football import APIFootballTeamStatsAdapter
+
+    respx.get(f"{_BASE}/teams/statistics").mock(return_value=Response(200, json={"response": {}}))
+    with pytest.raises(NotFoundError):
+        await APIFootballTeamStatsAdapter().fetch(team=26)

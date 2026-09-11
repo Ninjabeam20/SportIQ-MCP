@@ -14,6 +14,7 @@ Output is normalised to the common fixtures shape (see base.py).
 """
 from __future__ import annotations
 
+from sportiq.core.errors import NotFoundError
 from sportiq.core.http import get_json
 
 _OPENFOOTBALL_URL = (
@@ -27,8 +28,11 @@ class OpenFootballFixturesAdapter:
 
     async def fetch(self, **kwargs) -> dict:
         data = await get_json(_OPENFOOTBALL_URL)
+        matches = data.get("matches", [])
+        if not matches:
+            raise NotFoundError("openfootball returned no matches")
         fixtures = []
-        for match in data.get("matches", []):
+        for match in matches:
             ft = (match.get("score") or {}).get("ft")
             played = isinstance(ft, list) and len(ft) == 2
             fixtures.append(

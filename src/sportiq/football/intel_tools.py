@@ -258,12 +258,15 @@ async def football_simulate_group(group: str, iterations: int = 5000) -> Envelop
 
     state, fixtures_result = await _fetch_live_state(result.value)
     ratings = _conditioned_ratings(result.value.get("ratings", {}), state)
-    sim = simulate_group_stage(
-        groups,
-        ratings,
-        n_iter=_clamp_iterations(iterations),
-        results=state,
-    )
+    try:
+        sim = simulate_group_stage(
+            groups,
+            ratings,
+            n_iter=_clamp_iterations(iterations),
+            results=state,
+        )
+    except (ValueError, KeyError) as e:
+        return error_envelope(code="INVALID_INPUT", message=f"Invalid simulation input: {e}")
     selected_teams = {team: sim["teams"][team] for team in groups[key]}
     meta = _sim_meta(
         result,
@@ -320,9 +323,12 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
     groups = result.value.get("groups", {})
     state, fixtures_result = await _fetch_live_state(result.value)
     ratings = _conditioned_ratings(result.value.get("ratings", {}), state)
-    sim = simulate_tournament(
-        groups, ratings, n_iter=_clamp_iterations(iterations), seed=seed, results=state
-    )
+    try:
+        sim = simulate_tournament(
+            groups, ratings, n_iter=_clamp_iterations(iterations), seed=seed, results=state
+        )
+    except (ValueError, KeyError) as e:
+        return error_envelope(code="INVALID_INPUT", message=f"Invalid simulation input: {e}")
     return {
         "data": sim,
         "meta": _sim_meta(
@@ -368,9 +374,12 @@ async def football_knockout_path(team: str, iterations: int = 10000, seed: int |
 
     state, fixtures_result = await _fetch_live_state(result.value)
     ratings = _conditioned_ratings(base_ratings, state)
-    sim = simulate_tournament(
-        groups, ratings, n_iter=_clamp_iterations(iterations), seed=seed, results=state
-    )
+    try:
+        sim = simulate_tournament(
+            groups, ratings, n_iter=_clamp_iterations(iterations), seed=seed, results=state
+        )
+    except (ValueError, KeyError) as e:
+        return error_envelope(code="INVALID_INPUT", message=f"Invalid simulation input: {e}")
     row = sim["teams"].get(code, {})
     return {
         "data": {"team": code, **row},

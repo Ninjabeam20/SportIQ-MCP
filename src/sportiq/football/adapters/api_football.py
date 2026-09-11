@@ -128,6 +128,10 @@ class APIFootballTeamStatsAdapter:
             headers=_headers(),
         )
         resp = data.get("response", {}) or {}
+        if not resp or not resp.get("team", {}).get("name"):
+            raise NotFoundError(
+                f"api_football returned no team_stats for team={team} league={league} season={season}"
+            )
         goals = resp.get("goals", {})
         return {
             "team_stats": {

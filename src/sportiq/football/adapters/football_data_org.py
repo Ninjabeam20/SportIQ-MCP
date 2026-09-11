@@ -105,16 +105,12 @@ class FootballDataOrgTeamStatsAdapter:
     budget = _FOOTBALLDATA_BUDGET
 
     async def fetch(self, team: int, **kwargs) -> dict:
-        data = await get_json(f"{_FOOTBALLDATA_BASE}/teams/{team}", headers=_headers())
-        return {
-            "team_stats": {
-                "team": data.get("name"),
-                "played": None,
-                "wins": None,
-                "goals_for": None,
-                "goals_against": None,
-            }
-        }
+        # Wrong endpoint/ID space: /teams/{id} is a profile, not stats, and the
+        # numeric ID space differs from api-football's. Return a miss so the
+        # chain walks off instead of caching all-None team_stats.
+        raise NotFoundError(
+            f"football_data_org team_stats unavailable for team={team} (no stats endpoint mapping)"
+        )
 
     async def healthcheck(self) -> bool:
         return True

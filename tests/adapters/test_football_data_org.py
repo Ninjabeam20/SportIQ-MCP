@@ -133,3 +133,11 @@ async def test_fd_org_standings_null_table_raises_not_found():
     )
     with pytest.raises(NotFoundError):
         await FootballDataOrgStandingsAdapter().fetch()
+
+
+async def test_fd_org_team_stats_always_raises_not_found():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters.football_data_org import FootballDataOrgTeamStatsAdapter
+
+    with pytest.raises(NotFoundError):
+        await FootballDataOrgTeamStatsAdapter().fetch(team=26)

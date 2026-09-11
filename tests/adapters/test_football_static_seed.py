@@ -32,3 +32,26 @@ async def test_squad_terminator_unknown_team_empty_but_valid():
     assert result["source"] == "static_seed"
     assert result["team"] == "ZZZ"
     assert result["squad"] == []
+
+
+async def test_groups_adapter_missing_file_raises_not_found(monkeypatch):
+    import pytest
+
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters import static_seed
+
+    monkeypatch.setattr(static_seed, "load_wc2026", lambda: {})
+    monkeypatch.setattr(static_seed, "load_elo_seed", lambda: {})
+    with pytest.raises(NotFoundError):
+        await static_seed.StaticSeedGroupsAdapter().fetch()
+
+
+async def test_fixtures_adapter_missing_file_raises_not_found(monkeypatch):
+    import pytest
+
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters import static_seed
+
+    monkeypatch.setattr(static_seed, "load_wc2026", lambda: {})
+    with pytest.raises(NotFoundError):
+        await static_seed.StaticSeedFixturesAdapter().fetch()

@@ -545,3 +545,64 @@ async def test_football_meta_has_required_fields():
         result = await tools.football_get_groups()
     for field in ["source", "is_stale", "data_age_seconds", "fallback_used", "duration_ms"]:
         assert field in result["meta"]
+
+
+# -- 1e sim-model errors -> INVALID_INPUT ---------------------------------------
+
+
+def _malformed_draw_payload() -> dict:
+    # 1 group of 3 teams: simulate_group_stage expects 12 groups of 4.
+    return {
+        "groups": {"A": ["X", "Y", "Z"]},
+        "format": {},
+        "teams": {},
+        "ratings": {"X": 1500.0, "Y": 1500.0, "Z": 1500.0},
+        "source": "static_seed",
+    }
+
+
+async def test_simulate_group_malformed_draw_returns_invalid_input():
+    from sportiq.football import intel_tools
+
+    with patch("sportiq.football.intel_tools.football_groups_chain") as gmock, \
+         patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock:
+        gmock.fetch = AsyncMock(return_value=_fr(_malformed_draw_payload()))
+        fmock.fetch = AsyncMock(return_value=_fr({"fixtures": []}))
+        result = await intel_tools.football_simulate_group(group="A", iterations=100)
+    assert result["error"]["code"] == "INVALID_INPUT"
+
+
+async def test_simulate_bracket_malformed_draw_returns_invalid_input():
+    from sportiq.football import intel_tools
+
+    with patch("sportiq.football.intel_tools.football_groups_chain") as gmock, \
+         patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock:
+        gmock.fetch = AsyncMock(return_value=_fr(_malformed_draw_payload()))
+        fmock.fetch = AsyncMock(return_value=_fr({"fixtures": []}))
+        result = await intel_tools.football_simulate_bracket(iterations=100, seed=1)
+    assert result["error"]["code"] == "INVALID_INPUT"
+
+
+async def test_knockout_path_malformed_draw_returns_invalid_input():
+    from sportiq.football import intel_tools
+
+    payload = _malformed_draw_payload()
+    payload["ratings"]["ARG"] = 1900.0
+    with patch("sportiq.football.intel_tools.football_groups_chain") as gmock, \
+         patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock:
+        gmock.fetch = AsyncMock(return_value=_fr(payload))
+        fmock.fetch = AsyncMock(return_value=_fr({"fixtures": []}))
+        result = await intel_tools.football_knockout_path(team="ARG", iterations=100, seed=1)
+    assert result["error"]["code"] == "INVALID_INPUT"
+
+
+async def test_simulate_bracket_unseen_third_combo_returns_invalid_input():
+    from sportiq.football import intel_tools
+
+    with patch("sportiq.football.intel_tools.football_groups_chain") as gmock, \
+         patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock, \
+         patch("sportiq.football.intel_tools.simulate_tournament", side_effect=KeyError("ZZZZZZZZ")):
+        gmock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        fmock.fetch = AsyncMock(return_value=_fr({"fixtures": []}))
+        result = await intel_tools.football_simulate_bracket(iterations=100, seed=1)
+    assert result["error"]["code"] == "INVALID_INPUT"

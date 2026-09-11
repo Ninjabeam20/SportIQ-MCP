@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from sportiq.core.errors import NotFoundError
+
 _DATA_DIR = Path(__file__).parent.parent / "data"
 
 
@@ -41,6 +43,8 @@ class StaticSeedGroupsAdapter:
 
     async def fetch(self, **kwargs) -> dict:
         wc = load_wc2026()
+        if not wc.get("groups") or not load_elo_seed():
+            raise NotFoundError("static_seed groups/ratings unavailable (missing data file)")
         return {
             "groups": wc.get("groups", {}),
             "format": wc.get("format", {}),
@@ -62,6 +66,8 @@ class StaticSeedFixturesAdapter:
 
     async def fetch(self, **kwargs) -> dict:
         wc = load_wc2026()
+        if not wc.get("groups"):
+            raise NotFoundError("static_seed fixtures unavailable (missing data file)")
         teams_meta = wc.get("teams", {})
         fixtures = []
         for group, teams in wc.get("groups", {}).items():
