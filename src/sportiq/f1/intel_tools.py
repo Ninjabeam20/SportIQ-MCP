@@ -565,19 +565,22 @@ async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -
     )
 
     # Laps are required; stints are best-effort
-    if isinstance(laps_a_r, Exception) or isinstance(laps_b_r, Exception):
-        attempts = []
-        code = "ALL_SOURCES_FAILED"
-        for exc in (laps_a_r, laps_b_r):
-            if isinstance(exc, AllSourcesFailedError):
-                attempts.extend(exc.attempts)
-            elif isinstance(exc, NotFoundError):
-                code = "NOT_FOUND"
-        return error_envelope(
-            code=code,
-            message="Could not fetch lap data for one or both drivers.",
-            sources_tried=attempts,
-        )
+    for laps_r in (laps_a_r, laps_b_r):
+        if isinstance(laps_r, (AllSourcesFailedError, NotFoundError)):
+            attempts: list = []
+            code = "ALL_SOURCES_FAILED"
+            for exc in (laps_a_r, laps_b_r):
+                if isinstance(exc, AllSourcesFailedError):
+                    attempts.extend(exc.attempts)
+                elif isinstance(exc, NotFoundError):
+                    code = "NOT_FOUND"
+            return error_envelope(
+                code=code,
+                message="Could not fetch lap data for one or both drivers.",
+                sources_tried=attempts,
+            )
+        if isinstance(laps_r, BaseException):
+            raise laps_r
 
     laps_a = laps_a_r.value.get("laps", [])
     stints_a = stints_a_r.value.get("stints", []) if not isinstance(stints_a_r, Exception) else []
