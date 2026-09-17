@@ -142,14 +142,13 @@
   instances re-fetch everything.
 - **Where:** `src/sportiq/core/fallback.py`, `src/sportiq/core/cache.py`,
   `src/sportiq/core/ratelimit.py`; deployment config in `cloudbuild.yaml` / Cloud Run service.
-- **Why it matters:** currently mitigated by low traffic and (likely) max-instances=1-ish
-  scaling, but nothing in the repo pins that; a traffic spike that fans out to 3 instances
-  triples CricAPI spend invisibly.
-- **Suggested fix (single task):** this is an accepted zero-spend trade-off (Redis costs money),
-  so the *executable* fix is a guardrail, not a rewrite: set/verify `--max-instances=1` on the
-  Cloud Run service and record the invariant in `cloud.md` + a comment atop `ratelimit.py`
-  ("budget math assumes a single instance"). Revisit Redis (Upstash free tier) only when traffic
-  justifies it.
+- **Why it matters:** effective upstream spend = configured budget × live instances, and cold
+  instances re-fetch everything. On Cloud Run, multi-instance fanout risked multiplying quota
+  usage invisibly.
+- **Suggested fix (single task):** on Dell Compose, one replica (`container_name: sportiq`,
+  no replica scaling) is the operational pin; Cloud Run `--max-instances=1` (`cloud.md:77`) is
+  historical. Shared admission/cache state (Redis) is needed only if a second replica is ever
+  added.
 
 ## 6. LOW — sdist safety is an allowlist (was a blocklist; resolved)
 

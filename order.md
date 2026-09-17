@@ -65,18 +65,18 @@
 
 ## Phase 5 — stale memory/docs. Do fifth: after code settles so docs describe reality.
 
-- [ ] 5a. Tracked steel docs: `AGENTS.md:42,43,47` (`.Codex/rules/` → `.claude/rules/`, copy `CLAUDE.md` paths — do NOT create `.Codex/rules/`), `BACKERS.md:19-21` (donation-only), `PROJECT.md:206` (re-run `pytest --collect-only -q` on the branch, write the ACTUAL number — do not invent), `GAPS.md:157-159` (rewrite: Compose one replica is the pin; `cloud.md:77` max-instances is historical Cloud Run; Redis needed only if a second replica is added), `Dockerfile:35` (comment → Compose sets `PORT=8080`; behavior unchanged), `cloud.md` (one-line stale guard under `## PART 1` only — file banner already exists), `.github/workflows/test.yml:31` (comment "analytics extra is dashboard-only" — preferred over adding the extra). Skip: `SECURITY.md` hosting section (already Dell — verified current).
-- [ ] 5b. Wiki nits + index slugs: `docs/index.md:79,80,81,91,92` → `tyre-degradation`, `undercut`, `pit-strategy`, `cricket-win-probability`, fix `head-to-head` pointer. `docs/wiki/data-sources/api-football.md:21` — make the `[[../../../.claude/rules/api-budgets]]` backlink plain text (step6 A6). `docs/wiki/decisions/0007-cricket-fallback-strategy.md:22` — fix the `(CricAPI + CricSheet)` parenthetical (contradicts its own 2026-05-27 Amendment + D3a offline-only reintroduction).
-- [ ] 5e. Consistency checklist (steel docs must agree after 5a–5d): tool count 44 in `README`/`PROJECT`/`dev.md`/live `tools/list`; coverage `--cov-fail-under=84` in `test.yml`/`CLAUDE.md`/`AGENTS.md`/`PROJECT.md`; Dell-live + Task-9-done in `CLAUDE.md`/`PROJECT.md`/`GAPS.md`/`README.md:60-63,122`; `server.json` 0.3.2 == `pyproject.toml` 0.3.2; `docs/index.md` slugs == `docs/wiki/` filenames (no orphans); `pyproject.toml` sdist allowlist + `check_release_build.py` green.
+- [x] 5a. Tracked steel docs: `AGENTS.md:42,43,47` (`.Codex/rules/` → `.claude/rules/`, copy `CLAUDE.md` paths — do NOT create `.Codex/rules/`), `BACKERS.md:19-21` (donation-only), `PROJECT.md:206` (re-run `pytest --collect-only -q` on the branch, write the ACTUAL number — do not invent: 839), `GAPS.md:157-159` (rewrite: Compose one replica is the pin; `cloud.md:77` max-instances is historical Cloud Run; Redis needed only if a second replica is added), `Dockerfile:35` (comment → Compose sets `PORT=8080`; behavior unchanged), `cloud.md` (one-line stale guard under `## PART 1` only — file banner already exists), `.github/workflows/test.yml:31` (comment "analytics extra is dashboard-only" — preferred over adding the extra). Skip: `SECURITY.md` hosting section (already Dell — verified current). **DONE** 2026-09-17.
+- [x] 5b. Wiki nits + index slugs: `docs/index.md:79,80,81,91,92` → `tyre-degradation`, `undercut`, `pit-strategy`, `cricket-win-probability`, fix `head-to-head` pointer. `docs/wiki/data-sources/api-football.md:21` — make the `[[../../../.claude/rules/api-budgets]]` backlink plain text (step6 A6). `docs/wiki/decisions/0007-cricket-fallback-strategy.md:22` — fix the `(CricAPI + CricSheet)` parenthetical (contradicts its own 2026-05-27 Amendment + D3a offline-only reintroduction). **DONE** 2026-09-17.
+- [x] 5e. Consistency checklist (steel docs must agree after 5a–5d): tool count 44 in `README`/`PROJECT`/`dev.md`/live `tools/list`; coverage `--cov-fail-under=84` in `test.yml`/`CLAUDE.md`/`AGENTS.md`/`PROJECT.md`; Dell-live + Task-9-done in `CLAUDE.md`/`PROJECT.md`/`GAPS.md`/`README.md:60-63,122`; `server.json` 0.3.2 == `pyproject.toml` 0.3.2; `docs/index.md` slugs == `docs/wiki/` filenames (no orphans); `pyproject.toml` sdist allowlist + `check_release_build.py` green. **DONE** 2026-09-17.
 - [ ] 5c. Gitignored local docs — DEFAULT SKIP (not shipped; verified). Fix only if explicitly asked: `LEARNING-GUIDE.md`, `dev.md`, `interview_cheatsheet.md`, `interview_preparation_guide.md`, `BACKLOG.md:21`, `API-KEYS-AND-SETTINGS.md:3,81`, `v3.md` counts, `gcp.md`/`sep.md` bodies. (An earlier draft of this file scheduled them; correction per `muse.md`: their staleness is local-only. Consistency-everywhere = tracked files in 5a/5b + `.gitignore` keeping the rest out of the tree.)
 - [x] 5d. `core/value_bet.py:60-63` — skip `decimal_odds <= 0` like `None` (one bad bookmaker must not kill the scan); F1 quali `NotFoundError` `sources_tried` (`f1/intel_tools.py:479-483`) + cricket matchup attempts (`cricket/intel_tools.py:678`). Optional: `match_resolver` narrow to chain errors; `core/health.py:65-68` per-minute quota (keep `HealthReport` shape). Do NOT delete `simulate_group()` (used by tests). **DONE** `13e2104` (suite 814).
 - Gate: `uv run python scripts/check_release_build.py`, wiki frontmatter lint if available.
 
 ## Phase 6 — hygiene (gitignore decision). Do with Phase 5.
 
-- [ ] Commit the carried `M .gitignore` (`muse.md` line) on this branch.
-- [ ] Decide untracked: `gcp.md`, `sep.md`, `sportiq-analytics-dashboard*.png`, `.playwright-mcp/`, `muse.md` → append to `.gitignore` OR `git add` intentionally. (Untracked+unignored = accidental-commit risk. `muse.md` is a local briefing, same class as `grok_index.md` — keep it out of the public tree.)
-- [ ] `cloudbuild.yaml:16-17` targets deleted `sportiq-mcp-prod` — mark historical in-file; deletion needs explicit yes.
+- [x] Commit the carried `M .gitignore` (`muse.md` line) on this branch. **DONE** 2026-09-17.
+- [x] Decide untracked: `gcp.md`, `sep.md`, `sportiq-analytics-dashboard*.png`, `.playwright-mcp/`, `muse.md` → append to `.gitignore` OR `git add` intentionally. (Untracked+unignored = accidental-commit risk. `muse.md` is a local briefing, same class as `grok_index.md` — keep it out of the public tree.) **DONE** 2026-09-17 (appended to `.gitignore`).
+- [x] `cloudbuild.yaml:16-17` targets deleted `sportiq-mcp-prod` — mark historical in-file; deletion needs explicit yes. **DONE** 2026-09-17 (marked historical in-file).
 
 ## Phase 7 — verify, push, merge (gated)
 
@@ -156,15 +156,15 @@ Tick `[x]` only when the change is in the tree with green tests. "New" = file to
 
 | Status | File | Change |
 | :--- | :--- | :--- |
-| [ ] | `AGENTS.md` | 5a: `.claude/rules/` paths |
-| [ ] | `BACKERS.md` | 5a: donation-only |
-| [ ] | `PROJECT.md` | 5a: real collect count |
-| [ ] | `GAPS.md` | 5a: single-instance pin rewrite |
-| [ ] | `Dockerfile` | 5a: `$PORT` comment |
-| [ ] | `cloud.md` | 5a: PART 1 stale guard |
-| [ ] | `.github/workflows/test.yml` | 5a: analytics-extra comment |
-| [ ] | `docs/wiki/data-sources/api-football.md` | 5b: plain-text backlink |
-| [ ] | `docs/wiki/decisions/0007-cricket-fallback-strategy.md` | 5b: `:22` parenthetical |
+| [x] | `AGENTS.md` | 5a: `.claude/rules/` paths — **DONE** 2026-09-17 |
+| [x] | `BACKERS.md` | 5a: donation-only — **DONE** 2026-09-17 |
+| [x] | `PROJECT.md` | 5a: real collect count (839) — **DONE** 2026-09-17 |
+| [x] | `GAPS.md` | 5a: single-instance pin rewrite — **DONE** 2026-09-17 |
+| [x] | `Dockerfile` | 5a: `$PORT` comment (Compose PORT=8080) — **DONE** 2026-09-17 |
+| [x] | `cloud.md` | 5a: PART 1 stale guard — **DONE** 2026-09-17 |
+| [x] | `.github/workflows/test.yml` | 5a: analytics-extra comment — **DONE** 2026-09-17 |
+| [x] | `docs/wiki/data-sources/api-football.md` | 5b: plain-text backlink — **DONE** 2026-09-17 |
+| [x] | `docs/wiki/decisions/0007-cricket-fallback-strategy.md` | 5b: `:22` parenthetical — **DONE** 2026-09-17 |
 | [x] | `src/sportiq/core/value_bet.py` | 5d: skip `decimal_odds <= 0` — **DONE** `13e2104` |
 | [x] | `tests/unit/test_value_bet.py` | 5d: zero-price test — **DONE** `13e2104` |
 | [ ] | `docs/log.md` | Phase 7: batch entry (local journal, still required) |
@@ -173,7 +173,8 @@ Tick `[x]` only when the change is in the tree with green tests. "New" = file to
 
 | Status | File | Change |
 | :--- | :--- | :--- |
-| [ ] | `.gitignore` | carried `muse.md` line + clutter (`gcp.md`, `sep.md`, `sportiq-analytics-dashboard*.png`, `.playwright-mcp/`, `muse.md`) — commit on branch |
+| [x] | `.gitignore` | carried `muse.md` line + clutter (`gcp.md`, `sep.md`, `sportiq-analytics-dashboard*.png`, `.playwright-mcp/`, `muse.md`) — **DONE** 2026-09-17 |
+| [x] | `cloudbuild.yaml` | historical mark banner added — **DONE** 2026-09-17 |
 
 ### Explicitly NOT in the checklist (gated / deferred / do-not-touch)
 
@@ -244,5 +245,12 @@ These files were scanned and contain no executable work for this batch. Recorded
   - 4d: F1 laps/stints 10s/60s TTLs updated in `docs/wiki/chains/f1-laps-chain.md`, `f1-stints-chain.md`, and `docs/index.md`; football groups ~1y intentional TTL documented in `docs/wiki/chains/football-groups-chain.md` and comment in `src/sportiq/football/chains.py`.
   - 4e: `src/sportiq/cricket/chains.py` module docstring updated to reflect exact adapter sequences, dropped `→ stale-cache` suffix, and added explanatory note.
   - Evidence: unit test gate `uv run pytest tests/unit -q` **405 passed**; `uv run pytest tests/unit/test_o3_cache_ttls.py -q` **12 passed**; touched tool/adapter suites **126 passed**; full test suite `uv run pytest -q` **839 passed** (baseline 831 + 8 new tests); `ruff check` clean on all touched files. 1b, 2b, 3b, 3d, 3e, Phase 5–8 open.
+- 2026-09-17 (bot work session 3): **Phase 5 (5a, 5b, 5e) + Phase 6 in full DONE**.
+  - 5a: `AGENTS.md` updated from `.Codex/rules/` to `.claude/rules/` matching `CLAUDE.md`; `BACKERS.md` updated to donation-only wording (all tools free/unlocked); `PROJECT.md` updated collected test count to actual 839; `GAPS.md` section 5 rewritten to reflect Compose one-replica operational pin and Cloud Run maxScale historical; `Dockerfile` line 35 updated with Compose PORT=8080 comment; `cloud.md` added one-line stale guard under PART 1; `.github/workflows/test.yml` added comment that analytics extra is dashboard-only; `SECURITY.md` verified already current on Dell hosting.
+  - 5b: `docs/index.md` slugs updated: `tyre-degradation-model` → `tyre-degradation`, `undercut-model` → `undercut`, `pit-strategy-model` → `pit-strategy`, `cricket-win-probability-model` → `cricket-win-probability`, `head-to-head` → `cricket-head-to-head` (zero orphans, zero missing slugs); `docs/wiki/data-sources/api-football.md` converted `[[../../../.claude/rules/api-budgets]]` to plain text `.claude/rules/api-budgets.md`; `docs/wiki/decisions/0007-cricket-fallback-strategy.md` removed contradicting `+ CricSheet` parenthetical in Option 3.
+  - 5e: Verified consistency checklist: tool count 44 in `README`/`PROJECT`/FastMCP server `list_tools`; `--cov-fail-under=84` aligned across `test.yml`, `CLAUDE.md`, `AGENTS.md`, `PROJECT.md`; Dell-live and Task 9 teardown aligned across `CLAUDE.md`, `PROJECT.md`, `GAPS.md`, `README.md`, `AGENTS.md`; `server.json` version 0.3.2 == `pyproject.toml` version 0.3.2; all `docs/index.md` slugs match `docs/wiki/` filenames; `check_release_build.py` green.
+  - Phase 6: Appended `muse.md`, `gcp.md`, `sep.md`, `sportiq-analytics-dashboard*.png`, `.playwright-mcp/` to `.gitignore`; marked `cloudbuild.yaml` as historical due to Cloud Run decommission in Task 9.
+  - Evidence: `uv run pytest tests/unit -q` **405 passed**; `uv run pytest` **839 passed**; `uv run ruff check .` clean; `uv run python scripts/check_release_build.py` OK (1 wheel + 1 sdist v0.3.2 allowlisted). Phase 7 and Phase 8 remain gated/deferred.
+
 
 

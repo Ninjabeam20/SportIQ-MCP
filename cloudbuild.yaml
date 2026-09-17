@@ -1,3 +1,9 @@
+# HISTORICAL (Task 9, 2026-09-02) — DO NOT USE / DO NOT DELETE WITHOUT EXPLICIT YES
+# Production is the Dell home server via Docker Compose. Cloud Run sportiq-mcp,
+# scheduler sportiq-keepwarm, and Artifact Registry cloud-run-source-deploy were
+# deleted. The target project `sportiq-mcp-prod` below is decommissioned.
+# Preserved for reference only.
+#
 # Kaniko build with remote layer caching in Artifact Registry.
 #
 # Why Kaniko: a plain `gcloud run deploy --source` build runs on a clean VM with

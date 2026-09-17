@@ -18,7 +18,7 @@ _The first backers to go all-in. Be the first._
 
 ## Pro Supporters
 
-_Sponsors unlocking the advanced intelligence tools._
+_Sponsors supporting ongoing development and hosting (every tool is fully unlocked either way)._
 
 <!-- - [@username](https://github.com/username) -->
 

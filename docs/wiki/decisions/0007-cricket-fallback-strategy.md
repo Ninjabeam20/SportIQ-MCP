@@ -19,7 +19,7 @@ Phase 1 requires five cricket RAW tools backed by reliable data. The options eva
 
 1. **CricAPI only** — 100 req/day cap is too low for production use under load.
 2. **CricAPI + Cricbuzz scraper by default** — Cricbuzz ToS explicitly prohibits scraping. Shipping a ToS-violating adapter enabled by default exposes the package (and its users) to legal risk.
-3. **CricAPI + NDTV Sports + opt-in scrapers + RapidAPI paid mirror** — Free legal primary (CricAPI + CricSheet), ToS-risky adapters opt-in, and one licensed paid escape hatch.
+3. **CricAPI + NDTV Sports + opt-in scrapers + RapidAPI paid mirror** — Free legal primary (CricAPI), ToS-risky adapters opt-in, and one licensed paid escape hatch.
 
 Option 3 was chosen.
 

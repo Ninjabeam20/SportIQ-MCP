@@ -17,6 +17,8 @@ This is the runbook to put SportIQ online at a public URL so it works on **any**
 
 ## PART 1 — Deploy (do this first)
 
+> **Historical / superseded:** Do not execute these steps — Cloud Run was decommissioned in Task 9 (2026-09-02); production is now the Dell home server.
+
 ### 1a. One-time setup
 
 1. **Install the Google Cloud CLI** (Mac):

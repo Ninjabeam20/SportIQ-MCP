@@ -18,7 +18,7 @@ Primary network source for World Cup 2026 fixtures, standings, team stats, squad
 `APIFOOTBALL_KEY` (header `x-apisports-key`). Missing key -> `MissingCredentialsError`; the chain walks past.
 
 ## Free-tier limits
-100 req/day, shared across endpoints (one `api_football` budget). See [[../../../.claude/rules/api-budgets]].
+100 req/day, shared across endpoints (one `api_football` budget). See `.claude/rules/api-budgets.md`.
 
 ## Endpoints used
 | Endpoint | Tool | Chain |

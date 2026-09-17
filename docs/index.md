@@ -76,9 +76,9 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 ### F1
 
 - [[quali-analysis]] — Best-lap extraction, gap-to-pole seconds, and projected grid from raw qualifying lap data.
-- [[tyre-degradation-model]] — Linear fit (lap_time = intercept + slope × tyre_age) per compound with outlier filtering.
-- [[undercut-model]] — Pure-arithmetic undercut viability calculator.
-- [[pit-strategy-model]] — Predicts optimal stop laps and compound sequence for the remainder of a race.
+- [[tyre-degradation]] — Linear fit (lap_time = intercept + slope × tyre_age) per compound with outlier filtering.
+- [[undercut]] — Pure-arithmetic undercut viability calculator.
+- [[pit-strategy]] — Predicts optimal stop laps and compound sequence for the remainder of a race.
 - [[race-pace]] — Per-compound linear degradation comparison between two drivers; fresh-tyre intercept delta and overall winner.
 
 ### Cricket
@@ -88,8 +88,8 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[captain-score]] — `expected_points(player, venue, opp, form)` projection used as solver objective.
 - [[form-index]] — 0-100 score blending recent innings with career baseline.
 - [[pitch-report]] — Friendliness profile + recommendation derived from a venue record.
-- [[cricket-win-probability-model]] — Heuristic pre-match T20 win probability using form (50%), H2H (30%), and venue tilt (20%).
-- [[head-to-head]] — `summarise_h2h()` scores squads by player form edges and derives an H2H win-rate estimate.
+- [[cricket-win-probability]] — Heuristic pre-match T20 win probability using form (50%), H2H (30%), and venue tilt (20%).
+- [[cricket-head-to-head]] — `summarise_h2h()` scores squads by player form edges and derives an H2H win-rate estimate.
 - [[player-matchup]] — Role-aware heuristic comparing batter avg, bowler avg, and strike rate to assign an edge holder.
 
 ## Chains

@@ -28,6 +28,7 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Sync deps
+        # analytics extra is dashboard-only (scripts/dashboard.py); not needed for CI tests
         run: uv sync --extra dev --python ${{ matrix.python-version }}
 
       - name: Lint

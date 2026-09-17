@@ -32,7 +32,7 @@ RUN mkdir -p src/sportiq \
 COPY src ./src
 RUN uv pip install --system --no-deps --reinstall .
 
-# Serve over HTTP. Cloud Run/Fly/Render inject $PORT; default to 8080 locally.
+# Serve over HTTP. Compose sets PORT=8080; default to 8080 locally (behavior unchanged).
 ENV SPORTIQ_TRANSPORT=http \
     PORT=8080
 EXPOSE 8080

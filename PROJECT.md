@@ -203,7 +203,7 @@ Karpathy three-layer ownership:
 
 ### 3.6 Testing architecture
 
-758 collected tests, four layers (see `.claude/rules/testing.md`):
+839 collected tests, four layers (see `.claude/rules/testing.md`):
 `tests/unit/` (pure models + core, no I/O) → `tests/adapters/` (respx-mocked HTTP against
 committed cassettes in `tests/fixtures/{source}/`) → `tests/chains/` (stub adapters; order,
 fallback, stale-serve, budget behavior) → `tests/tools/` (envelope shape end-to-end with stubbed

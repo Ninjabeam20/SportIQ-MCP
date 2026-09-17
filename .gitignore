@@ -149,3 +149,11 @@ interview_preparation_guide.md
 # these regenerated GIF/MOV variants are 14–29 MiB each. Kept local only.
 docs/assets/sportiq_new*.gif
 docs/assets/sportiq_new*.mov
+
+# Local briefings, migration notes, and browser artifacts — keep out of public repo
+muse.md
+gcp.md
+sep.md
+sportiq-analytics-dashboard*.png
+.playwright-mcp/
+
