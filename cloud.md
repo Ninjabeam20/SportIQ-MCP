@@ -1,23 +1,24 @@
-# Deploying SportIQ MCP to the cloud (Google Cloud Run)
+# STOP — Cloud Run runbook is HISTORICAL only
 
-This is the runbook to put SportIQ online at a public URL so it works on **any** AI
-(claude.ai web, ChatGPT, phone apps) — not just desktop apps. The repo already has the
-`Dockerfile` and HTTP support; you just run the steps below.
+**Do not follow the steps in this file.** Production is **Dell Compose only**:
+`https://sportiq.utkarshgupta.org/mcp` (`restart: unless-stopped`, single replica).
+Never `gcloud run deploy`, never re-enable a GCP billing card, never set `K_SERVICE`
+on the Dell, never copy `sportiq-keepwarm` there.
 
-> **HISTORICAL (Task 9, 2026-09-02).** Cloud Run `sportiq-mcp`, scheduler
+> **HISTORICAL ARCHIVE (Task 9, 2026-09-02).** Cloud Run `sportiq-mcp`, scheduler
 > `sportiq-keepwarm`, and Artifact Registry `cloud-run-source-deploy` were
-> deleted. Production is only the Dell: `https://sportiq.utkarshgupta.org/mcp`.
-> The old `*.run.app` URLs 404. This file is the old Cloud Run runbook — do
-> **not** `gcloud run deploy`. Do not re-enable a GCP billing card.
-> Always-on idle on the Dell (`restart: unless-stopped`). **Never** set
-> `K_SERVICE` on the Dell. **Never** copy `sportiq-keepwarm` there.
-> Project `sportiq-mcp-prod` is `DELETE_REQUESTED`; the billing card is gone.
+> deleted. Old `*.run.app` URLs 404. Project `sportiq-mcp-prod` is
+> `DELETE_REQUESTED`. Kept below only so we remember what was torn down.
 
 ---
 
-## PART 1 — Deploy (do this first)
+## Historical archive — former Cloud Run deploy steps (DO NOT RUN)
 
-> **Historical / superseded:** Do not execute these steps — Cloud Run was decommissioned in Task 9 (2026-09-02); production is now the Dell home server.
+> **Superseded.** The sections below are the old Google Cloud Run runbook. They are
+> not a current deploy path. For live ops use Dell Compose docs / `docker compose`
+> on the home server — not this file.
+
+### Archive PART 1 — Deploy (obsolete)
 
 ### 1a. One-time setup
 
@@ -100,7 +101,7 @@ curl -X POST <URL>/mcp \
 
 ---
 
-## PART 2 — Connect it to AIs (after deploy)
+## Archive PART 2 — Connect it to AIs (after deploy)
 
 Use your `<URL>/mcp` link.
 
@@ -112,7 +113,7 @@ Use your `<URL>/mcp` link.
 
 ---
 
-## PART 3 — Maintenance & later (as needed)
+## Archive PART 3 — Maintenance & later (as needed)
 
 - **Push an update:** after changing code, just re-run the same `gcloud run deploy` command.
   It rebuilds and swaps in the new version with zero downtime.
@@ -132,7 +133,7 @@ Use your `<URL>/mcp` link.
 
 ---
 
-## Quick reference
+## Archive — Quick reference (obsolete)
 
 | Thing | Value |
 | --- | --- |
@@ -144,7 +145,7 @@ Use your `<URL>/mcp` link.
 
 ---
 
-## Canary deploy (current free edition)
+## Archive — Canary deploy (obsolete; was free Cloud Run edition)
 
 The paywall was removed on 2026-07-01 (ADR-0011 reversed). `SPORTIQ_VALID_KEYS` /
 `SPORTIQ_FREE_TOOLS` **do not exist** in current code. Do not set them.

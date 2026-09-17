@@ -1,6 +1,6 @@
 # order.md — execution order for the unexecuted backlog
 
-> **ACTIVE BRANCH: `bot`** (2026-09-11 reconciliation). Do **not** create `audit-fixes` or rename mid-flight — work on existing `bot` tip `971b16f` (suite **814**).
+> **ACTIVE BRANCH: `bot`** (refreshed 2026-09-17). Tip **`f25a721`**, suite **839**. Do **not** create `audit-fixes` or rename mid-flight — work only on `bot`. Phases 1–7 local verify DONE; **Next:** owner `yes push` (then separate merge/`yes deploy`). Do not push/PR/merge/deploy without that yes.
 > Historical: Branch `audit-fixes` (cut from `main` @ `5cfa12f`, 2026-09-05) — superseded for execution.
 > Rule: ALL remaining work below happens on **`bot`**. `main` + Dell stay untouched until Phase 7/8 gates pass.
 > No pre-existing file does this job: `grok_index.md` has an execution order but Waves A–C are all `[x]` (hosting mission closed 2026-09-02). `BACKLOG.md` is deferred ideas (promotion needs an ADR — NOT scheduled here). `GAPS.md` is severity-ordered but mostly RESOLVED. This file sequences the **2026-09-05 full-repo audit findings** (previously read-only, none executed) plus the small GAPS/git-hygiene leftovers.
@@ -235,7 +235,7 @@ These files were scanned and contain no executable work for this batch. Recorded
 - Operator suite claim accepted: **824 passed** (was 814). Ruff clean.
 - Direction: **ON TRACK.** 1b correctly left open (R7 stands). 1e + AF/FD/openfootball/static_seed/derived via fixtures chain match order.md Phase 2 intent.
 - Corrective / next tasks already in order.md: **3a+3c+Phase4 DONE**; next **Phase 5** steel docs + **Phase 6** hygiene. Still skip 1b (R7), 2b/R6 unless cassette; Phase 7/8 hard-stop (merge/deploy last).
-- Next Gemini slice: **Phase 5** steel docs + **Phase 6** hygiene (stop before Phase 7/8 merge/deploy).
+- Next: **Phase 7 remote** only after owner `yes push` (`git push -u origin bot`); then PR/merge only with separate yes; **Phase 8** Dell deploy only with separate `yes deploy`. Optional leftovers (3b/3d/3e) not required for push.
 
 - 2026-09-17 (bot work session): **Phase 3a DONE** — Implemented shared `extract_player_stats` in `cricket/models/player_matchup.py` handling wrapped `{data: {stats}}`, unwrapped `{stats}` (CricAPI), and `{values}` (RapidAPI) with `playingRole` / `role`. Wired into `compute_matchup`, `_t20_career_numbers` (`cricket/intel_tools.py`), and `player_form_index` (`cricket/models/form_index.py`). TDD: added 7 failing cassette-shape tests across `tests/unit/test_player_matchup.py`, `tests/unit/test_form_index.py`, and `tests/tools/test_cricket_player_matchup.py`; verified failure under unwrapped payload shapes; implemented extractor; all 39 focused tests green (`tests/unit/test_player_matchup.py tests/unit/test_form_index.py tests/tools/test_cricket_player_matchup.py`), unit test gate `uv run pytest tests/unit -q` **404 passed**, full test suite `uv run pytest` **831 passed** (824 baseline + 7 new); `ruff check` clean on changed files. 1b, 2b, 3b-3e, Phase 4–8 open.
 - 2026-09-17 (bot work session 2): **Phase 3c DONE** + **Phase 4 in full DONE** (4a, 4c, 4d, 4e; 4b already done).
@@ -252,10 +252,11 @@ These files were scanned and contain no executable work for this batch. Recorded
   - Phase 6: Appended `muse.md`, `gcp.md`, `sep.md`, `sportiq-analytics-dashboard*.png`, `.playwright-mcp/` to `.gitignore`; marked `cloudbuild.yaml` as historical due to Cloud Run decommission in Task 9.
   - Evidence: `uv run pytest tests/unit -q` **405 passed**; `uv run pytest` **839 passed**; `uv run ruff check .` clean; `uv run python scripts/check_release_build.py` OK (1 wheel + 1 sdist v0.3.2 allowlisted). Phase 7 and Phase 8 remain gated/deferred.
 - 2026-09-17 (bot work session 4): **Phase 7 LOCAL VERIFY DONE**.
-  - Tip SHA: `d4b226e` on branch `bot` (ahead of `origin/bot` by 6). Clean tree verified.
+  - Tip SHA at verify: `d4b226e` on branch `bot` (ahead of `origin/bot` by 6). Clean tree verified.
   - Full gates: `uv sync --extra dev --extra analytics` clean (114 pkgs); `uv run pytest -q` **839 passed** (1 warning); CI coverage gate `uv run pytest --cov=sportiq --cov-fail-under=84` **91.64%**; `uv run ruff check .` clean; `uv run python scripts/check_release_build.py` OK (1 wheel + 1 sdist v0.3.2 allowlisted).
   - Local log entry appended to gitignored `docs/log.md`.
   - Push / PR / merge / deploy untouched and clearly left unchecked.
+  - Follow-up: `order.md` Phase 7 ticks committed as `f25a721` (ahead of `origin/bot` by 7). Local verify evidence + order tick both live on tip `f25a721`.
   - Status: Ready for push when owner says yes.
 
 
