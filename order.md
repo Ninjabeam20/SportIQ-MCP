@@ -80,8 +80,8 @@
 
 ## Phase 7 — verify, push, merge (gated)
 
-- [ ] Full gates on branch: `uv sync --extra dev --extra analytics`, `uv run pytest -q`, `ruff check`, `uv run python scripts/check_release_build.py`.
-- [ ] Append `docs/log.md` entry for the batch (note: `docs/log.md` is currently gitignored-working-copy — keep local per ignore rule).
+- [x] Full gates on branch: `uv sync --extra dev --extra analytics`, `uv run pytest -q`, `ruff check`, `uv run python scripts/check_release_build.py`. **DONE** 2026-09-17 (839 passed, ruff clean, release build OK).
+- [x] Append `docs/log.md` entry for the batch (note: `docs/log.md` is currently gitignored-working-copy — keep local per ignore rule). **DONE** 2026-09-17.
 - [ ] Push branch (needs your explicit `yes` in-chat per hard-stop convention for shared-state ops): `git push -u origin bot` (was audit-fixes) — **NO PUSH** per 2026-09-11; local commit only. **DEFERRED / hard stop** — Phase 7 push-to-main UNCHECKED (2026-09-11).
 - [ ] Open PR → review → merge to `main`. Tag only if releasing (release flow = `/project:release`, needs explicit yes).
 
@@ -167,7 +167,7 @@ Tick `[x]` only when the change is in the tree with green tests. "New" = file to
 | [x] | `docs/wiki/decisions/0007-cricket-fallback-strategy.md` | 5b: `:22` parenthetical — **DONE** 2026-09-17 |
 | [x] | `src/sportiq/core/value_bet.py` | 5d: skip `decimal_odds <= 0` — **DONE** `13e2104` |
 | [x] | `tests/unit/test_value_bet.py` | 5d: zero-price test — **DONE** `13e2104` |
-| [ ] | `docs/log.md` | Phase 7: batch entry (local journal, still required) |
+| [x] | `docs/log.md` | Phase 7: batch entry (local journal, still required) — **DONE** 2026-09-17 |
 
 ### Phase 6 — hygiene
 
@@ -251,6 +251,13 @@ These files were scanned and contain no executable work for this batch. Recorded
   - 5e: Verified consistency checklist: tool count 44 in `README`/`PROJECT`/FastMCP server `list_tools`; `--cov-fail-under=84` aligned across `test.yml`, `CLAUDE.md`, `AGENTS.md`, `PROJECT.md`; Dell-live and Task 9 teardown aligned across `CLAUDE.md`, `PROJECT.md`, `GAPS.md`, `README.md`, `AGENTS.md`; `server.json` version 0.3.2 == `pyproject.toml` version 0.3.2; all `docs/index.md` slugs match `docs/wiki/` filenames; `check_release_build.py` green.
   - Phase 6: Appended `muse.md`, `gcp.md`, `sep.md`, `sportiq-analytics-dashboard*.png`, `.playwright-mcp/` to `.gitignore`; marked `cloudbuild.yaml` as historical due to Cloud Run decommission in Task 9.
   - Evidence: `uv run pytest tests/unit -q` **405 passed**; `uv run pytest` **839 passed**; `uv run ruff check .` clean; `uv run python scripts/check_release_build.py` OK (1 wheel + 1 sdist v0.3.2 allowlisted). Phase 7 and Phase 8 remain gated/deferred.
+- 2026-09-17 (bot work session 4): **Phase 7 LOCAL VERIFY DONE**.
+  - Tip SHA: `d4b226e` on branch `bot` (ahead of `origin/bot` by 6). Clean tree verified.
+  - Full gates: `uv sync --extra dev --extra analytics` clean (114 pkgs); `uv run pytest -q` **839 passed** (1 warning); CI coverage gate `uv run pytest --cov=sportiq --cov-fail-under=84` **91.64%**; `uv run ruff check .` clean; `uv run python scripts/check_release_build.py` OK (1 wheel + 1 sdist v0.3.2 allowlisted).
+  - Local log entry appended to gitignored `docs/log.md`.
+  - Push / PR / merge / deploy untouched and clearly left unchecked.
+  - Status: Ready for push when owner says yes.
+
 
 
 
