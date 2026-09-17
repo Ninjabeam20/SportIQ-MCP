@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sportiq.cricket.models.form_index import compute_form_index
+from sportiq.cricket.models.form_index import compute_form_index, player_form_index
 
 
 def test_form_score_is_bounded_0_to_100():
@@ -57,3 +57,46 @@ def test_samples_reflects_only_recent_window():
     innings = [{"runs": 30, "balls": 25}] * 12
     result = compute_form_index(innings, career_avg=30.0, career_sr=130.0)
     assert result["samples"] == 5  # weighted window is 5 newest
+
+
+# --- Cassette-shape tests (unwrapped CricAPI and RapidAPI) ---
+
+def test_player_form_index_unwrapped_cricapi():
+    """Unwrapped CricAPI cassette payload derives non-50 form score from career stats."""
+    import json
+    from pathlib import Path
+
+    fixture_path = Path(__file__).parents[1] / "fixtures" / "cricapi" / "players_info.json"
+    raw_fixture = json.loads(fixture_path.read_text())
+    unwrapped = raw_fixture["data"]
+
+    result = player_form_index(unwrapped)
+    # Kohli career avg 51.39, sr 137.96 -> baseline ~66.6
+    assert result["form_score"] > 55.0
+    assert result["trend"] == "stable"
+    assert result["samples"] == 0
+
+
+def test_player_form_index_wrapped_cricapi():
+    """Wrapped {data: {stats}} CricAPI payload also derives form score."""
+    import json
+    from pathlib import Path
+
+    fixture_path = Path(__file__).parents[1] / "fixtures" / "cricapi" / "players_info.json"
+    wrapped = json.loads(fixture_path.read_text())
+
+    result = player_form_index(wrapped)
+    assert result["form_score"] > 55.0
+
+
+def test_player_form_index_rapidapi_career():
+    """RapidAPI career values shape derives form score."""
+    import json
+    from pathlib import Path
+
+    fixture_path = Path(__file__).parents[1] / "fixtures" / "rapidapi" / "player_career.json"
+    rapid_data = json.loads(fixture_path.read_text())
+
+    result = player_form_index(rapid_data)
+    # T20I avg 51.39, sr 137.96 -> baseline ~66.6
+    assert result["form_score"] > 55.0

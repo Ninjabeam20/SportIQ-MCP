@@ -47,7 +47,7 @@
 
 ## Phase 3 — model/math correctness. Do third: behavior-visible, each isolated.
 
-- [ ] 3a. Player-stat extractor (one fix, three readers): write a single extractor accepting wrapped `{data:{stats}}` AND unwrapped `{stats}`/`{values}` with `playingRole` (CricAPI unwraps in the adapter — rows live at `payload["stats"]`, cassette `tests/fixtures/cricapi/players_info.json`; RapidAPI at `values`, cassette `tests/fixtures/rapidapi/player_career.json`). Wire into `cricket/models/player_matchup.py:30-55`, `cricket/intel_tools.py:334-368` `_t20_career_numbers`, `cricket/models/form_index.py:117-118`. Tests: feed unwrapped cassette shapes → non-`other` matchup when roles/averages exist (`test_player_matchup.py`, `test_form_index.py`, `test_cricket_player_matchup.py`).
+- [x] 3a. Player-stat extractor (one fix, three readers): write a single extractor accepting wrapped `{data:{stats}}` AND unwrapped `{stats}`/`{values}` with `playingRole` (CricAPI unwraps in the adapter — rows live at `payload["stats"]`, cassette `tests/fixtures/cricapi/players_info.json`; RapidAPI at `values`, cassette `tests/fixtures/rapidapi/player_career.json`). Wire into `cricket/models/player_matchup.py:30-55`, `cricket/intel_tools.py:334-368` `_t20_career_numbers`, `cricket/models/form_index.py:117-118`. Tests: feed unwrapped cassette shapes → non-`other` matchup when roles/averages exist (`test_player_matchup.py`, `test_form_index.py`, `test_cricket_player_matchup.py`). **DONE** 2026-09-17 on `bot`: `extract_player_stats` in `player_matchup.py`, wired into `_t20_career_numbers` and `player_form_index`; 7 new cassette tests across unit and tools; unit gate 404 passed, full suite 831 passed.
 - [ ] 3b. (Optional, low impact) `f1/data/points.py:8,14-26` — fastest-lap bonus only when `year < 2025`. Skip if the batch is large.
 - [ ] 3c. Dream11 scoring — align the SKILL, not the code: copy values from `docs/wiki/models/dream11-scoring.md` (code `scoring.py` 50→+4, 100→+8, maiden +12 already agrees with the wiki) into `.claude/skills/dream11-scoring/SKILL.md` (still 25/50/75/100 + maiden +8). Do not touch `scoring.py` unless live Dream11 tables are wanted.
 - [ ] 3d. (Optional) `f1/models/race_pace.py:62,66` — require `sample_count >= 2`, `faster = None` on `pace_delta == 0`; `tyre_deg.py:93` — document enumerate-index intercept; `group_sim.py:276` — sum-then-round `p_advance`; `theodds.py:60-68` — leave zero-bookmaker events unless trivial (value-bets `events_analysed` counts rated teams, not bookmakers).
@@ -134,10 +134,10 @@ Tick `[x]` only when the change is in the tree with green tests. "New" = file to
 
 | Status | File | Change |
 | :--- | :--- | :--- |
-| [ ] | `src/sportiq/cricket/intel_tools.py` | 3a: shared wrapped/unwrapped extractor in `_t20_career_numbers`; 4a: form-index `staleness_meta`, matchup attempts |
-| [ ] | `src/sportiq/cricket/models/player_matchup.py` | 3a: consume extractor output |
-| [ ] | `src/sportiq/cricket/models/form_index.py` | 3a: unwrapped `stats` fix |
-| [ ] | `tests/unit/test_player_matchup.py`, `test_form_index.py`, `tests/tools/test_cricket_player_matchup.py` | 3a: cassette-shape tests |
+| [x] | `src/sportiq/cricket/intel_tools.py` | 3a: shared wrapped/unwrapped extractor in `_t20_career_numbers` — **DONE** 2026-09-17; 4a: form-index `staleness_meta`, matchup attempts still open |
+| [x] | `src/sportiq/cricket/models/player_matchup.py` | 3a: `extract_player_stats` + consume in `compute_matchup` — **DONE** 2026-09-17 |
+| [x] | `src/sportiq/cricket/models/form_index.py` | 3a: unwrapped `stats` fix via `extract_player_stats` — **DONE** 2026-09-17 |
+| [x] | `tests/unit/test_player_matchup.py`, `test_form_index.py`, `tests/tools/test_cricket_player_matchup.py` | 3a: cassette-shape tests — **DONE** 2026-09-17 (39 focused passed) |
 | [ ] | `.claude/skills/dream11-scoring/SKILL.md` (+ mirror `.agents/skills/dream11-scoring/SKILL.md` if same content) | 3c: values ← wiki (code untouched) | — leave unless done (2026-09-11)
 | [ ] | `src/sportiq/f1/models/race_pace.py`, `f1/data/points.py`, `f1/adapters/fastf1_local.py`, `football/models/group_sim.py:276`, `football/adapters/theodds.py`, `cricket/match_resolver.py`, `core/health.py` | 3d/3e/5d optionals — take only if trivially small |
 
@@ -233,5 +233,8 @@ These files were scanned and contain no executable work for this batch. Recorded
 - Tip `af21767` on `bot` (ahead of `origin/bot` by 2). **Not pushed.** `main` untouched.
 - Operator suite claim accepted: **824 passed** (was 814). Ruff clean.
 - Direction: **ON TRACK.** 1b correctly left open (R7 stands). 1e + AF/FD/openfootball/static_seed/derived via fixtures chain match order.md Phase 2 intent.
-- Corrective / next tasks already in order.md: **3a** player-stat extractor (next behavior-visible); then 3c skill; Phase 4 observability; Phase 5 steel docs; Phase 6 hygiene. Still skip 2b/R6 unless cassette; Phase 7/8 hard-stop.
-- Next OpenCode slice: **Phase 3a** (cassette-shape tests first), one commit.
+- Corrective / next tasks already in order.md: **3a DONE**; next **3c** Dream11 skill + Phase 4 observability; then Phase 5 steel docs + Phase 6 hygiene. Still skip 1b (R7), 2b/R6 unless cassette; Phase 7/8 hard-stop (merge/deploy last).
+- Next Gemini slice: **Phase 3c** (Dream11 SKILL align), then Phase 4.
+
+- 2026-09-17 (bot work session): **Phase 3a DONE** — Implemented shared `extract_player_stats` in `cricket/models/player_matchup.py` handling wrapped `{data: {stats}}`, unwrapped `{stats}` (CricAPI), and `{values}` (RapidAPI) with `playingRole` / `role`. Wired into `compute_matchup`, `_t20_career_numbers` (`cricket/intel_tools.py`), and `player_form_index` (`cricket/models/form_index.py`). TDD: added 7 failing cassette-shape tests across `tests/unit/test_player_matchup.py`, `tests/unit/test_form_index.py`, and `tests/tools/test_cricket_player_matchup.py`; verified failure under unwrapped payload shapes; implemented extractor; all 39 focused tests green (`tests/unit/test_player_matchup.py tests/unit/test_form_index.py tests/tools/test_cricket_player_matchup.py`), unit test gate `uv run pytest tests/unit -q` **404 passed**, full test suite `uv run pytest` **831 passed** (824 baseline + 7 new); `ruff check` clean on changed files. 1b, 2b, 3b-3e, Phase 4–8 open.
+

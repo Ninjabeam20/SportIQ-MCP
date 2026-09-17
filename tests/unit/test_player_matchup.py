@@ -142,3 +142,80 @@ def test_edge_reason_max_120_chars():
     """edge_reason must not exceed 120 characters."""
     result = compute_matchup(_batter("A", batting_avg=99.0), _bowler("B", bowling_avg=10.0))
     assert len(result["edge_reason"]) <= 120
+
+
+# --- Cassette-shape tests (unwrapped CricAPI and RapidAPI) ---
+
+def test_unwrapped_cricapi_cassette_shape_non_other():
+    """Feed unwrapped CricAPI cassette shape → non-other matchup with signals."""
+    import json
+    from pathlib import Path
+
+    fixture_path = Path(__file__).parents[1] / "fixtures" / "cricapi" / "players_info.json"
+    raw_fixture = json.loads(fixture_path.read_text())
+    # CricAPI adapter unwraps response.data:
+    kohli_unwrapped = raw_fixture["data"]
+
+    bumrah_unwrapped = {
+        "id": "p_bumrah_001",
+        "name": "Jasprit Bumrah",
+        "playingRole": "Bowler",
+        "stats": [
+            {"fn": "bowling", "matchtype": "t20i", "stat": "Average", "value": "19.66"},
+            {"fn": "bowling", "matchtype": "t20i", "stat": "Economy", "value": "6.55"},
+            {"fn": "bowling", "matchtype": "t20i", "stat": "Wickets", "value": "74"},
+        ],
+    }
+
+    result = compute_matchup(kohli_unwrapped, bumrah_unwrapped)
+    assert result["matchup_type"] == "batter_vs_bowler"
+    assert result["edge_holder"] == "player_b"
+    assert result["player_a"] == "Virat Kohli"
+    assert result["player_b"] == "Jasprit Bumrah"
+    assert result["role_a"] == "Batter"
+    assert result["role_b"] == "Bowler"
+    assert result["signals"]["batting_avg_a"] == 51.39
+    assert result["signals"]["strike_rate_a"] == 137.96
+    assert result["signals"]["bowling_avg_b"] == 19.66
+
+
+def test_wrapped_cricapi_shape_non_other():
+    """Feed wrapped {data: {stats}} CricAPI shape → non-other matchup."""
+    import json
+    from pathlib import Path
+
+    fixture_path = Path(__file__).parents[1] / "fixtures" / "cricapi" / "players_info.json"
+    kohli_wrapped = json.loads(fixture_path.read_text())
+
+    bumrah_wrapped = {
+        "data": {
+            "name": "Jasprit Bumrah",
+            "playingRole": "Bowler",
+            "stats": [
+                {"fn": "bowling", "matchtype": "t20i", "stat": "Average", "value": "19.66"},
+            ],
+        }
+    }
+
+    result = compute_matchup(kohli_wrapped, bumrah_wrapped)
+    assert result["matchup_type"] == "batter_vs_bowler"
+    assert result["edge_holder"] == "player_b"
+    assert result["signals"]["batting_avg_a"] == 51.39
+    assert result["signals"]["bowling_avg_b"] == 19.66
+
+
+def test_rapidapi_career_shape_in_matchup():
+    """Feed RapidAPI values shape with role → non-other matchup."""
+    import json
+    from pathlib import Path
+
+    fixture_path = Path(__file__).parents[1] / "fixtures" / "rapidapi" / "player_career.json"
+    rapid_data = json.loads(fixture_path.read_text())
+    rapid_batter = {"role": "batter", **rapid_data}
+
+    bowler = _bowler("Bumrah", bowling_avg=20.0)
+
+    result = compute_matchup(rapid_batter, bowler)
+    assert result["matchup_type"] == "batter_vs_bowler"
+    assert result["signals"]["batting_avg_a"] == 51.39
+    assert result["signals"]["strike_rate_a"] == 137.96

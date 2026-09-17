@@ -1,7 +1,8 @@
 """Tool-layer tests for cricket_player_matchup (stubs chains, no live HTTP)."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from sportiq.core.errors import AllSourcesFailedError
 from sportiq.cricket.intel_tools import cricket_player_matchup
@@ -152,3 +153,54 @@ async def test_valid_data_has_required_keys():
     data = result["data"]
     for key in ["matchup_type", "edge_holder", "edge_reason", "signals", "role_a", "role_b"]:
         assert key in data, f"missing key: {key}"
+
+
+async def test_player_matchup_unwrapped_cricapi_cassette_shapes():
+    """Unwrapped CricAPI cassette payloads yield non-other batter_vs_bowler matchup with signals."""
+    import json
+    from pathlib import Path
+
+    fixture_path = Path(__file__).parents[1] / "fixtures" / "cricapi" / "players_info.json"
+    raw_fixture = json.loads(fixture_path.read_text())
+    kohli_unwrapped = raw_fixture["data"]
+
+    bumrah_unwrapped = {
+        "id": "p_bumrah_001",
+        "name": "Jasprit Bumrah",
+        "country": "India",
+        "playingRole": "Bowler",
+        "stats": [
+            {"fn": "bowling", "matchtype": "t20i", "stat": "Average", "value": "19.66"},
+            {"fn": "bowling", "matchtype": "t20i", "stat": "Economy", "value": "6.55"},
+            {"fn": "bowling", "matchtype": "t20i", "stat": "Wickets", "value": "74"},
+        ],
+    }
+
+    r_a = MagicMock()
+    r_a.value = kohli_unwrapped
+    r_a.source = "cricapi"
+    r_a.is_stale = False
+    r_a.fallback_used = False
+    r_a.data_age_seconds = 0
+    r_a.duration_ms = 10
+
+    r_b = MagicMock()
+    r_b.value = bumrah_unwrapped
+    r_b.source = "cricapi"
+    r_b.is_stale = False
+    r_b.fallback_used = False
+    r_b.data_age_seconds = 0
+    r_b.duration_ms = 10
+
+    with patch("sportiq.cricket.intel_tools.player_stats_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(side_effect=[r_a, r_b])
+        result = await cricket_player_matchup("p_kohli_001", "p_bumrah_001")
+
+    assert "data" in result
+    assert result["data"]["matchup_type"] == "batter_vs_bowler"
+    assert result["data"]["edge_holder"] == "player_b"
+    assert result["data"]["role_a"] == "Batter"
+    assert result["data"]["role_b"] == "Bowler"
+    assert result["data"]["signals"]["batting_avg_a"] == 51.39
+    assert result["data"]["signals"]["strike_rate_a"] == 137.96
+    assert result["data"]["signals"]["bowling_avg_b"] == 19.66

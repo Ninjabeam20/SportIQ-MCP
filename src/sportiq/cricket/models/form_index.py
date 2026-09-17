@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from sportiq.cricket.models.player_matchup import extract_player_stats
+
 # Weight applied to each of the last N=5 innings, newest first. Sum to 1.0
 # so the recent component stays comparable to the career baseline.
 _RECENT_WEIGHTS = (0.40, 0.25, 0.15, 0.12, 0.08)
@@ -102,7 +104,7 @@ def compute_form_index(
 def player_form_index(raw_stats: dict) -> dict:
     """Derive a form snapshot from a raw player-stats payload (no I/O).
 
-    Handles CricAPI ``data.stats`` and RapidAPI Cricbuzz ``values`` shapes.
+    Handles CricAPI wrapped/unwrapped ``stats`` and RapidAPI Cricbuzz ``values`` shapes.
     Falls back to neutral (form_score=50, trend='stable') when the payload
     carries no recognisable career numbers.
 
@@ -112,33 +114,9 @@ def player_form_index(raw_stats: dict) -> dict:
     Returns:
         {"form_score": 0..100, "trend": "rising|stable|falling", "samples": N}
     """
-    avg, sr = 0.0, 0.0
-
-    # CricAPI shape: raw_stats["data"]["stats"] list
-    cric_rows = (raw_stats or {}).get("data", {}).get("stats", [])
-    if cric_rows:
-        for row in cric_rows:
-            if row.get("matchtype") != "t20i" or row.get("fn") != "batting":
-                continue
-            try:
-                if row.get("stat") == "Average":
-                    avg = float(row.get("value", 0) or 0)
-                elif row.get("stat") == "Strike Rate":
-                    sr = float(row.get("value", 0) or 0)
-            except (TypeError, ValueError):
-                continue
-
-    # RapidAPI Cricbuzz shape: raw_stats["values"] list
-    if not avg and not sr:
-        for row in (raw_stats or {}).get("values", []):
-            if row.get("name") != "T20I":
-                continue
-            try:
-                avg = float(row.get("average", 0) or 0)
-                sr = float(row.get("strikeRate", 0) or 0)
-            except (TypeError, ValueError):
-                pass
-            break
+    extracted = extract_player_stats(raw_stats)
+    avg = float(extracted.get("batting_avg") or 0.0)
+    sr = float(extracted.get("strike_rate") or 0.0)
 
     # recent_innings not available from career-stats endpoints; fall back fully
     # to the career baseline (compute_form_index handles samples=0 gracefully).

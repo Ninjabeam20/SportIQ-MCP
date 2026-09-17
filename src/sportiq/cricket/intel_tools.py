@@ -28,7 +28,12 @@ from sportiq.cricket.models.dream11_solver import solve as _solve_dream11
 from sportiq.cricket.models.form_index import compute_form_index
 from sportiq.cricket.models.head_to_head import summarise_h2h
 from sportiq.cricket.models.pitch_report import pitch_report as _pitch_report
-from sportiq.cricket.models.player_matchup import compute_matchup as _compute_matchup
+from sportiq.cricket.models.player_matchup import (
+    compute_matchup as _compute_matchup,
+)
+from sportiq.cricket.models.player_matchup import (
+    extract_player_stats,
+)
 from sportiq.cricket.models.win_probability import win_prob
 
 # Cap concurrent per-player stats fetches during H2H analysis.
@@ -334,38 +339,11 @@ async def cricket_differential_picks(
 def _t20_career_numbers(stats_payload: dict) -> tuple[float, float]:
     """Pull T20I career average + strike rate out of a player_stats payload.
 
-    Handles both CricAPI ``stats: [{fn, matchtype, stat, value}, ...]`` and
-    RapidAPI Cricbuzz ``values: [{name: "T20I", average, strikeRate}, ...]``.
+    Handles CricAPI wrapped/unwrapped ``stats`` and RapidAPI Cricbuzz ``values``.
     Falls back to ``0.0`` per field if the upstream shape is unrecognised.
     """
-    # CricAPI shape.
-    avg, sr = 0.0, 0.0
-    cric_rows = (stats_payload or {}).get("data", {}).get("stats", [])
-    if cric_rows:
-        for row in cric_rows:
-            if row.get("matchtype") != "t20i" or row.get("fn") != "batting":
-                continue
-            try:
-                if row.get("stat") == "Average":
-                    avg = float(row.get("value", 0))
-                elif row.get("stat") == "Strike Rate":
-                    sr = float(row.get("value", 0))
-            except (TypeError, ValueError):
-                continue
-        if avg or sr:
-            return avg, sr
-
-    # RapidAPI Cricbuzz shape.
-    for row in (stats_payload or {}).get("values", []):
-        if row.get("name") != "T20I":
-            continue
-        try:
-            avg = float(row.get("average", 0) or 0)
-            sr = float(row.get("strikeRate", 0) or 0)
-        except (TypeError, ValueError):
-            pass
-        break
-    return avg, sr
+    extracted = extract_player_stats(stats_payload)
+    return float(extracted.get("batting_avg") or 0.0), float(extracted.get("strike_rate") or 0.0)
 
 
 async def cricket_player_form_index(player_id: str) -> Envelope:
