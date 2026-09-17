@@ -10,6 +10,7 @@ per-season auto-refresh is a Phase 3.1 follow-up.
 """
 from __future__ import annotations
 
+import asyncio
 import os
 import tempfile
 
@@ -39,24 +40,29 @@ class FastF1LapsAdapter:
                 "Add it to _SESSION_REGISTRY or use the OpenF1 adapter."
             )
         year, round_number = _SESSION_REGISTRY[session_key]
-        cache_dir = os.path.join(tempfile.gettempdir(), "fastf1_cache")
-        fastf1.Cache.enable_cache(cache_dir)
-        session = fastf1.get_session(year, round_number, "R")
-        session.load(laps=True, telemetry=False, weather=False, messages=False)
-        driver_str = str(driver_number).zfill(2)
-        laps = session.laps.pick_drivers(driver_str)
-        lap_records = []
-        for _, row in laps.iterrows():
-            lap_records.append({
-                "lap_number": int(row.get("LapNumber", 0)),
-                "lap_duration": float(row["LapTime"].total_seconds())
-                if hasattr(row.get("LapTime"), "total_seconds")
-                else None,
-                "compound": str(row.get("Compound", "")),
-                "tyre_life": int(row.get("TyreLife", 0)),
-                "driver_number": driver_number,
-                "session_key": session_key,
-            })
+
+        def _load_laps() -> list[dict]:
+            cache_dir = os.path.join(tempfile.gettempdir(), "fastf1_cache")
+            fastf1.Cache.enable_cache(cache_dir)
+            session = fastf1.get_session(year, round_number, "R")
+            session.load(laps=True, telemetry=False, weather=False, messages=False)
+            driver_str = str(driver_number).zfill(2)
+            laps = session.laps.pick_drivers(driver_str)
+            lap_records = []
+            for _, row in laps.iterrows():
+                lap_records.append({
+                    "lap_number": int(row.get("LapNumber", 0)),
+                    "lap_duration": float(row["LapTime"].total_seconds())
+                    if hasattr(row.get("LapTime"), "total_seconds")
+                    else None,
+                    "compound": str(row.get("Compound", "")),
+                    "tyre_life": int(row.get("TyreLife", 0)),
+                    "driver_number": driver_number,
+                    "session_key": session_key,
+                })
+            return lap_records
+
+        lap_records = await asyncio.to_thread(_load_laps)
         return {"laps": lap_records}
 
     async def healthcheck(self) -> bool:
@@ -79,34 +85,39 @@ class FastF1StandingsAdapter:
                 "fastf1 is not installed. Run: uv pip install 'sportiq-mcp[f1]'"
             ) from exc
 
-        cache_dir = os.path.join(tempfile.gettempdir(), "fastf1_cache")
-        fastf1.Cache.enable_cache(cache_dir)
-        schedule = fastf1.get_event_schedule(year, include_testing=False)
-        standings: list[dict] = []
-        for _, event in schedule.iterrows():
-            round_num = int(event.get("RoundNumber", 0))
-            if round_num == 0:
-                continue
-            try:
-                session = fastf1.get_session(year, round_num, "R")
-                session.load(
-                    laps=False,
-                    telemetry=False,
-                    weather=False,
-                    messages=False,
-                    timing_data=False,
-                )
-                results = session.results
-                for _, row in results.iterrows():
-                    standings.append({
-                        "year": year,
-                        "round": round_num,
-                        "driver": str(row.get("FullName", "")),
-                        "position": int(row.get("Position", 0)),
-                        "points": float(row.get("Points", 0)),
-                    })
-            except Exception:
-                continue
+        def _load_standings() -> list[dict]:
+            cache_dir = os.path.join(tempfile.gettempdir(), "fastf1_cache")
+            fastf1.Cache.enable_cache(cache_dir)
+            schedule = fastf1.get_event_schedule(year, include_testing=False)
+            standings: list[dict] = []
+            for _, event in schedule.iterrows():
+                round_num = int(event.get("RoundNumber", 0))
+                # Bound the loop: skip testing (0) and invalid/out-of-bounds round numbers
+                if round_num <= 0 or round_num > 35:
+                    continue
+                try:
+                    session = fastf1.get_session(year, round_num, "R")
+                    session.load(
+                        laps=False,
+                        telemetry=False,
+                        weather=False,
+                        messages=False,
+                        timing_data=False,
+                    )
+                    results = session.results
+                    for _, row in results.iterrows():
+                        standings.append({
+                            "year": year,
+                            "round": round_num,
+                            "driver": str(row.get("FullName", "")),
+                            "position": int(row.get("Position", 0)),
+                            "points": float(row.get("Points", 0)),
+                        })
+                except Exception:
+                    continue
+            return standings
+
+        standings = await asyncio.to_thread(_load_standings)
         return {"standings": standings}
 
     async def healthcheck(self) -> bool:

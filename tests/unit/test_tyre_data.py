@@ -51,13 +51,21 @@ def test_sprint_points_table_fia():
 
 def test_race_points_for_position_p1():
     assert race_points_for_position(1) == 25
+    assert race_points_for_position(1, year=2025) == 25
 
 
 def test_race_points_fastest_lap_bonus():
+    # Pre-2025: +1 bonus for top 10 with fastest lap
     assert race_points_for_position(1, fastest_lap=True) == 26
-    assert race_points_for_position(10, fastest_lap=True) == 2
+    assert race_points_for_position(1, fastest_lap=True, year=2024) == 26
+    assert race_points_for_position(10, fastest_lap=True, year=2024) == 2
     # Outside top 10: no bonus
-    assert race_points_for_position(11, fastest_lap=True) == 0
+    assert race_points_for_position(11, fastest_lap=True, year=2024) == 0
+
+    # 2025+: regulations removed fastest-lap bonus
+    assert race_points_for_position(1, fastest_lap=True, year=2025) == 25
+    assert race_points_for_position(10, fastest_lap=True, year=2025) == 1
+    assert race_points_for_position(1, fastest_lap=True, year=2026) == 25
 
 
 def test_sprint_points_for_position():

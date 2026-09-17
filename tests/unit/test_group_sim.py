@@ -195,3 +195,14 @@ def test_best_third_tie_uses_rating_before_rng_and_is_counted():
 
     assert [row["team"] for row in ranked] == ["HIGH", "LOW"]
     assert fallback_rows == 2
+
+
+def test_group_stage_p_advance_sum_then_round():
+    groups = {
+        letter: [f"{letter}{number}" for number in range(1, 5)]
+        for letter in "ABCDEFGHIJKL"
+    }
+    ratings = {team: 1500 for teams in groups.values() for team in teams}
+    out = simulate_group_stage(groups, ratings, n_iter=100, seed=42)
+    for stats in out["teams"].values():
+        assert 0.0 <= stats["p_advance"] <= 1.0

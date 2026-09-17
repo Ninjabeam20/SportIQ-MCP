@@ -58,17 +58,19 @@ def compare_race_pace(
         fit_a = fit_degradation(annotated_a, compound)
         fit_b = fit_degradation(annotated_b, compound)
 
-        # Skip if either driver has insufficient data
-        if fit_a["sample_count"] == 0 or fit_b["sample_count"] == 0:
+        # Skip if either driver has insufficient data (require sample_count >= 2)
+        if fit_a["sample_count"] < 2 or fit_b["sample_count"] < 2:
             continue
 
         pace_delta = fit_a["intercept"] - fit_b["intercept"]
-        faster = driver_a if pace_delta < 0 else driver_b
-
         if pace_delta < 0:
+            faster = driver_a
             wins_a += 1
         elif pace_delta > 0:
+            faster = driver_b
             wins_b += 1
+        else:
+            faster = None
         # exact tie: neither gets a win
 
         by_compound.append(

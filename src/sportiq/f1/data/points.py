@@ -11,18 +11,26 @@ FASTEST_LAP_BONUS: int = 1
 SPRINT_POINTS: list[int] = [8, 7, 6, 5, 4, 3, 2, 1]
 
 
-def race_points_for_position(position: int, fastest_lap: bool = False) -> int:
+def race_points_for_position(
+    position: int, fastest_lap: bool = False, year: int = 2024
+) -> int:
     """Return championship points for a race finish position (1-indexed).
 
     Args:
         position: Finishing position, 1-indexed.
         fastest_lap: Whether this driver set the fastest lap.
+        year: Championship season year. Regulations removed the fastest-lap
+            bonus starting in 2025 (bonus applies only when year < 2025).
 
     Returns:
         Championship points. 0 if outside points positions.
     """
     base = RACE_POINTS[position - 1] if 1 <= position <= len(RACE_POINTS) else 0
-    bonus = FASTEST_LAP_BONUS if fastest_lap and 1 <= position <= 10 else 0
+    bonus = (
+        FASTEST_LAP_BONUS
+        if fastest_lap and 1 <= position <= 10 and year < 2025
+        else 0
+    )
     return base + bonus
 
 

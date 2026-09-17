@@ -458,6 +458,33 @@ async def test_find_value_bets_invalid_min_edge():
     assert result["error"]["code"] == "INVALID_INPUT"
 
 
+async def test_find_value_bets_odds_runtime_error_returns_envelope():
+    from sportiq.football import intel_tools
+
+    with (
+        patch("sportiq.football.intel_tools.football_odds_chain") as mock_odds,
+        patch("sportiq.football.intel_tools.football_groups_chain") as mock_groups,
+    ):
+        mock_odds.fetch = AsyncMock(side_effect=RuntimeError("unexpected odds failure"))
+        mock_groups.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        result = await intel_tools.football_find_value_bets(min_edge=0.05)
+    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+async def test_find_value_bets_groups_runtime_error_returns_envelope():
+    from sportiq.football import intel_tools
+
+    event = _odds_event("Argentina", "Brazil", home=10.0, draw=4.0, away=1.4)
+    with (
+        patch("sportiq.football.intel_tools.football_odds_chain") as mock_odds,
+        patch("sportiq.football.intel_tools.football_groups_chain") as mock_groups,
+    ):
+        mock_odds.fetch = AsyncMock(return_value=_fr({"events": [event]}, source="theodds"))
+        mock_groups.fetch = AsyncMock(side_effect=RuntimeError("unexpected groups failure"))
+        result = await intel_tools.football_find_value_bets(min_edge=0.05)
+    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
 async def test_football_get_squad_unknown_team_returns_envelope(monkeypatch):
     """Unknown team must NOT raise: with no key the api_football adapter is
     skipped and the static_seed terminator serves an empty-but-valid squad.

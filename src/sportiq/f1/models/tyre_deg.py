@@ -89,7 +89,9 @@ def fit_degradation(laps: list[dict], compound: str) -> dict:
     if len(valid) < 2:
         return {"intercept": float(durations[0]), "slope": 0.0, "residual_std": 0.0, "sample_count": 1}
 
-    # Tyre age axis: use tyre_life if present, else lap index
+    # Tyre age axis: use tyre_life if present, else fallback to enumerate index i.
+    # Note on intercept: with tyre_life telemetry, the intercept extrapolates to tyre_age=0
+    # (brand-new tyre); without tyre_life, 0-based index i anchors intercept at the first valid lap.
     tyre_ages = np.array([
         float(lap.get("tyre_life", i))
         for i, lap in enumerate(valid)

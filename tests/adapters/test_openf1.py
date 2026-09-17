@@ -5,8 +5,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 import respx
 from httpx import Response
+
+from sportiq.core.errors import NotFoundError
 
 _FIXTURES = Path(__file__).parent.parent / "fixtures" / "openf1"
 
@@ -81,3 +84,58 @@ async def test_openf1_weather_adapter_returns_weather():
     assert "weather" in result
     assert result["weather"][0]["air_temperature"] == 22.5
     assert result["weather"][0]["rainfall"] == 0
+
+
+@respx.mock
+async def test_openf1_drivers_empty_raises_not_found():
+    from sportiq.f1.adapters.openf1 import OpenF1DriversAdapter
+
+    respx.get("https://api.openf1.org/v1/drivers").mock(
+        return_value=Response(200, json=[])
+    )
+    with pytest.raises(NotFoundError, match="no drivers"):
+        await OpenF1DriversAdapter().fetch(session_key=9877)
+
+
+@respx.mock
+async def test_openf1_laps_empty_raises_not_found():
+    from sportiq.f1.adapters.openf1 import OpenF1LapsAdapter
+
+    respx.get("https://api.openf1.org/v1/laps").mock(
+        return_value=Response(200, json=[])
+    )
+    with pytest.raises(NotFoundError, match="no laps"):
+        await OpenF1LapsAdapter().fetch(session_key=9877, driver_number=1)
+
+
+@respx.mock
+async def test_openf1_stints_empty_raises_not_found():
+    from sportiq.f1.adapters.openf1 import OpenF1StintsAdapter
+
+    respx.get("https://api.openf1.org/v1/stints").mock(
+        return_value=Response(200, json=[])
+    )
+    with pytest.raises(NotFoundError, match="no stints"):
+        await OpenF1StintsAdapter().fetch(session_key=9877, driver_number=1)
+
+
+@respx.mock
+async def test_openf1_sessions_empty_returns_empty_structure():
+    from sportiq.f1.adapters.openf1 import OpenF1SessionsAdapter
+
+    respx.get("https://api.openf1.org/v1/sessions").mock(
+        return_value=Response(200, json=[])
+    )
+    result = await OpenF1SessionsAdapter().fetch(year=2025)
+    assert result == {"sessions": []}
+
+
+@respx.mock
+async def test_openf1_weather_empty_returns_empty_structure():
+    from sportiq.f1.adapters.openf1 import OpenF1WeatherAdapter
+
+    respx.get("https://api.openf1.org/v1/weather").mock(
+        return_value=Response(200, json=[])
+    )
+    result = await OpenF1WeatherAdapter().fetch(session_key=9877)
+    assert result == {"weather": []}

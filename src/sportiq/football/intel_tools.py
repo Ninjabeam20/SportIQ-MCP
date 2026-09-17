@@ -428,10 +428,23 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
             sources_tried=odds_r.attempts,
             suggestion="Set THEODDS_KEY to enable live odds.",
         )
+    if isinstance(odds_r, Exception):
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message="No football odds source is available right now.",
+            sources_tried=getattr(odds_r, "attempts", []),
+            suggestion="Set THEODDS_KEY to enable live odds.",
+        )
     if isinstance(odds_r, BaseException):
         raise odds_r
     if isinstance(groups_r, (AllSourcesFailedError, NotFoundError)):
         return error_envelope(code=groups_r.code, message="Could not load ratings.", sources_tried=groups_r.attempts)
+    if isinstance(groups_r, Exception):
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message="Could not load ratings.",
+            sources_tried=getattr(groups_r, "attempts", []),
+        )
     if isinstance(groups_r, BaseException):
         raise groups_r
     odds_result, groups_result = odds_r, groups_r

@@ -273,7 +273,7 @@ def simulate_group_stage(
             "p_fourth": round(positions[3] / n_iter, 4),
             "p_auto_advance": auto_rounded,
             "p_best_third_advance": best_third_rounded,
-            "p_advance": round(auto_rounded + best_third_rounded, 4),
+            "p_advance": round(auto + best_third, 4),
             "avg_points": round(points_sum[team] / n_iter, 2),
         }
     return {

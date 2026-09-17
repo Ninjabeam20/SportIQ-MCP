@@ -68,3 +68,23 @@ async def test_empty_laps():
     assert result["compounds_compared"] == 0
     assert result["by_compound"] == []
     assert result["overall_faster"] is None
+
+
+async def test_sample_count_less_than_two_skipped():
+    # driver_a has only 1 lap; driver_b has 5 laps -> insufficient data, skip compound
+    laps_a = _make_laps("MEDIUM", count=1)
+    laps_b = _make_laps("MEDIUM", count=5)
+    result = compare_race_pace(laps_a, [], laps_b, [], driver_a=1, driver_b=44)
+    assert result["compounds_compared"] == 0
+    assert result["by_compound"] == []
+
+
+async def test_pace_delta_zero_tie_has_no_faster_driver():
+    # identical lap times -> pace_delta == 0 -> faster_driver is None
+    laps_a = _make_laps("MEDIUM", count=5, base_time=80.0)
+    laps_b = _make_laps("MEDIUM", count=5, base_time=80.0)
+    result = compare_race_pace(laps_a, [], laps_b, [], driver_a=1, driver_b=44)
+    assert result["compounds_compared"] == 1
+    entry = result["by_compound"][0]
+    assert entry["pace_delta_s"] == 0.0
+    assert entry["faster_driver"] is None

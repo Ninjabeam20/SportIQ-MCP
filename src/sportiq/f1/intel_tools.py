@@ -106,6 +106,12 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
             message="Could not fetch lap data.",
             sources_tried=laps_r.attempts,
         )
+    if isinstance(laps_r, Exception):
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message="Could not fetch lap data.",
+            sources_tried=getattr(laps_r, "attempts", []),
+        )
     if isinstance(laps_r, BaseException):
         raise laps_r
     laps_result = laps_r
@@ -114,6 +120,12 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
     stints_result = None
     if isinstance(stints_r, (AllSourcesFailedError, NotFoundError)):
         pass
+    elif isinstance(stints_r, Exception):
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message="Could not fetch stint data.",
+            sources_tried=getattr(stints_r, "attempts", []),
+        )
     elif isinstance(stints_r, BaseException):
         raise stints_r
     else:
@@ -398,6 +410,12 @@ async def f1_predict_pit_strategy(
             message="Could not fetch lap data for pit strategy prediction.",
             sources_tried=laps_r.attempts,
         )
+    if isinstance(laps_r, Exception):
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message="Could not fetch lap data for pit strategy prediction.",
+            sources_tried=getattr(laps_r, "attempts", []),
+        )
     if isinstance(laps_r, BaseException):
         raise laps_r
     laps_result = laps_r
@@ -406,6 +424,12 @@ async def f1_predict_pit_strategy(
     stints_result = None
     if isinstance(stints_r, (AllSourcesFailedError, NotFoundError)):
         pass
+    elif isinstance(stints_r, Exception):
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message="Could not fetch stint data for pit strategy prediction.",
+            sources_tried=getattr(stints_r, "attempts", []),
+        )
     elif isinstance(stints_r, BaseException):
         raise stints_r
     else:
@@ -416,6 +440,12 @@ async def f1_predict_pit_strategy(
     weather_result = None
     if isinstance(weather_r, (AllSourcesFailedError, NotFoundError)):
         pass
+    elif isinstance(weather_r, Exception):
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message="Could not fetch weather data for pit strategy prediction.",
+            sources_tried=getattr(weather_r, "attempts", []),
+        )
     elif isinstance(weather_r, BaseException):
         raise weather_r
     else:

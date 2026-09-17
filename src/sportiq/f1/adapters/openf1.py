@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from sportiq.core.errors import NotFoundError
 from sportiq.core.http import get_json_burst
 from sportiq.f1.adapters.base import _OPENF1_BASE
 
@@ -42,7 +43,10 @@ class OpenF1DriversAdapter:
 
     async def fetch(self, session_key: int, **kwargs) -> dict:
         data = await get_json_burst(f"{_OPENF1_BASE}/drivers", params={"session_key": session_key})
-        return {"drivers": data if isinstance(data, list) else [data]}
+        drivers = data if isinstance(data, list) else [data]
+        if not drivers:
+            raise NotFoundError(f"OpenF1 returned no drivers for session_key={session_key}")
+        return {"drivers": drivers}
 
     async def healthcheck(self) -> bool:
         return True
@@ -57,7 +61,12 @@ class OpenF1LapsAdapter:
             f"{_OPENF1_BASE}/laps",
             params={"session_key": session_key, "driver_number": driver_number},
         )
-        return {"laps": data if isinstance(data, list) else [data]}
+        laps = data if isinstance(data, list) else [data]
+        if not laps:
+            raise NotFoundError(
+                f"OpenF1 returned no laps for session_key={session_key}, driver_number={driver_number}"
+            )
+        return {"laps": laps}
 
     async def healthcheck(self) -> bool:
         return True
@@ -72,7 +81,12 @@ class OpenF1StintsAdapter:
             f"{_OPENF1_BASE}/stints",
             params={"session_key": session_key, "driver_number": driver_number},
         )
-        return {"stints": data if isinstance(data, list) else [data]}
+        stints = data if isinstance(data, list) else [data]
+        if not stints:
+            raise NotFoundError(
+                f"OpenF1 returned no stints for session_key={session_key}, driver_number={driver_number}"
+            )
+        return {"stints": stints}
 
     async def healthcheck(self) -> bool:
         return True
