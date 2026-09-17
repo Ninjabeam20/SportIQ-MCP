@@ -49,18 +49,18 @@
 
 - [x] 3a. Player-stat extractor (one fix, three readers): write a single extractor accepting wrapped `{data:{stats}}` AND unwrapped `{stats}`/`{values}` with `playingRole` (CricAPI unwraps in the adapter — rows live at `payload["stats"]`, cassette `tests/fixtures/cricapi/players_info.json`; RapidAPI at `values`, cassette `tests/fixtures/rapidapi/player_career.json`). Wire into `cricket/models/player_matchup.py:30-55`, `cricket/intel_tools.py:334-368` `_t20_career_numbers`, `cricket/models/form_index.py:117-118`. Tests: feed unwrapped cassette shapes → non-`other` matchup when roles/averages exist (`test_player_matchup.py`, `test_form_index.py`, `test_cricket_player_matchup.py`). **DONE** 2026-09-17 on `bot`: `extract_player_stats` in `player_matchup.py`, wired into `_t20_career_numbers` and `player_form_index`; 7 new cassette tests across unit and tools; unit gate 404 passed, full suite 831 passed.
 - [ ] 3b. (Optional, low impact) `f1/data/points.py:8,14-26` — fastest-lap bonus only when `year < 2025`. Skip if the batch is large.
-- [ ] 3c. Dream11 scoring — align the SKILL, not the code: copy values from `docs/wiki/models/dream11-scoring.md` (code `scoring.py` 50→+4, 100→+8, maiden +12 already agrees with the wiki) into `.claude/skills/dream11-scoring/SKILL.md` (still 25/50/75/100 + maiden +8). Do not touch `scoring.py` unless live Dream11 tables are wanted.
+- [x] 3c. Dream11 scoring — align the SKILL, not the code: copy values from `docs/wiki/models/dream11-scoring.md` (code `scoring.py` 50→+4, 100→+8, maiden +12 already agrees with the wiki) into `.claude/skills/dream11-scoring/SKILL.md` (still 25/50/75/100 + maiden +8) and mirror to `.agents/skills/dream11-scoring/SKILL.md`. **DONE** 2026-09-17.
 - [ ] 3d. (Optional) `f1/models/race_pace.py:62,66` — require `sample_count >= 2`, `faster = None` on `pace_delta == 0`; `tyre_deg.py:93` — document enumerate-index intercept; `group_sim.py:276` — sum-then-round `p_advance`; `theodds.py:60-68` — leave zero-bookmaker events unless trivial (value-bets `events_analysed` counts rated teams, not bookmakers).
 - [ ] 3e. (Optional, out of batch 1) `f1/adapters/fastf1_local.py:44,84` — `asyncio.to_thread` for blocking calls; verify `_SESSION_REGISTRY[9877]`; standings loop bound.
 - Gate: `uv run pytest tests/unit -q`.
 
 ## Phase 4 — meta/staleness/health/TTL alignment. Do fourth: no behavior change, fixes observability.
 
-- [ ] 4a. `football/intel_tools.py:469-473` (include `groups_result`), `f1/intel_tools.py:577` (include stints), `cricket/intel_tools.py:405` (use `staleness_meta`), `cricket/intel_tools.py:678,545` (keep single staleness source, propagate attempts), `f1/intel_tools.py:557,473` (propagate `e.code`/attempts).
+- [x] 4a. `football/intel_tools.py:469-473` (include `groups_result`), `f1/intel_tools.py:577` (include stints), `cricket/intel_tools.py:405` (use `staleness_meta`), `cricket/intel_tools.py:678,545` (keep single staleness source, propagate attempts), `f1/intel_tools.py:557,473` (propagate `e.code`/attempts). **DONE** 2026-09-17.
 - [x] 4b. `football/models/form_trends.py:25-36,50-51` — import `_is_finished` from `results_state.py:123-128` (`FINISHED`/`FT`/`AET`/`PEN`/`AWD`/`WO` + scores present; in-play with live scores must NOT count, `FT` must); coerce goals with try/`continue` instead of bare `int()`. Tests: `tests/unit/test_form_trends.py`. **DONE** `13e2104` + R4 xG (suite 814).
-- [ ] 4c. `football/adapters/football_data_org.py:60-61,89-90` — `healthcheck()` returns `bool(settings.footballdata_key)`; `core/health.py:65-68` — report per-minute window too; register `derived_standings` for health; fix `football/chains.py:95,103` squad key `str(team)` normalisation.
-- [ ] 4d. TTL doc decisions (code is truth in both): F1 laps/stints 10s/60s live telemetry → update `docs/wiki/chains/f1-laps-chain.md:25`, `f1-stints-chain.md:24`, `docs/index.md:111-112`. Football groups ~1y is INTENTIONAL (static draw seed, still correct post-tournament) → keep code, record the rationale in `docs/wiki/chains/football-groups-chain.md` + `chains.py:88-89` comment (closes step6 A5; `done/remaining.md:59-60` stays as history).
-- [ ] 4e. Chain docstring touch: `src/sportiq/cricket/chains.py:4-10` — adapter lists verified correct against code (standings `cricapi → rapidapi` matches; review-cleanup #4 DONE); drop or define the `→ stale-cache` suffix (stale is chain fallback, not an adapter).
+- [x] 4c. `football/adapters/football_data_org.py:60-61,89-90` — `healthcheck()` returns `bool(settings.footballdata_key)`; `core/health.py:65-68` — report per-minute window too; register `derived_standings` for health; fix `football/chains.py:95,103` squad key `str(team)` normalisation. **DONE** 2026-09-17.
+- [x] 4d. TTL doc decisions (code is truth in both): F1 laps/stints 10s/60s live telemetry → update `docs/wiki/chains/f1-laps-chain.md:25`, `f1-stints-chain.md:24`, `docs/index.md:111-112`. Football groups ~1y is INTENTIONAL (static draw seed, still correct post-tournament) → keep code, record the rationale in `docs/wiki/chains/football-groups-chain.md` + `chains.py:88-89` comment (closes step6 A5; `done/remaining.md:59-60` stays as history). **DONE** 2026-09-17.
+- [x] 4e. Chain docstring touch: `src/sportiq/cricket/chains.py:4-10` — adapter lists verified correct against code (standings `cricapi → rapidapi` matches; review-cleanup #4 DONE); drop or define the `→ stale-cache` suffix (stale is chain fallback, not an adapter). **DONE** 2026-09-17.
 - Gate: tool tests + `tests/unit/test_o3_cache_ttls.py`.
 
 ## Phase 5 — stale memory/docs. Do fifth: after code settles so docs describe reality.
@@ -121,11 +121,11 @@ Tick `[x]` only when the change is in the tree with green tests. "New" = file to
 | Status | File | Change |
 | :--- | :--- | :--- |
 | [x] | `src/sportiq/football/adapters/api_football.py` | 2a: standings/scorers empty `NotFoundError` — **DONE** `77bef8f`/`b395f15` + TeamStats empty-guard 2026-09-11 (suite 824) |
-| [x] | `src/sportiq/football/adapters/football_data_org.py` | 2a: empty raises — **DONE** `77bef8f`/`b395f15` + TeamStats always-raise 2026-09-11; 4c key-gated healthcheck still open |
+| [x] | `src/sportiq/football/adapters/football_data_org.py` | 2a: empty raises — **DONE** `77bef8f`/`b395f15` + TeamStats always-raise 2026-09-11; 4c key-gated healthcheck — **DONE** 2026-09-17 |
 | [x] | `src/sportiq/football/adapters/openfootball.py` | 2a: raise on empty `matches` — **DONE** 2026-09-11 (suite 824) |
 | [x] | `src/sportiq/football/adapters/static_seed.py` | 2a: raise on missing file (groups/fixtures loaders only; squad terminator untouched) — **DONE** 2026-09-11 (suite 824) |
 | [x] | `src/sportiq/football/adapters/derived_standings.py` | 2c: route via `football_fixtures_chain` — **DONE** 2026-09-11 (suite 824) |
-| [ ] | `src/sportiq/football/chains.py` | 2a/4c: FD team-stats decision DONE (raise); derived registered for health DONE 2026-09-11; `str(team)` key normalisation still open |
+| [x] | `src/sportiq/football/chains.py` | 2a/4c: FD team-stats decision DONE (raise); derived registered for health DONE 2026-09-11; `str(team)` key normalisation DONE 2026-09-17 |
 | [ ] | `src/sportiq/f1/adapters/openf1.py` | 2b: laps/stints/drivers raise; weather/sessions untouched | — **R6 SKIPPED** (2026-09-11)
 | [ ] | `src/sportiq/f1/adapters/jolpica.py` | 2b: empty-guard + `gather(return_exceptions=True)` |
 | [ ] | `tests/adapters/test_api_football.py`, `test_football_data_org.py`, `test_openfootball.py`, `test_football_static_seed.py`, `test_openf1.py`, `test_jolpica.py`, `tests/chains/` | 2a/2b: empty-200 → `NotFoundError`; AF-empty → derived walk-through |
@@ -134,11 +134,11 @@ Tick `[x]` only when the change is in the tree with green tests. "New" = file to
 
 | Status | File | Change |
 | :--- | :--- | :--- |
-| [x] | `src/sportiq/cricket/intel_tools.py` | 3a: shared wrapped/unwrapped extractor in `_t20_career_numbers` — **DONE** 2026-09-17; 4a: form-index `staleness_meta`, matchup attempts still open |
+| [x] | `src/sportiq/cricket/intel_tools.py` | 3a: shared wrapped/unwrapped extractor in `_t20_career_numbers` — **DONE** 2026-09-17; 4a: form-index `staleness_meta`, matchup attempts — **DONE** 2026-09-17 |
 | [x] | `src/sportiq/cricket/models/player_matchup.py` | 3a: `extract_player_stats` + consume in `compute_matchup` — **DONE** 2026-09-17 |
 | [x] | `src/sportiq/cricket/models/form_index.py` | 3a: unwrapped `stats` fix via `extract_player_stats` — **DONE** 2026-09-17 |
 | [x] | `tests/unit/test_player_matchup.py`, `test_form_index.py`, `tests/tools/test_cricket_player_matchup.py` | 3a: cassette-shape tests — **DONE** 2026-09-17 (39 focused passed) |
-| [ ] | `.claude/skills/dream11-scoring/SKILL.md` (+ mirror `.agents/skills/dream11-scoring/SKILL.md` if same content) | 3c: values ← wiki (code untouched) | — leave unless done (2026-09-11)
+| [x] | `.claude/skills/dream11-scoring/SKILL.md` (+ mirror `.agents/skills/dream11-scoring/SKILL.md` if same content) | 3c: values ← wiki (code untouched) — **DONE** 2026-09-17 |
 | [ ] | `src/sportiq/f1/models/race_pace.py`, `f1/data/points.py`, `f1/adapters/fastf1_local.py`, `football/models/group_sim.py:276`, `football/adapters/theodds.py`, `cricket/match_resolver.py`, `core/health.py` | 3d/3e/5d optionals — take only if trivially small |
 
 ### Phase 4 — observability
@@ -147,10 +147,10 @@ Tick `[x]` only when the change is in the tree with green tests. "New" = file to
 | :--- | :--- | :--- |
 | [x] | `src/sportiq/football/models/form_trends.py` | 4b: `_is_finished` import + goal coerce — **DONE** `13e2104` + R4 xG |
 | [x] | `tests/unit/test_form_trends.py` | 4b: in-play-excluded / `FT`-counted tests — **DONE** `13e2104` |
-| [ ] | `src/sportiq/cricket/chains.py` | 4e: docstring `stale-cache` touch |
-| [ ] | `docs/wiki/chains/f1-laps-chain.md`, `f1-stints-chain.md`, `docs/wiki/chains/football-groups-chain.md`, `src/sportiq/football/chains.py` (comment) | 4d: TTL doc truth + groups-rationale |
-| [ ] | `docs/index.md` | 4d (TTL one-liners) + 5b (slugs) |
-| [ ] | `tests/unit/test_o3_cache_ttls.py` | 4d: TTL assertions green |
+| [x] | `src/sportiq/cricket/chains.py` | 4e: docstring `stale-cache` touch — **DONE** 2026-09-17 |
+| [x] | `docs/wiki/chains/f1-laps-chain.md`, `f1-stints-chain.md`, `docs/wiki/chains/football-groups-chain.md`, `src/sportiq/football/chains.py` (comment) | 4d: TTL doc truth + groups-rationale — **DONE** 2026-09-17 |
+| [x] | `docs/index.md` | 4d (TTL one-liners) + 5b (slugs) — 4d **DONE** 2026-09-17 |
+| [x] | `tests/unit/test_o3_cache_ttls.py` | 4d: TTL assertions green (12 passed) — **DONE** 2026-09-17 |
 
 ### Phase 5 — docs/memory
 
@@ -233,8 +233,16 @@ These files were scanned and contain no executable work for this batch. Recorded
 - Tip `af21767` on `bot` (ahead of `origin/bot` by 2). **Not pushed.** `main` untouched.
 - Operator suite claim accepted: **824 passed** (was 814). Ruff clean.
 - Direction: **ON TRACK.** 1b correctly left open (R7 stands). 1e + AF/FD/openfootball/static_seed/derived via fixtures chain match order.md Phase 2 intent.
-- Corrective / next tasks already in order.md: **3a DONE**; next **3c** Dream11 skill + Phase 4 observability; then Phase 5 steel docs + Phase 6 hygiene. Still skip 1b (R7), 2b/R6 unless cassette; Phase 7/8 hard-stop (merge/deploy last).
-- Next Gemini slice: **Phase 3c** (Dream11 SKILL align), then Phase 4.
+- Corrective / next tasks already in order.md: **3a+3c+Phase4 DONE**; next **Phase 5** steel docs + **Phase 6** hygiene. Still skip 1b (R7), 2b/R6 unless cassette; Phase 7/8 hard-stop (merge/deploy last).
+- Next Gemini slice: **Phase 5** steel docs + **Phase 6** hygiene (stop before Phase 7/8 merge/deploy).
 
 - 2026-09-17 (bot work session): **Phase 3a DONE** — Implemented shared `extract_player_stats` in `cricket/models/player_matchup.py` handling wrapped `{data: {stats}}`, unwrapped `{stats}` (CricAPI), and `{values}` (RapidAPI) with `playingRole` / `role`. Wired into `compute_matchup`, `_t20_career_numbers` (`cricket/intel_tools.py`), and `player_form_index` (`cricket/models/form_index.py`). TDD: added 7 failing cassette-shape tests across `tests/unit/test_player_matchup.py`, `tests/unit/test_form_index.py`, and `tests/tools/test_cricket_player_matchup.py`; verified failure under unwrapped payload shapes; implemented extractor; all 39 focused tests green (`tests/unit/test_player_matchup.py tests/unit/test_form_index.py tests/tools/test_cricket_player_matchup.py`), unit test gate `uv run pytest tests/unit -q` **404 passed**, full test suite `uv run pytest` **831 passed** (824 baseline + 7 new); `ruff check` clean on changed files. 1b, 2b, 3b-3e, Phase 4–8 open.
+- 2026-09-17 (bot work session 2): **Phase 3c DONE** + **Phase 4 in full DONE** (4a, 4c, 4d, 4e; 4b already done).
+  - 3c: Aligned Dream11 scoring skill in `.claude/skills/dream11-scoring/SKILL.md` and mirrored to `.agents/skills/dream11-scoring/SKILL.md` to match wiki (`docs/wiki/models/dream11-scoring.md`) and code `scoring.py` (50→+4, 100→+8, maiden +12, LBW/bowled, fielding, duck, SR/economy buckets; role constraints & ILP untouched).
+  - 4a: `groups_result` included in `staleness_meta` aggregation in `football_find_value_bets`; stints included in `staleness_meta` in `f1_compare_race_pace`; `staleness_meta` used in `cricket_player_form_index`; single staleness source in `cricket_head_to_head` (removed duplicate `is_stale`); propagated `e.code`/attempts in `f1_qualifying_analysis`, `f1_compare_race_pace`, and `cricket_player_matchup`.
+  - 4c: `FootballDataOrg` adapters `healthcheck()` returns `bool(settings.footballdata_key)`; `core/health.py` reports per-minute window in `quotas[f"{budget.source}:per_minute"]`; `derived_standings` verified registered for health; `football_squad_chain` normalised `str(team).lower()` in `cache_key_fn`.
+  - 4d: F1 laps/stints 10s/60s TTLs updated in `docs/wiki/chains/f1-laps-chain.md`, `f1-stints-chain.md`, and `docs/index.md`; football groups ~1y intentional TTL documented in `docs/wiki/chains/football-groups-chain.md` and comment in `src/sportiq/football/chains.py`.
+  - 4e: `src/sportiq/cricket/chains.py` module docstring updated to reflect exact adapter sequences, dropped `→ stale-cache` suffix, and added explanatory note.
+  - Evidence: unit test gate `uv run pytest tests/unit -q` **405 passed**; `uv run pytest tests/unit/test_o3_cache_ttls.py -q` **12 passed**; touched tool/adapter suites **126 passed**; full test suite `uv run pytest -q` **839 passed** (baseline 831 + 8 new tests); `ruff check` clean on all touched files. 1b, 2b, 3b, 3d, 3e, Phase 5–8 open.
+
 

@@ -73,3 +73,16 @@ async def test_no_laps_returns_empty_grid():
     assert "data" in result
     assert result["data"]["grid"] == []
     assert result["data"]["pole_time_s"] is None
+
+
+async def test_not_found_propagates_attempts():
+    from sportiq.core.errors import NotFoundError
+
+    attempts = [{"name": "openf1", "error": "session 9222 not found"}]
+    with patch("sportiq.f1.intel_tools.f1_drivers_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(side_effect=NotFoundError("session not found", attempts=attempts))
+        result = await f1_qualifying_analysis(9222)
+
+    assert result["error"]["code"] == "NOT_FOUND"
+    assert result["error"]["sources_tried"] == attempts
+

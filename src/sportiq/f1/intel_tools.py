@@ -481,16 +481,16 @@ async def f1_qualifying_analysis(session_key: int) -> Envelope:
 
     try:
         drivers_result = await f1_drivers_chain.fetch(session_key=session_key)
-    except AllSourcesFailedError as e:
-        return error_envelope(
-            code="ALL_SOURCES_FAILED",
-            message=f"Could not fetch drivers for session {session_key}.",
-            sources_tried=e.attempts,
+    except (AllSourcesFailedError, NotFoundError) as e:
+        msg = (
+            f"Could not fetch drivers for session {session_key}."
+            if isinstance(e, AllSourcesFailedError)
+            else f"No drivers found for session {session_key}."
         )
-    except NotFoundError:
         return error_envelope(
-            code="NOT_FOUND",
-            message=f"No drivers found for session {session_key}.",
+            code=e.code,
+            message=msg,
+            sources_tried=e.attempts,
         )
 
     driver_list = drivers_result.value.get("drivers", [])
@@ -570,9 +570,9 @@ async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -
             attempts: list = []
             code = "ALL_SOURCES_FAILED"
             for exc in (laps_a_r, laps_b_r):
-                if isinstance(exc, AllSourcesFailedError):
+                if isinstance(exc, (AllSourcesFailedError, NotFoundError)):
                     attempts.extend(exc.attempts)
-                elif isinstance(exc, NotFoundError):
+                if isinstance(exc, NotFoundError):
                     code = "NOT_FOUND"
             return error_envelope(
                 code=code,
@@ -588,12 +588,13 @@ async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -
     stints_b = stints_b_r.value.get("stints", []) if not isinstance(stints_b_r, Exception) else []
 
     result = compare_race_pace(laps_a, stints_a, laps_b, stints_b, driver_a, driver_b)
+    stint_results = [r for r in (stints_a_r, stints_b_r) if not isinstance(r, Exception)]
     return {
         "data": result,
         "meta": {
             "source": laps_a_r.source,
             "estimated": True,
-            **staleness_meta(laps_a_r, laps_b_r),
+            **staleness_meta(laps_a_r, laps_b_r, *stint_results),
         },
     }
 

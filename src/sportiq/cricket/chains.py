@@ -1,13 +1,17 @@
 """Module-level FallbackChain singletons for all cricket tools.
 
 Resolution order per chain:
-  live_score    : cricapi → ndtv → cricbuzz → rapidapi → stale-cache
-  scorecard     : cricapi → rapidapi → stale-cache
-  fixtures      : cricapi → ndtv → rapidapi → stale-cache
-  standings     : cricapi → rapidapi → stale-cache
-  squad         : cricapi → static_seed
-  player_stats  : cricapi_player_info → rapidapi_player_stats → stale-cache
+  live_score    : cricapi → ndtv → cricbuzz → rapidapi (30s / 300s)
+  scorecard     : cricapi → rapidapi (30s / 300s)
+  fixtures      : cricapi → ndtv → rapidapi (6h / 24h)
+  standings     : cricapi → rapidapi (10min / 1h)
+  squad         : cricapi → static_seed (12h / 3d)
+  player_stats  : cricapi_player_info → rapidapi_player_stats (24h / 7d)
   pitch_data    : static_venue (terminator only; v1 is offline-only)
+  odds          : theodds (only source; 5min / 24h)
+
+Note: stale-cache is a built-in FallbackChain fallback mechanism across all
+chains (served on adapter failure before AllSourcesFailedError), not an adapter.
 """
 
 from __future__ import annotations

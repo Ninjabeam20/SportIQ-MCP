@@ -437,6 +437,20 @@ async def test_find_value_bets_no_live_elo_key_when_disabled():
     assert "live_elo" not in result["meta"]
 
 
+async def test_find_value_bets_staleness_from_groups():
+    from sportiq.football import intel_tools
+
+    event = _odds_event("Argentina", "Brazil", home=10.0, draw=4.0, away=1.4)
+    with (
+        patch("sportiq.football.intel_tools.football_odds_chain") as mock_odds,
+        patch("sportiq.football.intel_tools.football_groups_chain") as mock_groups,
+    ):
+        mock_odds.fetch = AsyncMock(return_value=_fr({"events": [event]}, source="theodds", is_stale=False))
+        mock_groups.fetch = AsyncMock(return_value=_fr(_draw_payload(), is_stale=True))
+        result = await intel_tools.football_find_value_bets(min_edge=0.05)
+    assert result["meta"]["is_stale"] is True
+
+
 async def test_find_value_bets_invalid_min_edge():
     from sportiq.football import intel_tools
 

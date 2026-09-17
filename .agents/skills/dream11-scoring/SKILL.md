@@ -19,11 +19,31 @@ Mirrors the wiki page at docs/wiki/models/dream11-scoring.md. Load this when wor
 
 ## Scoring (key events)
 - Batting run: +1 pt; Boundary bonus: +1 pt; Six bonus: +2 pts
-- 25-run milestone: +4 pts; 50: +8; 75: +12; 100: +16
-- Dismissal duck: -2 pts
-- Wicket (excl. run-out): +25 pts; 3-wicket haul: +4; 4-wkt: +8; 5-wkt: +16
-- Maiden over: +8 pts
+- Half-century bonus (50+): +4 pts; Century bonus (100+): +8 pts
+- Dismissal duck: -2 pts (BAT/ALL/WK only, dismissed for 0)
+- Wicket: +25 pts; LBW / bowled bonus: +8 pts (each)
+- 3-wicket haul: +4 pts; 4-wicket haul: +8 pts; 5-wicket haul: +16 pts
+- Maiden over: +12 pts
+- Catch: +8 pts; 3-catch bonus: +4 pts
+- Stumping: +12 pts
+- Run-out (direct): +12 pts; Run-out (indirect): +6 pts
 - Captain multiplier: 2×; Vice-captain: 1.5×
+
+## Strike-rate buckets (≥10 balls faced)
+- >170: +6 pts
+- 150.01–170: +4 pts
+- 130–150: +2 pts
+- 60–70: -2 pts
+- 50–59.99: -4 pts
+- <50: -6 pts
+
+## Economy buckets (≥2 overs bowled)
+- ≤5: +6 pts
+- 5.01–6: +4 pts
+- 6.01–7: +2 pts
+- 10–11: -2 pts
+- 11.01–12: -4 pts
+- >12: -6 pts
 
 ## ILP approach
 PuLP CBC solver. Binary variable per player × role (selected, captain, VC).

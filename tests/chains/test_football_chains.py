@@ -101,6 +101,10 @@ async def test_squad_chain_keys_by_team():
     assert key_a != key_b
     assert key_a.startswith("sportiq:football:squad:")
     assert "ARG" not in key_a[len("sportiq:football:squad:"):]
+    # Int team IDs must be normalised to str without crashing
+    key_int = chains.football_squad_chain.cache_key_fn(team=26)
+    assert key_int.startswith("sportiq:football:squad:")
+
 
 
 @respx.mock

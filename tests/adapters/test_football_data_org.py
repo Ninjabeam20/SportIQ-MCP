@@ -141,3 +141,32 @@ async def test_fd_org_team_stats_always_raises_not_found():
 
     with pytest.raises(NotFoundError):
         await FootballDataOrgTeamStatsAdapter().fetch(team=26)
+
+
+async def test_fd_org_healthcheck_reflects_key(monkeypatch):
+    from sportiq.config import settings
+    from sportiq.football.adapters.football_data_org import (
+        FootballDataOrgFixturesAdapter,
+        FootballDataOrgScorersAdapter,
+        FootballDataOrgStandingsAdapter,
+        FootballDataOrgTeamStatsAdapter,
+    )
+
+    monkeypatch.setattr(settings, "footballdata_key", None)
+    for cls in (
+        FootballDataOrgFixturesAdapter,
+        FootballDataOrgStandingsAdapter,
+        FootballDataOrgTeamStatsAdapter,
+        FootballDataOrgScorersAdapter,
+    ):
+        assert await cls().healthcheck() is False
+
+    monkeypatch.setattr(settings, "footballdata_key", "test-token")
+    for cls in (
+        FootballDataOrgFixturesAdapter,
+        FootballDataOrgStandingsAdapter,
+        FootballDataOrgTeamStatsAdapter,
+        FootballDataOrgScorersAdapter,
+    ):
+        assert await cls().healthcheck() is True
+

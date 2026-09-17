@@ -66,6 +66,8 @@ async def get_health_report() -> dict:
             quotas[budget.source] = remaining_dict["per_day"]
         elif "per_minute" in remaining_dict and remaining_dict["per_minute"] is not None:
             quotas[budget.source] = remaining_dict["per_minute"]
+        if "per_minute" in remaining_dict and remaining_dict["per_minute"] is not None:
+            quotas[f"{budget.source}:per_minute"] = remaining_dict["per_minute"]
 
     report = HealthReport(
         cache_backend=cache.backend,

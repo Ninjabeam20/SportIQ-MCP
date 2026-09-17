@@ -108,8 +108,8 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 - [[f1-sessions-chain]] — openf1 (only source); 6h TTL.
 - [[f1-results-chain]] — jolpica (only source); keyed by year + round; 24h TTL.
-- [[f1-laps-chain]] — openf1 → fastf1_local; 1h TTL.
-- [[f1-stints-chain]] — openf1; 1h TTL.
+- [[f1-laps-chain]] — openf1 → fastf1_local; 10s fresh / 60s stale TTL.
+- [[f1-stints-chain]] — openf1; 10s fresh / 60s stale TTL.
 - [[f1-weather-chain]] — openf1; 10min TTL.
 - [[f1-standings-chain]] — jolpica → fastf1_local; 24h TTL.
 - [[f1-drivers-chain]] — openf1; 24h TTL.

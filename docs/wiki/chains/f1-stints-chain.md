@@ -21,8 +21,8 @@ related: [[openf1]], [[f1-predict-pit-strategy]]
 
 ## TTLs
 
-- Fresh: 1h
-- Stale ceiling: 24h
+- Fresh: 10s
+- Stale ceiling: 60s
 
 ## Cache key
 

@@ -382,8 +382,8 @@ async def cricket_player_form_index(player_id: str) -> Envelope:
         "data": {**form, "player_id": player_id, "career_avg": avg, "career_sr": sr},
         "meta": {
             "source": stats_result.source,
-            "is_stale": stats_result.is_stale,
             "estimated": True,
+            **staleness_meta(stats_result),
         },
     }
 
@@ -528,7 +528,6 @@ async def cricket_head_to_head(team_a: str, team_b: str) -> Envelope:
         },
         "meta": {
             "source": squad_result_a.source,
-            "is_stale": squad_result_a.is_stale or squad_result_b.is_stale,
             "estimated": True,
             **staleness_meta(squad_result_a, squad_result_b),
         },
@@ -650,11 +649,19 @@ async def cricket_player_matchup(player_a: str, player_b: str) -> Envelope:
         return_exceptions=True,
     )
 
-    if isinstance(stats_a_r, NotFoundError) or isinstance(stats_b_r, NotFoundError):
-        nf = stats_a_r if isinstance(stats_a_r, NotFoundError) else stats_b_r
-        return error_envelope(code="NOT_FOUND", message=str(nf))
-    if isinstance(stats_a_r, AllSourcesFailedError) or isinstance(stats_b_r, AllSourcesFailedError):
-        return error_envelope(code="ALL_SOURCES_FAILED", message="Could not fetch player stats.")
+    if isinstance(stats_a_r, (AllSourcesFailedError, NotFoundError)) or isinstance(
+        stats_b_r, (AllSourcesFailedError, NotFoundError)
+    ):
+        attempts: list = []
+        code = "ALL_SOURCES_FAILED"
+        msg = "Could not fetch player stats."
+        for exc in (stats_a_r, stats_b_r):
+            if isinstance(exc, (AllSourcesFailedError, NotFoundError)):
+                attempts.extend(exc.attempts)
+            if isinstance(exc, NotFoundError):
+                code = "NOT_FOUND"
+                msg = str(exc)
+        return error_envelope(code=code, message=msg, sources_tried=attempts)
     if isinstance(stats_a_r, BaseException):
         raise stats_a_r
     if isinstance(stats_b_r, BaseException):

@@ -478,7 +478,7 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
     meta = {
         "source": odds_result.source,
         "estimated": True,
-        **staleness_meta(odds_result),
+        **staleness_meta(odds_result, groups_result),
     }
     if live_elo:
         meta["live_elo"] = True

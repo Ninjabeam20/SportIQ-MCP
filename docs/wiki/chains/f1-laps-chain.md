@@ -22,8 +22,8 @@ related: [[openf1]], [[fastf1]], [[f1-get-lap-times]], [[f1-tyre-degradation]], 
 
 ## TTLs
 
-- Fresh: 1h
-- Stale ceiling: 24h
+- Fresh: 10s
+- Stale ceiling: 60s
 
 ## Cache key
 

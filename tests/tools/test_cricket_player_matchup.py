@@ -115,6 +115,30 @@ async def test_not_found_when_player_unknown():
     assert result["error"]["code"] == "NOT_FOUND"
 
 
+async def test_all_sources_failed_propagates_attempts():
+    mock_b = _mock_stats_result("Bumrah", role="bowler", bowling_avg=22.0)
+    attempts = [{"name": "cricapi", "error": "timeout"}]
+    exc = AllSourcesFailedError("upstream down", attempts=attempts)
+    with patch("sportiq.cricket.intel_tools.player_stats_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(side_effect=[exc, mock_b])
+        result = await cricket_player_matchup("bad_id", "bumrah")
+    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+    assert result["error"]["sources_tried"] == attempts
+
+
+async def test_not_found_propagates_attempts():
+    from sportiq.core.errors import NotFoundError
+
+    mock_b = _mock_stats_result("Bumrah", role="bowler", bowling_avg=22.0)
+    attempts = [{"name": "cricapi", "error": "not found"}]
+    with patch("sportiq.cricket.intel_tools.player_stats_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(side_effect=[NotFoundError("no such player", attempts=attempts), mock_b])
+        result = await cricket_player_matchup("nonexistent_player", "bumrah")
+    assert result["error"]["code"] == "NOT_FOUND"
+    assert result["error"]["sources_tried"] == attempts
+
+
+
 # --- valid path ---
 
 async def test_valid_returns_envelope():

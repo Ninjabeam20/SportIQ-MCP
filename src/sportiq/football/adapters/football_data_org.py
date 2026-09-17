@@ -64,7 +64,7 @@ class FootballDataOrgFixturesAdapter:
         return {"fixtures": fixtures}
 
     async def healthcheck(self) -> bool:
-        return True
+        return bool(settings.footballdata_key)
 
 
 class FootballDataOrgStandingsAdapter:
@@ -97,7 +97,7 @@ class FootballDataOrgStandingsAdapter:
         return {"standings": standings}
 
     async def healthcheck(self) -> bool:
-        return True
+        return bool(settings.footballdata_key)
 
 
 class FootballDataOrgTeamStatsAdapter:
@@ -113,7 +113,7 @@ class FootballDataOrgTeamStatsAdapter:
         )
 
     async def healthcheck(self) -> bool:
-        return True
+        return bool(settings.footballdata_key)
 
 
 class FootballDataOrgScorersAdapter:
@@ -142,4 +142,4 @@ class FootballDataOrgScorersAdapter:
         return {"scorers": scorers}
 
     async def healthcheck(self) -> bool:
-        return True
+        return bool(settings.footballdata_key)

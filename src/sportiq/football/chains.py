@@ -85,6 +85,8 @@ football_groups_chain: FallbackChain[dict] = FallbackChain(
     name="football:groups",
     adapters=[_seed_groups],
     cache_key_fn=lambda **_: "sportiq:football:groups:wc2026",
+    # ~1y TTL is intentional: static draw seed and baseline Elo ratings are immutable
+    # across the tournament cycle. Live match results and Elo nudges are applied in-memory.
     fresh_ttl=31536000,
     stale_ttl=31536000,
 )
@@ -100,7 +102,7 @@ football_team_stats_chain: FallbackChain[dict] = FallbackChain(
 football_squad_chain: FallbackChain[dict] = FallbackChain(
     name="football:squad",
     adapters=[_af_squad, _seed_squad],
-    cache_key_fn=lambda team, **_: "sportiq:football:squad:" + hashlib.blake2s(team.lower().encode(), digest_size=8).hexdigest(),
+    cache_key_fn=lambda team, **_: "sportiq:football:squad:" + hashlib.blake2s(str(team).lower().encode(), digest_size=8).hexdigest(),
     fresh_ttl=43200,
     stale_ttl=259200,
 )

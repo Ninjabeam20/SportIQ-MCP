@@ -257,6 +257,8 @@ async def test_player_form_index_returns_score_and_trend():
     assert "form_score" in r["data"]
     assert 0.0 <= r["data"]["form_score"] <= 100.0
     assert r["meta"]["source"] == "cricapi"
+    assert "data_age_seconds" in r["meta"]
+    assert "fallback_used" in r["meta"]
 
 
 async def test_player_form_index_empty_id_returns_invalid_input():

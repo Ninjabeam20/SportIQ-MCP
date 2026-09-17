@@ -68,6 +68,23 @@ async def test_sportiq_health_includes_quota_per_budgeted_source():
     assert "static_seed" not in quotas
 
 
+async def test_sportiq_health_includes_per_minute_quota():
+    from sportiq.core.health import get_health_report
+
+    register_adapter_for_health(
+        _StubAdapter(
+            "football_data_org",
+            budget=Budget(source="football_data_org", per_minute=10, per_day=100),
+        )
+    )
+
+    envelope = await get_health_report()
+    quotas = envelope["data"]["quotas"]
+    assert quotas["football_data_org"] == 100
+    assert quotas["football_data_org:per_minute"] == 10
+
+
+
 async def test_health_names_separate_sports_and_dedupe_shared_provider():
     from sportiq.core.health import get_health_report
 
