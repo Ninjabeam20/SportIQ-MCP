@@ -3,8 +3,8 @@ title: "ADR-0012: Hosted abuse controls"
 type: decision
 tags: [security, http, rate-limit, telemetry, cache]
 sources: [design, implementation]
-last_updated: 2026-08-13
-related: [[0003-redis-with-diskcache-fallback]], [[local-analytics-dashboard]], [[fastmcp-patterns]]
+last_updated: 2026-09-25
+related: [[0003-redis-with-diskcache-fallback]], [[local-analytics-dashboard]]
 ---
 
 # ADR-0012: Hosted abuse controls

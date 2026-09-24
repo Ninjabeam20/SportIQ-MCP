@@ -3,8 +3,8 @@ title: Pro-entitlement gate (V1 presence check + V2a hosted enforcement)
 type: decision
 tags: [monetization, entitlements, gating]
 sources: [chat, v1.md, v2.md]
-last_updated: 2026-07-01
-related: [[error-envelope]], [[fastmcp-patterns]], [[product-hosting-arc]]
+last_updated: 2026-09-25
+related: [[product-hosting-arc]]
 ---
 
 # ADR 0011 — Pro-entitlement gate (V1 presence check + V2a hosted enforcement)
@@ -83,7 +83,7 @@ identically. Adding a platform later is a validator swap, not a tool change.
 ## Consequences
 
 - New error code `SUBSCRIPTION_REQUIRED` (added to the exhaustive
-  [[error-envelope]] table).
+  [error envelope](../../../.claude/rules/error-envelope.md) table).
 - `FallbackChain`, adapters, and the free tools are untouched — the gate sits
   above the chain, in the tool wrapper. `instrument_tools` telemetry composes
   over `gated` (telemetry wraps the already-gated `fn`).

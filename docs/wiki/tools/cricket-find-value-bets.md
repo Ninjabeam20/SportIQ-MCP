@@ -3,8 +3,8 @@ title: cricket_find_value_bets
 type: tool
 tags: [cricket, odds, value-betting, ipl]
 sources: [theodds-cricket-adapter]
-last_updated: 2026-09-02
-related: [[cricket-win-probability-model]], [[football-find-value-bets]], [[cricket-get-live-odds]]
+last_updated: 2026-09-25
+related: [[cricket-win-probability]], [[football-find-value-bets]], [[cricket-get-live-odds]]
 ---
 
 # cricket_find_value_bets
@@ -15,7 +15,7 @@ Scoring edges against a neutral 50/50 prior would flag every market underdog,
 which would be misleading. The tool still reports `events_analysed` so callers
 know whether odds were available. For raw de-vigged prices use
 [[cricket-get-live-odds]]. Real edge detection lands when a cricket win model
-is wired (see [[cricket-head-to-head]] / [[cricket-win-probability-model]]).
+is wired (see [[cricket-head-to-head]] / [[cricket-win-probability]]).
 
 ## Parameters
 

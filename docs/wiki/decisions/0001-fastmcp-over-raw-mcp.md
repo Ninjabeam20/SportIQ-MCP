@@ -3,8 +3,8 @@ title: FastMCP over raw MCP SDK
 type: decision
 tags: [mcp, framework]
 sources: [chat]
-last_updated: 2026-05-26
-related: [[fastmcp-patterns]]
+last_updated: 2026-09-25
+related: []
 ---
 
 # ADR 0001 — FastMCP over raw MCP SDK

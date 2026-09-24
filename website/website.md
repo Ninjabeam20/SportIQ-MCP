@@ -1,5 +1,7 @@
 # SportIQ — Single-Page Website Design & Build Prompt
 
+> **Historical design brief (archived 2026-09-25).** Paid-tier and Polar checkout instructions below predate the free product. For current behavior use `website/CLAUDE.md`, `website/src/config/links.ts`, and the shipped site.
+
 > **What this file is.** A complete, self-sufficient design + build brief for the SportIQ marketing site.
 > Hand this whole file to a build session (or the `frontend-design` skill) and it can ship the site with no extra context.
 > Stack is locked: **Next.js (App Router) + Tailwind + TypeScript, deployed to Vercel, fully SEO-optimized.**

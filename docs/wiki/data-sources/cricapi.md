@@ -3,7 +3,7 @@ title: CricAPI
 type: data-source
 tags: [cricket, live-scores, fixtures, standings, squad, player-stats]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[cricket-live-score-chain]], [[cricket-scorecard-chain]], [[cricket-fixtures-chain]], [[cricket-standings-chain]], [[cricket-squad-chain]], [[cricket-player-stats-chain]]
 ---
 
@@ -17,7 +17,7 @@ Set `CRICAPI_KEY` in the environment. The key is obtained from [cricapi.com](htt
 
 ## Free-tier limits
 
-100 requests/day. Hard cap — exhausting it kills live scores until midnight UTC reset. The rate limiter in `core/ratelimit.py` tracks daily usage. See [[api-budgets]].
+100 requests/day. Hard cap — exhausting it kills live scores until midnight UTC reset. The rate limiter in `core/ratelimit.py` tracks daily usage. See [API budgets](../../../.claude/rules/api-budgets.md).
 
 ## Endpoints used
 

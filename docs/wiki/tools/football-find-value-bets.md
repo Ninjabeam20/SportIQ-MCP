@@ -2,8 +2,8 @@
 title: football_find_value_bets
 type: tool
 tags: [football, odds, betting, value, intel]
-sources: [the-odds-api, value-bet, poisson-xg-model]
-last_updated: 2026-05-30
+sources: [the-odds-api, value-bet, poisson-xg]
+last_updated: 2026-09-25
 related: [[value-bet]], [[football-match-predictor]], [[the-odds-api]], [[football-odds-chain]]
 ---
 
@@ -50,10 +50,10 @@ meta.is_stale:        reflects the ODDS freshness (the time-sensitive input)
 
 ## Scope
 
-**Football only** this round. `football_match_predictor` already yields 1X2
-probabilities, a perfect match for 1X2 odds. Cricket has no win-probability model
-yet (only Dream11 / form / pitch), so a cricket value-bet tool would require
-building a win model first — out of scope (stretch in step10).
+**Football only.** `football_match_predictor` yields 1X2 probabilities that can
+be compared with 1X2 odds. Cricket has a heuristic [[cricket-win-probability]]
+model, but it is not wired into `cricket_find_value_bets`; that tool currently
+emits no picks.
 
 ## Errors
 

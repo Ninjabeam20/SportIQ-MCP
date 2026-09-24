@@ -3,8 +3,8 @@ title: respx for HTTP test mocking
 type: decision
 tags: [testing, http]
 sources: [chat]
-last_updated: 2026-05-26
-related: [[testing]]
+last_updated: 2026-09-25
+related: []
 ---
 
 # ADR 0006 — respx for HTTP test mocking

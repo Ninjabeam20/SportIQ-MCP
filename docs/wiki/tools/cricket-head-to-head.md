@@ -2,9 +2,9 @@
 title: Cricket Head-to-Head Analyzer
 type: tool
 tags: [cricket, h2h, analytics, win-probability]
-sources: [cricket-squad-chain, cricket-player-stats-chain, cricket-win-probability-model, form-index]
-last_updated: 2026-06-03
-related: [[cricket-player-form-index]], [[cricket-win-probability-model]], [[form-index]], [[cricket-squad-chain]], [[cricket-player-stats-chain]]
+sources: [cricket-squad-chain, cricket-player-stats-chain, cricket-win-probability, form-index]
+last_updated: 2026-09-25
+related: [[cricket-player-form-index]], [[cricket-win-probability]], [[form-index]], [[cricket-squad-chain]], [[cricket-player-stats-chain]]
 ---
 
 # Cricket Head-to-Head Analyzer
@@ -36,7 +36,7 @@ async def cricket_head_to_head(team_a: str, team_b: str) -> dict
 | `key_players_b` | `list` | Same for team B. |
 | `h2h_win_rate_a` | `float` | Estimated H2H win rate for team A from edge ratio (0.0–1.0). |
 | `h2h_win_rate_b` | `float` | Same for team B; `h2h_win_rate_a + h2h_win_rate_b == 1.0`. |
-| `win_prob_a` | `float` | Final win probability for team A from [[cricket-win-probability-model]]. |
+| `win_prob_a` | `float` | Final win probability for team A from [[cricket-win-probability]]. |
 | `win_prob_b` | `float` | Same for team B; `win_prob_a + win_prob_b == 1.0`. |
 
 `meta.estimated: true` always — all outputs are model estimates, not oracle data.
@@ -52,7 +52,7 @@ player_stats_chain    ─┘
 ```
 
 1. Fetch both squads via [[cricket-squad-chain]]. On `AllSourcesFailedError` → `ALL_SOURCES_FAILED` envelope.
-2. For every player in both squads that has a `player_id` (up to 11 per side), fire concurrent stats fetches via [[cricket-player-stats-chain]] gated by `_PLAYER_STATS_SEMAPHORE(5)`. Failures are silently dropped.
+2. For every player in both squads that has a `player_id` (up to 11 per side), fire concurrent stats fetches via [[cricket-player-stats-chain]] gated by `_PLAYER_STATS_SEMAPHORE(5)`. Known provider failures use neutral player stats; unexpected exceptions re-raise for telemetry.
 3. `summarise_h2h()` in `cricket/models/head_to_head.py` scores each player via `player_form_index(raw)` (from [[form-index]]), ranks players by form within each squad, counts positional edges, and derives `h2h_win_rate_*` from the edge ratio.
 4. `win_prob({"h2h_win_rate": h2h_a}, {"h2h_win_rate": h2h_b})` converts H2H rates to final probabilities weighted 30% H2H / 50% form (neutral) / 20% venue (neutral).
 

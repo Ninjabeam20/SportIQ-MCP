@@ -3,8 +3,8 @@ title: f1_undercut_window
 type: tool
 tags: [f1, undercut, strategy, intel]
 sources: []
-last_updated: 2026-05-28
-related: [[f1-laps-chain]], [[undercut-model]]
+last_updated: 2026-09-25
+related: [[f1-laps-chain]], [[undercut]]
 ---
 
 # f1_undercut_window

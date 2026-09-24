@@ -3,8 +3,8 @@ title: Pit Strategy Predictor
 type: model
 tags: [f1, pit-stop, strategy]
 sources: [f1db]
-last_updated: 2026-09-11
-related: [[f1-predict-pit-strategy]], [[tyre-degradation-model]], [[undercut-model]], [[f1db]]
+last_updated: 2026-09-25
+related: [[f1-predict-pit-strategy]], [[tyre-degradation]], [[undercut]], [[f1db]]
 ---
 
 # Pit Strategy Predictor

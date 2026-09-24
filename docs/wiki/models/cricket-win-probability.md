@@ -3,7 +3,7 @@ title: Cricket Win Probability Model
 type: model
 tags: [cricket, model, win-probability, t20]
 sources: []
-last_updated: 2026-06-03
+last_updated: 2026-09-25
 related: [[cricket-find-value-bets]], [[cricket-player-form-index]]
 ---
 
@@ -14,7 +14,7 @@ Heuristic pre-match T20 win probability using three signals:
 | Signal | Weight | Source |
 | :--- | :--- | :--- |
 | Form score (0-100) | 50% | [[form-index]] aggregated |
-| H2H win rate (0-1) | 30% | H2H data (stubbed at 0.5 until Feature 2) |
+| H2H win rate (0-1) | 30% | `cricket_head_to_head` supplies an estimated player-edge ratio |
 | Venue tilt (0-1) | 20% | [[pitch-report]] `batting_friendly` |
 
 Output: `{"team_a": float, "team_b": float}` summing to 1. No draw (T20 only).
@@ -36,4 +36,4 @@ All inputs optional — the model never errors. Missing form defaults to 50 (neu
 
 ## Calibration notes
 
-Weights (`form=50%, h2h=30%, venue=20%`) are calibrated for T20 heuristics. No Elo or Poisson component yet — this is intentionally simple for Phase 1C. Feature 2 (H2H analyzer) will wire real H2H win rates; Feature 4 (form trends) will supply rolling form scores.
+Weights (`form=50%, h2h=30%, venue=20%`) are heuristic, not empirically calibrated. The H2H tool passes its estimated player-edge ratio; form and venue remain neutral in that call. The model is not wired into `cricket_find_value_bets`, and it has no Elo or Poisson component.

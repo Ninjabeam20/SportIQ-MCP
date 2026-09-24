@@ -3,8 +3,8 @@ title: FallbackChain pattern
 type: decision
 tags: [architecture, resilience]
 sources: [chat]
-last_updated: 2026-05-26
-related: [[fallback-contract]]
+last_updated: 2026-09-25
+related: []
 ---
 
 # ADR 0005 — FallbackChain pattern

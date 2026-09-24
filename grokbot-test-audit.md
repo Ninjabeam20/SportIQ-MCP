@@ -1,5 +1,7 @@
 # grokbot-test-audit — post-impl on `bot`
 
+> **Historical test snapshot (2026-09-11).** Counts, SHAs, and branch status below are from the audited commit; the fixes were merged to main on 2026-09-25.
+
 | Field | Value |
 |---|---|
 | Repo | `Ninjabeam20/SportIQ-MCP` |

@@ -1,7 +1,7 @@
 """Resolve a CricAPI match_id to {team_a, team_b, venue}."""
 from __future__ import annotations
 
-from sportiq.core.errors import NotFoundError
+from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.cricket.chains import fixtures_chain, scorecard_chain
 
 
@@ -23,7 +23,7 @@ async def resolve_match(match_id: str) -> dict:
                 venue = m.get("venue", "")
                 if team_a and team_b:
                     return {"team_a": team_a, "team_b": team_b, "venue": venue}
-    except Exception:
+    except (AllSourcesFailedError, NotFoundError):
         pass
 
     # Fall back to scorecard
@@ -36,7 +36,7 @@ async def resolve_match(match_id: str) -> dict:
         venue = data.get("venue", "")
         if team_a and team_b:
             return {"team_a": team_a, "team_b": team_b, "venue": venue}
-    except Exception:
+    except (AllSourcesFailedError, NotFoundError):
         pass
 
     raise NotFoundError(f"Could not resolve match_id={match_id!r} to team/venue info")

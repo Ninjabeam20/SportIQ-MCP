@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from sportiq.core.errors import NotFoundError
+from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.fallback import FallbackResult
 
 
@@ -41,7 +41,7 @@ async def test_resolve_match_falls_back_to_scorecard():
         patch("sportiq.cricket.match_resolver.fixtures_chain") as mock_f,
         patch("sportiq.cricket.match_resolver.scorecard_chain") as mock_s,
     ):
-        mock_f.fetch = AsyncMock(side_effect=Exception("fixtures failed"))
+        mock_f.fetch = AsyncMock(side_effect=AllSourcesFailedError("fixtures failed"))
         mock_s.fetch = AsyncMock(return_value=_fr(scorecard_val))
         result = await match_resolver.resolve_match("m456")
 
@@ -56,8 +56,8 @@ async def test_resolve_match_raises_not_found_when_no_data():
         patch("sportiq.cricket.match_resolver.fixtures_chain") as mock_f,
         patch("sportiq.cricket.match_resolver.scorecard_chain") as mock_s,
     ):
-        mock_f.fetch = AsyncMock(side_effect=Exception("failed"))
-        mock_s.fetch = AsyncMock(side_effect=Exception("failed"))
+        mock_f.fetch = AsyncMock(side_effect=AllSourcesFailedError("failed"))
+        mock_s.fetch = AsyncMock(side_effect=AllSourcesFailedError("failed"))
         with pytest.raises(NotFoundError):
             await match_resolver.resolve_match("nonexistent")
 
@@ -78,3 +78,22 @@ async def test_resolve_match_uses_match_id_from_fixtures():
 
     assert result["team_a"] == "MI"
     assert result["team_b"] == "CSK"
+
+
+@pytest.mark.parametrize("source", ["fixtures", "scorecard"])
+async def test_resolve_match_reraises_unexpected_chain_failure(source):
+    from sportiq.cricket import match_resolver
+
+    with (
+        patch("sportiq.cricket.match_resolver.fixtures_chain") as mock_f,
+        patch("sportiq.cricket.match_resolver.scorecard_chain") as mock_s,
+    ):
+        fixtures_error = (
+            RuntimeError("unexpected fixtures bug")
+            if source == "fixtures"
+            else AllSourcesFailedError("fixtures unavailable")
+        )
+        mock_f.fetch = AsyncMock(side_effect=fixtures_error)
+        mock_s.fetch = AsyncMock(side_effect=RuntimeError("unexpected scorecard bug"))
+        with pytest.raises(RuntimeError, match=f"unexpected {source} bug"):
+            await match_resolver.resolve_match("m123")

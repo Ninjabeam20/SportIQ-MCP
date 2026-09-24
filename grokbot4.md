@@ -1,5 +1,7 @@
 # grokbot4 — Docs hygiene + verification
 
+> **Historical audit plan (2026-09-11).** Read as a dated finding, not current implementation instructions; the fixes were merged to main on 2026-09-25.
+
 | Field | Value |
 |---|---|
 | Repo | `sportiq-mcp (Ninjabeam20/SportIQ-MCP)` |

@@ -2,9 +2,9 @@
 title: Value-Bet Detector
 type: model
 tags: [football, odds, betting, value, devig]
-sources: [the-odds-api, poisson-xg-model]
-last_updated: 2026-09-11
-related: [[football-find-value-bets]], [[football-match-predictor]], [[the-odds-api]], [[poisson-xg-model]]
+sources: [the-odds-api, poisson-xg]
+last_updated: 2026-09-25
+related: [[football-find-value-bets]], [[football-match-predictor]], [[the-odds-api]], [[poisson-xg]]
 ---
 
 # Value-Bet Detector

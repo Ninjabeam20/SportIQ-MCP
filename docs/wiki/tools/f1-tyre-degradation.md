@@ -3,8 +3,8 @@ title: f1_tyre_degradation
 type: tool
 tags: [f1, tyre, degradation, intel]
 sources: []
-last_updated: 2026-05-29
-related: [[f1-laps-chain]], [[f1-stints-chain]], [[tyre-degradation-model]]
+last_updated: 2026-09-25
+related: [[f1-laps-chain]], [[f1-stints-chain]], [[tyre-degradation]]
 ---
 
 # f1_tyre_degradation

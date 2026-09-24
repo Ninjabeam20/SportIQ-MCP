@@ -3,7 +3,7 @@ title: Race Pace Comparison Model
 type: model
 tags: [f1, degradation, race-pace]
 sources: []
-last_updated: 2026-06-04
+last_updated: 2026-09-25
 related: [[f1-race-pace-compare]], [[f1-tyre-degradation]]
 ---
 
@@ -25,7 +25,7 @@ Pure function in `src/sportiq/f1/models/race_pace.py`. No I/O.
 
 ## Algorithm
 
-1. Annotate each driver's laps with compound and tyre_life via `annotate_laps_with_stints()` (see [[tyre-degradation-model]]).
+1. Annotate each driver's laps with compound and tyre_life via `annotate_laps_with_stints()` (see [[tyre-degradation]]).
 2. Collect distinct compounds for each driver from laps with valid `lap_duration`.
 3. For each compound in the intersection: call `fit_degradation()` for each driver.
 4. Skip compounds where either driver has `sample_count == 0`.

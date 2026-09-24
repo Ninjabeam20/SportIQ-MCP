@@ -1,16 +1,16 @@
-# order.md — execution order for the unexecuted backlog
+# order.md — 2026 audit execution record
 
-> **ACTIVE BRANCH: `bot`** (refreshed 2026-09-25). Suite **869 collected tests**. Do **not** create `audit-fixes` or rename mid-flight — work only on `bot`. Phases 1–7 local verify DONE; owner authorized pushing `bot` on 2026-09-25. Merge and deploy remain separate decisions.
+> **Current status (2026-09-25):** `bot` was fast-forward merged into local `main`; post-merge tests, Ruff, and release checks passed. `origin/main` push and Dell deployment are pending. The dated branch instructions below are historical. Suite: **871 collected tests** after the resolver regression tests.
 > Historical: Branch `audit-fixes` (cut from `main` @ `5cfa12f`, 2026-09-05) — superseded for execution.
-> Rule: ALL remaining work below happens on **`bot`**. `main` + Dell stay untouched until Phase 7/8 gates pass.
+> The original bot-only rule below governed the audit implementation before the merge.
 > No pre-existing file does this job: `grok_index.md` has an execution order but Waves A–C are all `[x]` (hosting mission closed 2026-09-02). `BACKLOG.md` is deferred ideas (promotion needs an ADR — NOT scheduled here). `GAPS.md` is severity-ordered but mostly RESOLVED. This file sequences the **2026-09-05 full-repo audit findings** (previously read-only, none executed) plus the small GAPS/git-hygiene leftovers.
 > 2026-09-05 sweep: every `*.md` outside `website/node_modules`, `.venv`, `.git` was scanned for unimplemented plans. Phases 1–6 hold the scheduled work; **Appendix A** records everything verified DONE/STALE (so nothing is unaccounted for); **Appendix B** holds deferred items that need a decision/ADR before they may be scheduled. `done/` files are archived history — verdicts about them are recorded here, the files themselves are left untouched.
 > Governing correction source: **`muse.md`** (verified 2026-09-05 re-read of the audit against the tree — "follow this file, not the chat"). It confirms most phases below but corrects nine points, all folded in: `Exception` (never `BaseException`); F1 gather paths the audit missed; selective OpenF1 raises; skill-not-code scoring alignment; `SECURITY.md` already current (do not rewrite); `simulate_group()` is used by tests (do not delete); gitignored docs skipped by default; `build_accumulator` needs no guard; F1 TTLs stay in code. Where this file and the raw audit disagree, `muse.md` wins.
-> Branch note: `muse.md` suggested `fix/audit-envelope-and-empty-payloads`; historical live branch was **`audit-fixes`**. **2026-09-11: ACTIVE BRANCH is `bot`** — do not create/rename to audit-fixes.
+> Branch note (historical): `muse.md` suggested `fix/audit-envelope-and-empty-payloads`; the audit used `bot`.
 
-## Agent instruction (binding on every worker, human or agent)
+## Historical agent instruction (before merge)
 
-1. Work ONLY on branch **`bot`** (was `audit-fixes`). `main` + Dell stay untouched until Phase 7/8 gates pass with an explicit `yes`.
+1. Work ONLY on branch **`bot`** (was `audit-fixes`) before integration. The 2026-09-25 request authorized merging and deploying after verification.
 2. Follow the phase order below (0 → 8). If you believe a better order exists, state it + why in chat and update this file BEFORE reordering — never silently work out of order.
 3. Keep the Execution checklist current as you go: tick `[x]` only when the change is in the tree WITH its tests green; the Status column is the single source of truth for what remains.
 4. Before touching code, read `muse.md` §0 (hard rules) + §7 (12 do-not-regress patterns). Where this file and the raw audit disagree, `muse.md` wins.
@@ -83,11 +83,11 @@
 - [x] Full gates on branch: `uv sync --extra dev --extra analytics`, `uv run pytest -q`, `ruff check`, `uv run python scripts/check_release_build.py`. **DONE** 2026-09-25 (869 collected; full suite passed, ruff clean, release build OK offline).
 - [x] Append `docs/log.md` entry for the batch (note: `docs/log.md` is currently gitignored-working-copy — keep local per ignore rule). **DONE** 2026-09-17.
 - [x] Push branch: owner authorized `push bot` on 2026-09-25; `git push -u origin bot` succeeded through commit `6da4487`. PR, merge, and deploy remain pending separate decisions.
-- [ ] Open PR → review → merge to `main`. Tag only if releasing (release flow = `/project:release`, needs explicit yes).
+- [x] Fast-forward merge `bot` into local `main` on 2026-09-25 after testing `origin/main`; post-merge tests, Ruff, and release checks passed. No PR or release tag requested. `origin/main` push pending.
 
-## Phase 8 — deploy + iterate (HARD STOP — needs explicit `yes` in current message)
+## Phase 8 — deploy + iterate
 
-- [ ] Do NOT run without a fresh `yes`: Dell is production (`restart: unless-stopped`, single replica, no ports). Never `K_SERVICE`, never keep-warm copy. **DEFERRED / hard stop** — Phase 8 deploy UNCHECKED (2026-09-11).
+- [x] Owner authorized Dell deployment in the 2026-09-25 message. Dell is production (`restart: unless-stopped`, single replica, no ports). Never `K_SERVICE`, never keep-warm copy.
 - [ ] Deploy: on Dell, `docker compose up -d --build`, then smoke: `initialize` 200 + `tools/list` 44 + `sportiq_health` diskcache + `football_simulate_bracket(500, seed=42)` sanity.
 - [ ] Iterate: file new findings → append to this file's "Notes" → repeat Phases 1–7 per batch.
 
@@ -268,3 +268,4 @@ These files were scanned and contain no executable work for this batch. Recorded
 
 - 2026-09-25 (bot closeout): Finite odds prices only (`nan`/`inf` skipped); PuLP solver failures remain structured invalid-input errors while unexpected failures re-raise. Confirmed captain/vice-captain validation is implemented and tested. Applied the same exception rule to football/F1/cricket/cross-sport concurrent tool paths. Adjusted the group-simulation test tolerance for independently rounded probability fields. `PROJECT.md` count refreshed to **869 collected**. `uv sync --offline --extra dev --extra analytics` clean; full pytest green; CI coverage **91.91%** (84% gate); Ruff clean; release build allowlist/uvx check green offline. Owner authorized pushing `bot`; merge and deploy remain pending separate decisions.
 - 2026-09-25 (bot push): `6da4487` pushed to `origin/bot`; Phase 7 push checked. This plan-status update follows in a docs-only commit. PR, merge, and deploy remain pending.
+- 2026-09-25 (main integration): Verified fetched `origin/main` in an isolated checkout (full pytest and Ruff green), fast-forward merged `bot` into local `main`, then reran full pytest, Ruff, and release build checks. Wiki audit repaired 27 unresolved wiki links, updated Dream11 `match_id` and cricket model claims, clarified cross-sport exception behavior, and marked obsolete paid/audit plans as historical. Two resolver regression tests confirmed unexpected chain errors were being masked; narrowed catches to known provider failures. Final local suite: 871 collected, full pytest green, coverage 91.91%, Ruff and release build green. Wiki age lint still flags 71 unchanged pages older than 90 days; age alone is not evidence that their content is false. `origin/main` push and Dell smoke remain next.

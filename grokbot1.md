@@ -1,5 +1,7 @@
 # grokbot1 — INDEX + safety
 
+> **Historical audit snapshot (2026-09-11).** Branch and main SHA claims below describe that date; the fixes were merged to main on 2026-09-25.
+
 | Field | Value |
 |---|---|
 | Repo | `sportiq-mcp (Ninjabeam20/SportIQ-MCP)` |

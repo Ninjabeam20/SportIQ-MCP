@@ -3,8 +3,8 @@ title: Cricsheet
 type: data-source
 tags: [cricket, ipl, venues, offline-seed, calibration]
 sources: [cricsheet]
-last_updated: 2026-06-11
-related: [[cricket-get-pitch-report]], [[pitch-report]], [[venues]]
+last_updated: 2026-09-25
+related: [[cricket-get-pitch-report]], [[pitch-report]]
 ---
 
 # Cricsheet

@@ -3,8 +3,8 @@ title: f1_predict_pit_strategy
 type: tool
 tags: [f1, pit-stop, strategy, intel, flagship]
 sources: []
-last_updated: 2026-05-28
-related: [[f1-laps-chain]], [[f1-stints-chain]], [[f1-weather-chain]], [[pit-strategy-model]]
+last_updated: 2026-09-25
+related: [[f1-laps-chain]], [[f1-stints-chain]], [[f1-weather-chain]], [[pit-strategy]]
 ---
 
 # f1_predict_pit_strategy
@@ -46,7 +46,7 @@ async def f1_predict_pit_strategy(
 
 ## Model
 
-See [[pit-strategy-model]] for algorithm details. Key inputs: per-compound tyre-degradation fits ([[tyre-degradation-model]]), weather rainfall flag ([[f1-weather-chain]]), current stint from stints data ([[f1-stints-chain]]).
+See [[pit-strategy]] for algorithm details. Key inputs: per-compound tyre-degradation fits ([[tyre-degradation]]), weather rainfall flag ([[f1-weather-chain]]), current stint from stints data ([[f1-stints-chain]]).
 
 ## Chains
 

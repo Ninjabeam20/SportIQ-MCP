@@ -3,8 +3,8 @@ title: Qualifying Analysis Model
 type: model
 tags: [f1, qualifying, grid]
 sources: []
-last_updated: 2026-06-04
-related: [[f1-qualifying-analysis]], [[tyre-degradation-model]]
+last_updated: 2026-09-25
+related: [[f1-qualifying-analysis]], [[tyre-degradation]]
 ---
 
 # Qualifying Analysis Model

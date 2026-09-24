@@ -3,7 +3,7 @@ title: cross_sport_build_accumulator
 type: tool
 tags: [football, cricket, accumulator, cross-sport]
 sources: []
-last_updated: 2026-06-04
+last_updated: 2026-09-25
 related: [[football-build-accumulator]], [[parlay-builder]]
 ---
 
@@ -44,10 +44,10 @@ Builds a multi-leg accumulator bet by combining value picks from both football a
 ## Failure modes
 
 - `INVALID_INPUT` — `legs` outside 2–8 or `min_edge` outside (0, 1).
-- `ALL_SOURCES_FAILED` — both football and cricket value-bet sources returned errors or exceptions.
+- `ALL_SOURCES_FAILED` — both football and cricket value-bet tools returned structured errors.
 - One sport failing is non-fatal: the accumulator is built from the remaining sport's picks, and `meta.note` records the failure.
 
 ## Implementation notes
 
 - `normalise_pick` in `core/parlay.py` prefixes `match_id` with `sport:` (e.g. `football:123`) so the dedup step in `build_accumulator` never conflates the same raw ID across sports.
-- Both sport fetches run concurrently via `asyncio.gather(..., return_exceptions=True)`.
+- Both sport calls run concurrently via `asyncio.gather(..., return_exceptions=True)`. Unexpected exceptions re-raise for telemetry; a known provider error from one sport can still leave the other sport available.

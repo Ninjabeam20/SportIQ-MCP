@@ -3,7 +3,7 @@ title: cricket_build_dream11_team
 type: tool
 tags: [cricket, dream11, ilp, flagship]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[dream11-solver]], [[dream11-scoring]], [[captain-score]], [[cricket-squad-chain]], [[cricket-pitch-data-chain]]
 ---
 
@@ -15,16 +15,17 @@ Phase 2 flagship #1. Returns an optimal Dream11 XI plus captain and vice-captain
 
 ```python
 async def cricket_build_dream11_team(
-    team_a: str,
-    team_b: str,
-    venue: str,
+    match_id: str | None = None,
+    team_a: str | None = None,
+    team_b: str | None = None,
+    venue: str | None = None,
     strategy: str = "balanced",
-) -> dict
+) -> Envelope
 ```
 
 `team_a` / `team_b` accept any team code or name resolvable by [[cricket-squad-chain]] (`MI`, `CSK`, `IND`, etc.). `venue` accepts a venues.json key, the official venue name, or the city — see [[static-seed]].
 
-The original Phase 2 plan signed `match_id`-driven; live match → teams + venue resolution requires a follow-up scorecard lookup. Until then, the tool takes the inputs the [[dream11-solver]] needs directly.
+Pass `match_id` to resolve teams and venue through the fixtures chain, falling back to the scorecard chain. Alternatively, pass `team_a`, `team_b`, and `venue` directly. A missing or unresolved venue returns a structured error.
 
 ## Constraints enforced (per call)
 

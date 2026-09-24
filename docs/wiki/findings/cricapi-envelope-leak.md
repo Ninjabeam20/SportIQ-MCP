@@ -3,8 +3,8 @@ title: CricAPI envelope leak + failure-as-success
 type: finding
 tags: [cricket, cricapi, security, fallback]
 sources: [2026-05-30-step8-live-findings.md, cricapi]
-last_updated: 2026-05-30
-related: [[cricapi]], [[cricket-scorecard-chain]], [[cricket-squad-chain]], [[project-not-found-invariant]], [[error-envelope-secret-leak]]
+last_updated: 2026-09-25
+related: [[cricapi]], [[cricket-scorecard-chain]], [[cricket-squad-chain]], [[0005-fallback-chain-pattern]], [[error-envelope-secret-leak]]
 ---
 
 # CricAPI envelope leak + failure-as-success
@@ -43,7 +43,7 @@ Scorecard / points-table / player-info call it. The squad adapter raises
 
 `cricket_get_scorecard` and `cricket_get_points_table` now also catch `NotFoundError`
 → `NOT_FOUND` envelope (these chains have no terminator, unlike squad). See
-[[project-not-found-invariant]].
+[[0005-fallback-chain-pattern]].
 
 ## Regression coverage
 
