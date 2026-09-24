@@ -153,8 +153,30 @@ def test_solver_missing_cbc_raises_invalid_input(monkeypatch):
     import pulp
 
     def patched_solve(self, *args, **kwargs):
-        raise Exception("cbc not found")
+        raise pulp.PulpSolverError("cbc not found")
 
     monkeypatch.setattr(pulp.LpProblem, "solve", patched_solve)
     with pytest.raises(InvalidInputError, match="cbc"):
+        solve(_synthetic_pool())
+
+
+def test_solver_unexpected_failure_reraises(monkeypatch):
+    import pulp
+
+    def patched_solve(self, *args, **kwargs):
+        raise RuntimeError("solver code bug")
+
+    monkeypatch.setattr(pulp.LpProblem, "solve", patched_solve)
+    with pytest.raises(RuntimeError, match="solver code bug"):
+        solve(_synthetic_pool())
+
+
+def test_solver_rejects_optimal_status_without_captain_selection(monkeypatch):
+    import pulp
+
+    def patched_solve(self, *args, **kwargs):
+        return pulp.LpStatusOptimal
+
+    monkeypatch.setattr(pulp.LpProblem, "solve", patched_solve)
+    with pytest.raises(RuntimeError, match="captain"):
         solve(_synthetic_pool())

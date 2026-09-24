@@ -30,6 +30,9 @@ async def cross_sport_build_accumulator(legs: int = 3, min_edge: float = 0.05) -
         cricket_find_value_bets(min_edge=min_edge),
         return_exceptions=True,
     )
+    for result in (football_r, cricket_r):
+        if isinstance(result, BaseException):
+            raise result
 
     all_picks: list[dict] = []
     sports_available: list[str] = []
@@ -37,7 +40,7 @@ async def cross_sport_build_accumulator(legs: int = 3, min_edge: float = 0.05) -
     sub_metas: list[dict] = []
 
     # Collect football picks
-    if not isinstance(football_r, Exception) and not football_r.get("error"):
+    if not football_r.get("error"):
         fb_picks = football_r.get("data", {}).get("value_bets", [])
         all_picks.extend(normalise_pick(p, "football") for p in fb_picks)
         sports_available.append("football")
@@ -46,7 +49,7 @@ async def cross_sport_build_accumulator(legs: int = 3, min_edge: float = 0.05) -
         notes.append("football picks unavailable")
 
     # Collect cricket picks
-    if not isinstance(cricket_r, Exception) and not cricket_r.get("error"):
+    if not cricket_r.get("error"):
         ck_picks = cricket_r.get("data", {}).get("value_bets", [])
         all_picks.extend(normalise_pick(p, "cricket") for p in ck_picks)
         sports_available.append("cricket")

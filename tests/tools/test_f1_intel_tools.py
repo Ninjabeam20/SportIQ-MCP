@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
+import pytest
+
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.fallback import FallbackResult
 
@@ -72,7 +74,7 @@ async def test_f1_tyre_degradation_all_sources_failed():
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
 
 
-async def test_f1_tyre_degradation_laps_runtime_error_returns_envelope():
+async def test_f1_tyre_degradation_laps_unexpected_error_reraises():
     from sportiq.f1 import intel_tools
 
     with (
@@ -81,13 +83,13 @@ async def test_f1_tyre_degradation_laps_runtime_error_returns_envelope():
     ):
         mock_laps.fetch = AsyncMock(side_effect=RuntimeError("unexpected laps error"))
         mock_stints.fetch = AsyncMock(return_value=_fr({"stints": []}))
-        result = await intel_tools.f1_tyre_degradation(
-            session_key=9877, driver_number=1, compound="SOFT"
-        )
-    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+        with pytest.raises(RuntimeError, match="unexpected laps error"):
+            await intel_tools.f1_tyre_degradation(
+                session_key=9877, driver_number=1, compound="SOFT"
+            )
 
 
-async def test_f1_tyre_degradation_stints_runtime_error_returns_envelope():
+async def test_f1_tyre_degradation_stints_unexpected_error_reraises():
     from sportiq.f1 import intel_tools
 
     with (
@@ -96,10 +98,10 @@ async def test_f1_tyre_degradation_stints_runtime_error_returns_envelope():
     ):
         mock_laps.fetch = AsyncMock(return_value=_fr(_laps_payload()))
         mock_stints.fetch = AsyncMock(side_effect=RuntimeError("unexpected stints error"))
-        result = await intel_tools.f1_tyre_degradation(
-            session_key=9877, driver_number=1, compound="SOFT"
-        )
-    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+        with pytest.raises(RuntimeError, match="unexpected stints error"):
+            await intel_tools.f1_tyre_degradation(
+                session_key=9877, driver_number=1, compound="SOFT"
+            )
 
 
 async def test_f1_tyre_degradation_degrades_gracefully_when_stints_down():
@@ -410,7 +412,7 @@ async def test_f1_predict_pit_strategy_laps_not_found_returns_envelope():
     assert result["error"]["code"] == "NOT_FOUND"
 
 
-async def test_f1_predict_pit_strategy_laps_runtime_error_returns_envelope():
+async def test_f1_predict_pit_strategy_laps_unexpected_error_reraises():
     from sportiq.f1 import intel_tools
 
     with (
@@ -422,11 +424,11 @@ async def test_f1_predict_pit_strategy_laps_runtime_error_returns_envelope():
         mock_laps.fetch = AsyncMock(side_effect=RuntimeError("unexpected laps error"))
         mock_stints.fetch = AsyncMock(return_value=_fr({"stints": []}))
         mock_weather.fetch = AsyncMock(return_value=_fr({"weather": []}))
-        result = await intel_tools.f1_predict_pit_strategy(session_key=9877, driver_number=1)
-    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+        with pytest.raises(RuntimeError, match="unexpected laps error"):
+            await intel_tools.f1_predict_pit_strategy(session_key=9877, driver_number=1)
 
 
-async def test_f1_predict_pit_strategy_stints_runtime_error_returns_envelope():
+async def test_f1_predict_pit_strategy_stints_unexpected_error_reraises():
     from sportiq.f1 import intel_tools
 
     with (
@@ -438,11 +440,11 @@ async def test_f1_predict_pit_strategy_stints_runtime_error_returns_envelope():
         mock_laps.fetch = AsyncMock(return_value=_fr(_laps_payload()))
         mock_stints.fetch = AsyncMock(side_effect=RuntimeError("unexpected stints error"))
         mock_weather.fetch = AsyncMock(return_value=_fr({"weather": []}))
-        result = await intel_tools.f1_predict_pit_strategy(session_key=9877, driver_number=1)
-    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+        with pytest.raises(RuntimeError, match="unexpected stints error"):
+            await intel_tools.f1_predict_pit_strategy(session_key=9877, driver_number=1)
 
 
-async def test_f1_predict_pit_strategy_weather_runtime_error_returns_envelope():
+async def test_f1_predict_pit_strategy_weather_unexpected_error_reraises():
     from sportiq.f1 import intel_tools
 
     with (
@@ -454,5 +456,5 @@ async def test_f1_predict_pit_strategy_weather_runtime_error_returns_envelope():
         mock_laps.fetch = AsyncMock(return_value=_fr(_laps_payload()))
         mock_stints.fetch = AsyncMock(return_value=_fr({"stints": []}))
         mock_weather.fetch = AsyncMock(side_effect=RuntimeError("unexpected weather error"))
-        result = await intel_tools.f1_predict_pit_strategy(session_key=9877, driver_number=1)
-    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+        with pytest.raises(RuntimeError, match="unexpected weather error"):
+            await intel_tools.f1_predict_pit_strategy(session_key=9877, driver_number=1)

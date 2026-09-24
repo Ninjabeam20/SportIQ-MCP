@@ -1,6 +1,9 @@
 """Tool-layer tests for f1_qualifying_analysis."""
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
+from sportiq.core.errors import AllSourcesFailedError
 from sportiq.f1.intel_tools import f1_qualifying_analysis
 
 
@@ -67,12 +70,24 @@ async def test_no_laps_returns_empty_grid():
         "sportiq.f1.intel_tools._fetch_driver_laps", new_callable=AsyncMock
     ) as ml:
         md.fetch = AsyncMock(return_value=mock_drivers)
-        ml.side_effect = Exception("no laps")
+        ml.side_effect = AllSourcesFailedError("no laps")
         result = await f1_qualifying_analysis(9222)
 
     assert "data" in result
     assert result["data"]["grid"] == []
     assert result["data"]["pole_time_s"] is None
+
+
+async def test_unexpected_lap_failure_reraises():
+    drivers = MagicMock()
+    drivers.value = {"drivers": [{"driver_number": 1}]}
+    with patch("sportiq.f1.intel_tools.f1_drivers_chain") as md, patch(
+        "sportiq.f1.intel_tools._fetch_driver_laps", new_callable=AsyncMock
+    ) as ml:
+        md.fetch = AsyncMock(return_value=drivers)
+        ml.side_effect = RuntimeError("unexpected lap bug")
+        with pytest.raises(RuntimeError, match="unexpected lap bug"):
+            await f1_qualifying_analysis(9222)
 
 
 async def test_not_found_propagates_attempts():
@@ -85,4 +100,3 @@ async def test_not_found_propagates_attempts():
 
     assert result["error"]["code"] == "NOT_FOUND"
     assert result["error"]["sources_tried"] == attempts
-

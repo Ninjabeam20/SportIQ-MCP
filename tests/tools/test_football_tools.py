@@ -178,7 +178,7 @@ async def test_simulate_group_models_contextual_best_third_advancement():
     assert any(t["p_best_third_advance"] > 0 for t in result["data"]["teams"].values())
     for row in result["data"]["teams"].values():
         assert row["p_advance"] == pytest.approx(
-            row["p_auto_advance"] + row["p_best_third_advance"], abs=0.0001
+                row["p_auto_advance"] + row["p_best_third_advance"], abs=0.00011
         )
     assert "tiebreak_fallbacks" in result["meta"]
     assert "tiebreak_policy" in result["meta"]
@@ -458,7 +458,7 @@ async def test_find_value_bets_invalid_min_edge():
     assert result["error"]["code"] == "INVALID_INPUT"
 
 
-async def test_find_value_bets_odds_runtime_error_returns_envelope():
+async def test_find_value_bets_odds_unexpected_error_reraises():
     from sportiq.football import intel_tools
 
     with (
@@ -467,11 +467,11 @@ async def test_find_value_bets_odds_runtime_error_returns_envelope():
     ):
         mock_odds.fetch = AsyncMock(side_effect=RuntimeError("unexpected odds failure"))
         mock_groups.fetch = AsyncMock(return_value=_fr(_draw_payload()))
-        result = await intel_tools.football_find_value_bets(min_edge=0.05)
-    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+        with pytest.raises(RuntimeError, match="unexpected odds failure"):
+            await intel_tools.football_find_value_bets(min_edge=0.05)
 
 
-async def test_find_value_bets_groups_runtime_error_returns_envelope():
+async def test_find_value_bets_groups_unexpected_error_reraises():
     from sportiq.football import intel_tools
 
     event = _odds_event("Argentina", "Brazil", home=10.0, draw=4.0, away=1.4)
@@ -481,8 +481,8 @@ async def test_find_value_bets_groups_runtime_error_returns_envelope():
     ):
         mock_odds.fetch = AsyncMock(return_value=_fr({"events": [event]}, source="theodds"))
         mock_groups.fetch = AsyncMock(side_effect=RuntimeError("unexpected groups failure"))
-        result = await intel_tools.football_find_value_bets(min_edge=0.05)
-    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+        with pytest.raises(RuntimeError, match="unexpected groups failure"):
+            await intel_tools.football_find_value_bets(min_edge=0.05)
 
 
 async def test_football_get_squad_unknown_team_returns_envelope(monkeypatch):

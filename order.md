@@ -1,6 +1,6 @@
 # order.md — execution order for the unexecuted backlog
 
-> **ACTIVE BRANCH: `bot`** (refreshed 2026-09-17). Tip **`f25a721`**, suite **839**. Do **not** create `audit-fixes` or rename mid-flight — work only on `bot`. Phases 1–7 local verify DONE; **Next:** owner `yes push` (then separate merge/`yes deploy`). Do not push/PR/merge/deploy without that yes.
+> **ACTIVE BRANCH: `bot`** (refreshed 2026-09-25). Suite **869 collected tests**. Do **not** create `audit-fixes` or rename mid-flight — work only on `bot`. Phases 1–7 local verify DONE; owner authorized pushing `bot` on 2026-09-25. Merge and deploy remain separate decisions.
 > Historical: Branch `audit-fixes` (cut from `main` @ `5cfa12f`, 2026-09-05) — superseded for execution.
 > Rule: ALL remaining work below happens on **`bot`**. `main` + Dell stay untouched until Phase 7/8 gates pass.
 > No pre-existing file does this job: `grok_index.md` has an execution order but Waves A–C are all `[x]` (hosting mission closed 2026-09-02). `BACKLOG.md` is deferred ideas (promotion needs an ADR — NOT scheduled here). `GAPS.md` is severity-ordered but mostly RESOLVED. This file sequences the **2026-09-05 full-repo audit findings** (previously read-only, none executed) plus the small GAPS/git-hygiene leftovers.
@@ -32,9 +32,9 @@
 ## Phase 1 — crash paths (envelope contract). Do first: smallest diffs, biggest reliability win. One commit per bullet, run affected tests each time.
 
 - [x] 1a. `src/sportiq/cricket/tools.py:35,145,173,206` — add `NotFoundError` to `cricket_get_live_matches` / `get_schedule` / `get_squad` / `get_live_odds` (copy `tools.py:71` pattern). Tests: `tests/tools/test_cricket_raw_tools.py`, `tests/tools/test_odds_tools.py`. **DONE** `13e2104` (suite 814).
-- [x] 1b. Gather re-raises → envelope (use `Exception`, NEVER `BaseException` — it swallows `CancelledError`/`KeyboardInterrupt`). Football `src/sportiq/football/intel_tools.py:422-427` (`raise odds_r` / `raise groups_r`); F1 `src/sportiq/f1/intel_tools.py:98-99,106-107` (tyre-deg gather) + `:390-409` (pit-strategy `raise laps_r`/`stints_r`/`weather_r` — missed by the original audit). Pattern: chain-error handling just above those lines. Tests: gather returns generic `RuntimeError` → `error.code == "ALL_SOURCES_FAILED"`, never a raise (`tests/tools/test_odds_tools.py`, `test_football_tools.py`, `test_f1_intel_tools.py`). Do not touch `_maybe_nudge_single` (already degrades). **DONE** 2026-09-17 on `bot` (value-bets, tyre-deg, pit-strategy; R7 race-pace/player-matchup untouched).
+- [x] 1b. Exception rule settled 2026-09-25: known provider failures (`AllSourcesFailedError`/`NotFoundError`) return structured errors or use documented best-effort fallback; unexpected exceptions re-raise for telemetry. Applied to football value bets, F1 tyre/pit/quali/race-pace, cricket H2H player stats, and cross-sport accumulator. Regression tests assert re-raise for unexpected failures.
 - [x] 1c. `src/sportiq/f1/models/pit_strategy.py:51,66` — `None`-compound guard + unknown-compound fallback to MEDIUM. Tests: `tests/unit/test_pit_strategy.py`. **DONE** `13e2104` (suite 814).
-- [x] 1d. `src/sportiq/cricket/models/dream11_solver.py:128,135` — catch `PulpSolverError` (missing CBC) → `InvalidInputError("solver unavailable")`; validate C/VC instead of bare `next()`. Tests: `tests/unit/test_dream11_solver.py`. **DONE** `13e2104` (suite 814).
+- [x] 1d. `src/sportiq/cricket/models/dream11_solver.py` — catch `PulpSolverError` (missing CBC) → `InvalidInputError`; validate C/VC instead of bare `next()`. 2026-09-25 verified invalid C/VC raises `RuntimeError` as an unexpected solver result; tests cover both cases.
 - [x] 1e. Sim-model errors → `INVALID_INPUT` at the tool boundary (models stay raising — they are pure). Catch `except (ValueError, KeyError)` in `football_simulate_group` (~261 `simulate_group_stage`), `football_simulate_bracket` (~323 `simulate_tournament`), `football_knockout_path` (covers malformed draw, unseen third-combo `KeyError`). Tests: `tests/unit/test_group_sim.py`, `test_bracket_sim.py`, `test_bracket_data.py`. Skip: `build_accumulator` guard (parlay.py is defensive — overstated) and `simulate_group()` deletion (used by unit tests — do not delete). **DONE** 2026-09-11 on `bot` — tool catches + 4 tool-level tests in `tests/tools/test_football_tools.py` (malformed draw ×3, KeyError combo ×1); suite 824 green.
 - Gate: `uv run pytest tests/tools tests/unit/test_pit_strategy.py tests/unit/test_dream11_solver.py tests/unit/test_group_sim.py tests/unit/test_bracket_sim.py -q` + `ruff check`.
 
@@ -65,7 +65,7 @@
 
 ## Phase 5 — stale memory/docs. Do fifth: after code settles so docs describe reality.
 
-- [x] 5a. Tracked steel docs: `AGENTS.md:42,43,47` (`.Codex/rules/` → `.claude/rules/`, copy `CLAUDE.md` paths — do NOT create `.Codex/rules/`), `BACKERS.md:19-21` (donation-only), `PROJECT.md:206` (re-run `pytest --collect-only -q` on the branch, write the ACTUAL number — do not invent: 839), `GAPS.md:157-159` (rewrite: Compose one replica is the pin; `cloud.md:77` max-instances is historical Cloud Run; Redis needed only if a second replica is added), `Dockerfile:35` (comment → Compose sets `PORT=8080`; behavior unchanged), `cloud.md` (one-line stale guard under `## PART 1` only — file banner already exists), `.github/workflows/test.yml:31` (comment "analytics extra is dashboard-only" — preferred over adding the extra). Skip: `SECURITY.md` hosting section (already Dell — verified current). **DONE** 2026-09-17.
+- [x] 5a. Tracked steel docs: `AGENTS.md:42,43,47` (`.Codex/rules/` → `.claude/rules/`, copy `CLAUDE.md` paths — do NOT create `.Codex/rules/`), `BACKERS.md:19-21` (donation-only), `PROJECT.md:206` (re-run `pytest --collect-only -q` on the branch and record the actual count; refreshed to 869 on 2026-09-25), `GAPS.md:157-159` (rewrite: Compose one replica is the pin; `cloud.md:77` max-instances is historical Cloud Run; Redis needed only if a second replica is added), `Dockerfile:35` (comment → Compose sets `PORT=8080`; behavior unchanged), `cloud.md` (one-line stale guard under `## PART 1` only — file banner already exists), `.github/workflows/test.yml:31` (comment "analytics extra is dashboard-only" — preferred over adding the extra). Skip: `SECURITY.md` hosting section (already Dell — verified current). **DONE** 2026-09-17; count refreshed 2026-09-25.
 - [x] 5b. Wiki nits + index slugs: `docs/index.md:79,80,81,91,92` → `tyre-degradation`, `undercut`, `pit-strategy`, `cricket-win-probability`, fix `head-to-head` pointer. `docs/wiki/data-sources/api-football.md:21` — make the `[[../../../.claude/rules/api-budgets]]` backlink plain text (step6 A6). `docs/wiki/decisions/0007-cricket-fallback-strategy.md:22` — fix the `(CricAPI + CricSheet)` parenthetical (contradicts its own 2026-05-27 Amendment + D3a offline-only reintroduction). **DONE** 2026-09-17.
 - [x] 5e. Consistency checklist (steel docs must agree after 5a–5d): tool count 44 in `README`/`PROJECT`/`dev.md`/live `tools/list`; coverage `--cov-fail-under=84` in `test.yml`/`CLAUDE.md`/`AGENTS.md`/`PROJECT.md`; Dell-live + Task-9-done in `CLAUDE.md`/`PROJECT.md`/`GAPS.md`/`README.md:60-63,122`; `server.json` 0.3.2 == `pyproject.toml` 0.3.2; `docs/index.md` slugs == `docs/wiki/` filenames (no orphans); `pyproject.toml` sdist allowlist + `check_release_build.py` green. **DONE** 2026-09-17.
 - [ ] 5c. Gitignored local docs — DEFAULT SKIP (not shipped; verified). Fix only if explicitly asked: `LEARNING-GUIDE.md`, `dev.md`, `interview_cheatsheet.md`, `interview_preparation_guide.md`, `BACKLOG.md:21`, `API-KEYS-AND-SETTINGS.md:3,81`, `v3.md` counts, `gcp.md`/`sep.md` bodies. (An earlier draft of this file scheduled them; correction per `muse.md`: their staleness is local-only. Consistency-everywhere = tracked files in 5a/5b + `.gitignore` keeping the rest out of the tree.)
@@ -80,7 +80,7 @@
 
 ## Phase 7 — verify, push, merge (gated)
 
-- [x] Full gates on branch: `uv sync --extra dev --extra analytics`, `uv run pytest -q`, `ruff check`, `uv run python scripts/check_release_build.py`. **DONE** 2026-09-17 (839 passed, ruff clean, release build OK).
+- [x] Full gates on branch: `uv sync --extra dev --extra analytics`, `uv run pytest -q`, `ruff check`, `uv run python scripts/check_release_build.py`. **DONE** 2026-09-25 (869 collected; full suite passed, ruff clean, release build OK offline).
 - [x] Append `docs/log.md` entry for the batch (note: `docs/log.md` is currently gitignored-working-copy — keep local per ignore rule). **DONE** 2026-09-17.
 - [ ] Push branch (needs your explicit `yes` in-chat per hard-stop convention for shared-state ops): `git push -u origin bot` (was audit-fixes) — **NO PUSH** per 2026-09-11; local commit only. **DEFERRED / hard stop** — Phase 7 push-to-main UNCHECKED (2026-09-11).
 - [ ] Open PR → review → merge to `main`. Tag only if releasing (release flow = `/project:release`, needs explicit yes).
@@ -107,9 +107,9 @@ Tick `[x]` only when the change is in the tree with green tests. "New" = file to
 | :--- | :--- | :--- |
 | [x] | `src/sportiq/cricket/tools.py` | 1a: dual `except (AllSourcesFailedError, NotFoundError)` ×4 fns — **DONE** `13e2104` |
 | [x] | `tests/tools/test_cricket_raw_tools.py` | 1a: `NotFoundError` → envelope regression tests — **DONE** `13e2104` |
-| [x] | `src/sportiq/football/intel_tools.py` | 1b: gather `Exception` → envelope (422-427); 1e: sim `INVALID_INPUT` catches — **DONE** 2026-09-17 |
-| [x] | `src/sportiq/f1/intel_tools.py` | 1b: gather `Exception` → envelope (98-99, 106-107, 390-409); 4a: staleness + `sources_tried` — **DONE** 2026-09-17 (R7 race-pace untouched) |
-| [x] | `tests/tools/test_odds_tools.py`, `test_football_tools.py`, `test_f1_intel_tools.py` | 1b/1e: `RuntimeError` → envelope tests — **DONE** 2026-09-17 |
+| [x] | `src/sportiq/football/intel_tools.py` | 1b: known provider errors → envelope; unexpected errors → re-raise. 1e sim `INVALID_INPUT` catches retained — **DONE** 2026-09-25 |
+| [x] | `src/sportiq/f1/intel_tools.py` | 1b: known provider errors → envelope/best-effort; unexpected errors → re-raise. 4a staleness retained — **DONE** 2026-09-25 |
+| [x] | `tests/tools/test_football_tools.py`, `test_f1_intel_tools.py` | 1b: unexpected `RuntimeError` re-raise tests — **DONE** 2026-09-25 |
 | [x] | `src/sportiq/f1/models/pit_strategy.py` | 1c: `(… or "MEDIUM").upper()` + `TyreCompound` fallback — **DONE** `13e2104` |
 | [x] | `tests/unit/test_pit_strategy.py` | 1c: `None` + `"UNKNOWN"` compound tests — **DONE** `13e2104` |
 | [x] | `src/sportiq/cricket/models/dream11_solver.py` | 1d: solver-exception → `InvalidInputError`, C/VC validation — **DONE** `13e2104` |
@@ -158,7 +158,7 @@ Tick `[x]` only when the change is in the tree with green tests. "New" = file to
 | :--- | :--- | :--- |
 | [x] | `AGENTS.md` | 5a: `.claude/rules/` paths — **DONE** 2026-09-17 |
 | [x] | `BACKERS.md` | 5a: donation-only — **DONE** 2026-09-17 |
-| [x] | `PROJECT.md` | 5a: real collect count (839) — **DONE** 2026-09-17 |
+| [x] | `PROJECT.md` | 5a: real collect count refreshed to 869 — **DONE** 2026-09-25 |
 | [x] | `GAPS.md` | 5a: single-instance pin rewrite — **DONE** 2026-09-17 |
 | [x] | `Dockerfile` | 5a: `$PORT` comment (Compose PORT=8080) — **DONE** 2026-09-17 |
 | [x] | `cloud.md` | 5a: PART 1 stale guard — **DONE** 2026-09-17 |
@@ -266,6 +266,5 @@ These files were scanned and contain no executable work for this batch. Recorded
   - 3e: In `src/sportiq/f1/adapters/fastf1_local.py`, offloaded blocking session loading and schedule iteration to `asyncio.to_thread`. Verified session registry key in tree is `_SESSION_REGISTRY` (`9877: (2025, 8)`, `9158: (2024, 6)`). Bounded the standings loop (skipping round <= 0 and round > 35). Added 2 adapter tests in `tests/adapters/test_fastf1_local.py` verifying `to_thread` execution and bounded rounds.
   - Evidence: `uv run pytest tests/tools -q` **310 passed**; `uv run pytest tests/adapters/test_openf1.py tests/adapters/test_jolpica.py -q` **16 passed**; `uv run pytest tests/unit -q` **408 passed**; full test suite `uv run pytest -q` **858 passed** (839 baseline + 19 new tests); `uv run ruff check .` clean.
 
-
-
+- 2026-09-25 (bot closeout): Finite odds prices only (`nan`/`inf` skipped); PuLP solver failures remain structured invalid-input errors while unexpected failures re-raise. Confirmed captain/vice-captain validation is implemented and tested. Applied the same exception rule to football/F1/cricket/cross-sport concurrent tool paths. Adjusted the group-simulation test tolerance for independently rounded probability fields. `PROJECT.md` count refreshed to **869 collected**. `uv sync --offline --extra dev --extra analytics` clean; full pytest green; CI coverage **91.91%** (84% gate); Ruff clean; release build allowlist/uvx check green offline. Owner authorized pushing `bot`; merge and deploy remain pending separate decisions.
 

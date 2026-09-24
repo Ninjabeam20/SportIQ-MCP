@@ -425,14 +425,14 @@ async def cricket_get_pitch_report(venue: str) -> Envelope:
 async def _fetch_player_stats_safe(pid: str) -> tuple[str, dict]:
     """Fetch stats for one player, gated by the concurrency semaphore.
 
-    Returns ``(pid, stats_dict)`` on success or ``(pid, {})`` on any failure
+    Returns ``(pid, stats_dict)`` on success or ``(pid, {})`` on a provider failure
     so callers can always unpack a 2-tuple.
     """
     async with _PLAYER_STATS_SEMAPHORE:
         try:
             result = await player_stats_chain.fetch(player_id=pid)
             return pid, result.value
-        except Exception:  # best-effort; skip broken sources
+        except (AllSourcesFailedError, NotFoundError):  # best-effort provider data
             return pid, {}
 
 
@@ -497,8 +497,8 @@ async def cricket_head_to_head(team_a: str, team_b: str) -> Envelope:
         )
         stats_by_player: dict[str, dict] = {}
         for item in fetch_results:
-            if isinstance(item, Exception):
-                continue
+            if isinstance(item, BaseException):
+                raise item
             pid, stats = item
             if stats:
                 stats_by_player[pid] = stats

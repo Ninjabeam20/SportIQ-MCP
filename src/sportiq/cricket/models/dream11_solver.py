@@ -53,6 +53,8 @@ def solve(candidates: list[dict], strategy: str = "balanced") -> dict:
         InvalidInputError: < 11 candidates, unknown strategy, or no feasible
             XI under the constraints (e.g. credits over-budget,
             team-cap violation, missing keeper).
+        RuntimeError: CBC reports an optimal solution with invalid captain or
+            vice-captain selections.
     """
     if strategy not in _STRATEGY_ROLE_BOUNDS:
         raise InvalidInputError(
@@ -70,6 +72,7 @@ def solve(candidates: list[dict], strategy: str = "balanced") -> dict:
         LpProblem,
         LpStatus,
         LpVariable,
+        PulpSolverError,
         lpSum,
     )
 
@@ -124,7 +127,7 @@ def solve(candidates: list[dict], strategy: str = "balanced") -> dict:
     # COIN_CMD picks the `cbc` binary off PATH (brew install cbc on macOS arm64).
     try:
         status = prob.solve(COIN_CMD(msg=False))
-    except Exception as exc:
+    except PulpSolverError as exc:
         raise InvalidInputError(
             f"Dream11 solver failed (ensure coinor-cbc is on PATH): {exc}"
         ) from exc
@@ -132,8 +135,17 @@ def solve(candidates: list[dict], strategy: str = "balanced") -> dict:
         raise InvalidInputError(f"No feasible Dream11 XI under constraints: {LpStatus[status]}")
 
     picked_idx = [i for i in range(n) if (x[i].value() or 0) > 0.5]
-    captain_idx = next(i for i in range(n) if (cap[i].value() or 0) > 0.5)
-    vc_idx = next(i for i in range(n) if (vc[i].value() or 0) > 0.5)
+    captain_indices = [i for i in range(n) if (cap[i].value() or 0) > 0.5]
+    vc_indices = [i for i in range(n) if (vc[i].value() or 0) > 0.5]
+    if (
+        len(captain_indices) != 1
+        or len(vc_indices) != 1
+        or captain_indices[0] == vc_indices[0]
+        or captain_indices[0] not in picked_idx
+        or vc_indices[0] not in picked_idx
+    ):
+        raise RuntimeError("Dream11 solver returned invalid captain/vice-captain selection")
+    captain_idx, vc_idx = captain_indices[0], vc_indices[0]
 
     picked = [candidates[i] for i in picked_idx]
     total_credits = sum(float(p.get("credits", 0)) for p in picked)

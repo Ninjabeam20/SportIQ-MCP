@@ -77,3 +77,14 @@ def test_find_value_skips_non_numeric_odds():
     bookmaker = {"name": "Bad", "home": "bad", "draw": 3.0, "away": 4.0}
     picks = find_value(model, bookmaker, min_edge=0.01)
     assert isinstance(picks, list)
+
+
+@pytest.mark.parametrize("bad_price", [float("nan"), float("inf"), float("-inf")])
+def test_find_value_skips_nonfinite_odds_without_poisoning_other_prices(bad_price):
+    model = {"home_win": 0.80, "draw": 0.10, "away_win": 0.10}
+    bookmaker = {"name": "Bad", "home": 2.0, "draw": 4.0, "away": bad_price}
+
+    picks = find_value(model, bookmaker, min_edge=0.01)
+
+    assert [pick["outcome"] for pick in picks] == ["home"]
+    assert picks[0]["edge"] == pytest.approx(0.1333, abs=0.0001)

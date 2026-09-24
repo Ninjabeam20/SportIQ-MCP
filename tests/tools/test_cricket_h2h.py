@@ -2,6 +2,9 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
+from sportiq.core.errors import AllSourcesFailedError
 from sportiq.cricket.intel_tools import cricket_head_to_head
 
 
@@ -65,12 +68,24 @@ async def test_valid_returns_envelope():
         patch("sportiq.cricket.intel_tools.player_stats_chain") as mps,
     ):
         ms.fetch = AsyncMock(return_value=mock_squad)
-        mps.fetch = AsyncMock(side_effect=Exception("no stats"))
+        mps.fetch = AsyncMock(side_effect=AllSourcesFailedError("no stats"))
         result = await cricket_head_to_head("MI", "CSK")
 
     assert "data" in result
     assert "error" not in result
     assert result["meta"]["estimated"] is True
+
+
+async def test_player_stats_unexpected_failure_reraises():
+    mock_squad = _mock_squad_result([{"name": "P1", "player_id": "1"}])
+    with (
+        patch("sportiq.cricket.intel_tools.squad_chain") as ms,
+        patch("sportiq.cricket.intel_tools.player_stats_chain") as mps,
+    ):
+        ms.fetch = AsyncMock(return_value=mock_squad)
+        mps.fetch = AsyncMock(side_effect=RuntimeError("unexpected player bug"))
+        with pytest.raises(RuntimeError, match="unexpected player bug"):
+            await cricket_head_to_head("MI", "CSK")
 
 
 async def test_data_has_required_keys():
@@ -81,7 +96,7 @@ async def test_data_has_required_keys():
         patch("sportiq.cricket.intel_tools.player_stats_chain") as mps,
     ):
         ms.fetch = AsyncMock(return_value=mock_squad)
-        mps.fetch = AsyncMock(side_effect=Exception("no stats"))
+        mps.fetch = AsyncMock(side_effect=AllSourcesFailedError("no stats"))
         result = await cricket_head_to_head("MI", "CSK")
 
     for key in [
@@ -107,7 +122,7 @@ async def test_win_prob_present_and_sums_to_one():
         patch("sportiq.cricket.intel_tools.player_stats_chain") as mps,
     ):
         ms.fetch = AsyncMock(return_value=mock_squad)
-        mps.fetch = AsyncMock(side_effect=Exception("no stats"))
+        mps.fetch = AsyncMock(side_effect=AllSourcesFailedError("no stats"))
         result = await cricket_head_to_head("India", "Australia")
 
     data = result["data"]

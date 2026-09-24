@@ -106,12 +106,6 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
             message="Could not fetch lap data.",
             sources_tried=laps_r.attempts,
         )
-    if isinstance(laps_r, Exception):
-        return error_envelope(
-            code="ALL_SOURCES_FAILED",
-            message="Could not fetch lap data.",
-            sources_tried=getattr(laps_r, "attempts", []),
-        )
     if isinstance(laps_r, BaseException):
         raise laps_r
     laps_result = laps_r
@@ -120,12 +114,6 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
     stints_result = None
     if isinstance(stints_r, (AllSourcesFailedError, NotFoundError)):
         pass
-    elif isinstance(stints_r, Exception):
-        return error_envelope(
-            code="ALL_SOURCES_FAILED",
-            message="Could not fetch stint data.",
-            sources_tried=getattr(stints_r, "attempts", []),
-        )
     elif isinstance(stints_r, BaseException):
         raise stints_r
     else:
@@ -410,12 +398,6 @@ async def f1_predict_pit_strategy(
             message="Could not fetch lap data for pit strategy prediction.",
             sources_tried=laps_r.attempts,
         )
-    if isinstance(laps_r, Exception):
-        return error_envelope(
-            code="ALL_SOURCES_FAILED",
-            message="Could not fetch lap data for pit strategy prediction.",
-            sources_tried=getattr(laps_r, "attempts", []),
-        )
     if isinstance(laps_r, BaseException):
         raise laps_r
     laps_result = laps_r
@@ -424,12 +406,6 @@ async def f1_predict_pit_strategy(
     stints_result = None
     if isinstance(stints_r, (AllSourcesFailedError, NotFoundError)):
         pass
-    elif isinstance(stints_r, Exception):
-        return error_envelope(
-            code="ALL_SOURCES_FAILED",
-            message="Could not fetch stint data for pit strategy prediction.",
-            sources_tried=getattr(stints_r, "attempts", []),
-        )
     elif isinstance(stints_r, BaseException):
         raise stints_r
     else:
@@ -440,12 +416,6 @@ async def f1_predict_pit_strategy(
     weather_result = None
     if isinstance(weather_r, (AllSourcesFailedError, NotFoundError)):
         pass
-    elif isinstance(weather_r, Exception):
-        return error_envelope(
-            code="ALL_SOURCES_FAILED",
-            message="Could not fetch weather data for pit strategy prediction.",
-            sources_tried=getattr(weather_r, "attempts", []),
-        )
     elif isinstance(weather_r, BaseException):
         raise weather_r
     else:
@@ -539,8 +509,10 @@ async def f1_qualifying_analysis(session_key: int) -> Envelope:
 
     all_laps: list[dict] = []
     for res in raw_results:
-        if isinstance(res, Exception):
+        if isinstance(res, (AllSourcesFailedError, NotFoundError)):
             continue
+        if isinstance(res, BaseException):
+            raise res
         all_laps.extend(res.value.get("laps", []))
 
     bests = best_lap_per_driver(all_laps)
@@ -548,7 +520,9 @@ async def f1_qualifying_analysis(session_key: int) -> Envelope:
     grid = grid_projection(gaps, driver_info)
     pole_time = min(bests.values()) if bests else None
 
-    successful_lap_results = [r for r in raw_results if not isinstance(r, Exception)]
+    successful_lap_results = [
+        r for r in raw_results if not isinstance(r, (AllSourcesFailedError, NotFoundError))
+    ]
     all_results = [drivers_result, *successful_lap_results]
     return {
         "data": {
@@ -613,12 +587,17 @@ async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -
             raise laps_r
 
     laps_a = laps_a_r.value.get("laps", [])
-    stints_a = stints_a_r.value.get("stints", []) if not isinstance(stints_a_r, Exception) else []
+    for stints_r in (stints_a_r, stints_b_r):
+        if isinstance(stints_r, BaseException) and not isinstance(
+            stints_r, (AllSourcesFailedError, NotFoundError)
+        ):
+            raise stints_r
+    stints_a = stints_a_r.value.get("stints", []) if not isinstance(stints_a_r, BaseException) else []
     laps_b = laps_b_r.value.get("laps", [])
-    stints_b = stints_b_r.value.get("stints", []) if not isinstance(stints_b_r, Exception) else []
+    stints_b = stints_b_r.value.get("stints", []) if not isinstance(stints_b_r, BaseException) else []
 
     result = compare_race_pace(laps_a, stints_a, laps_b, stints_b, driver_a, driver_b)
-    stint_results = [r for r in (stints_a_r, stints_b_r) if not isinstance(r, Exception)]
+    stint_results = [r for r in (stints_a_r, stints_b_r) if not isinstance(r, BaseException)]
     return {
         "data": result,
         "meta": {

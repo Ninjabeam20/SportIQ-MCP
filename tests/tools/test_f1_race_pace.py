@@ -71,6 +71,17 @@ async def test_race_pace_unexpected_laps_error_reraises():
             await f1_race_pace_compare(session_key=9222, driver_a=1, driver_b=44)
 
 
+async def test_race_pace_unexpected_stints_error_reraises():
+    with patch(
+        "sportiq.f1.intel_tools._fetch_driver_laps",
+        new_callable=AsyncMock,
+        return_value=_make_laps_result(),
+    ), patch("sportiq.f1.intel_tools.f1_stints_chain") as mock_stints:
+        mock_stints.fetch = AsyncMock(side_effect=RuntimeError("unexpected stint bug"))
+        with pytest.raises(RuntimeError, match="unexpected stint bug"):
+            await f1_race_pace_compare(session_key=9222, driver_a=1, driver_b=44)
+
+
 async def test_valid_returns_envelope():
     laps_a = _make_laps_result(base_time=80.0)
     laps_b = _make_laps_result(base_time=82.0)
@@ -132,4 +143,3 @@ async def test_race_pace_not_found_propagates_attempts():
 
     assert result["error"]["code"] == "NOT_FOUND"
     assert result["error"]["sources_tried"] == attempts
-

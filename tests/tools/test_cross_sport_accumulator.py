@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
+import pytest
+
 from sportiq.server_tools.cross_sport import cross_sport_build_accumulator
 
 FOOTBALL_PATCH = "sportiq.server_tools.cross_sport.football_find_value_bets"
@@ -52,6 +54,16 @@ async def test_all_sources_failed():
          patch(CRICKET_PATCH, new=AsyncMock(return_value=err)):
         result = await cross_sport_build_accumulator(legs=3, min_edge=0.05)
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+async def test_unexpected_sport_failure_reraises():
+    err = RuntimeError("unexpected football bug")
+    with (
+        patch(FOOTBALL_PATCH, new=AsyncMock(side_effect=err)),
+        patch(CRICKET_PATCH, new=AsyncMock(return_value=_value_bets_response([]))),
+        pytest.raises(RuntimeError, match="unexpected football bug"),
+    ):
+        await cross_sport_build_accumulator()
 
 
 # -- valid responses --------------------------------------------------------------

@@ -12,6 +12,8 @@ bet is +EV ("value").
 
 from __future__ import annotations
 
+from math import isfinite
+
 # Map a market outcome key to the model's probability key.
 _OUTCOME_TO_MODEL = {"home": "home_win", "draw": "draw", "away": "away_win"}
 
@@ -54,7 +56,7 @@ def find_value(
     Returns:
         One dict per value outcome:
         ``{outcome, model_prob, fair_odds, market_odds, edge, bookmaker}``.
-        Outcomes with a missing (None), non-positive, or non-numeric price are skipped.
+        Outcomes with a missing (None), non-positive, non-finite, or non-numeric price are skipped.
     """
     # Implied probs only for outcomes that carry a price.
     implied: dict[str, float] = {}
@@ -66,7 +68,7 @@ def find_value(
             price = float(raw)
         except (TypeError, ValueError):
             continue
-        if price <= 0:
+        if not isfinite(price) or price <= 0:
             continue
         implied[outcome] = implied_prob(price)
     devigged = devig(implied)
