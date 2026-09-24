@@ -82,7 +82,7 @@
 
 - [x] Full gates on branch: `uv sync --extra dev --extra analytics`, `uv run pytest -q`, `ruff check`, `uv run python scripts/check_release_build.py`. **DONE** 2026-09-25 (869 collected; full suite passed, ruff clean, release build OK offline).
 - [x] Append `docs/log.md` entry for the batch (note: `docs/log.md` is currently gitignored-working-copy — keep local per ignore rule). **DONE** 2026-09-17.
-- [ ] Push branch (needs your explicit `yes` in-chat per hard-stop convention for shared-state ops): `git push -u origin bot` (was audit-fixes) — **NO PUSH** per 2026-09-11; local commit only. **DEFERRED / hard stop** — Phase 7 push-to-main UNCHECKED (2026-09-11).
+- [x] Push branch: owner authorized `push bot` on 2026-09-25; `git push -u origin bot` succeeded through commit `6da4487`. PR, merge, and deploy remain pending separate decisions.
 - [ ] Open PR → review → merge to `main`. Tag only if releasing (release flow = `/project:release`, needs explicit yes).
 
 ## Phase 8 — deploy + iterate (HARD STOP — needs explicit `yes` in current message)
@@ -267,4 +267,4 @@ These files were scanned and contain no executable work for this batch. Recorded
   - Evidence: `uv run pytest tests/tools -q` **310 passed**; `uv run pytest tests/adapters/test_openf1.py tests/adapters/test_jolpica.py -q` **16 passed**; `uv run pytest tests/unit -q` **408 passed**; full test suite `uv run pytest -q` **858 passed** (839 baseline + 19 new tests); `uv run ruff check .` clean.
 
 - 2026-09-25 (bot closeout): Finite odds prices only (`nan`/`inf` skipped); PuLP solver failures remain structured invalid-input errors while unexpected failures re-raise. Confirmed captain/vice-captain validation is implemented and tested. Applied the same exception rule to football/F1/cricket/cross-sport concurrent tool paths. Adjusted the group-simulation test tolerance for independently rounded probability fields. `PROJECT.md` count refreshed to **869 collected**. `uv sync --offline --extra dev --extra analytics` clean; full pytest green; CI coverage **91.91%** (84% gate); Ruff clean; release build allowlist/uvx check green offline. Owner authorized pushing `bot`; merge and deploy remain pending separate decisions.
-
+- 2026-09-25 (bot push): `6da4487` pushed to `origin/bot`; Phase 7 push checked. This plan-status update follows in a docs-only commit. PR, merge, and deploy remain pending.
