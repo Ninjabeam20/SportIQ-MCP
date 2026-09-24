@@ -3,8 +3,8 @@ title: Jolpica
 type: data-source
 tags: [f1, standings, race-results, historical]
 sources: []
-last_updated: 2026-05-28
-related: [[f1-sessions-chain]], [[f1-standings-chain]]
+last_updated: 2026-09-25
+related: [[f1-results-chain]], [[f1-standings-chain]]
 ---
 
 # Jolpica
@@ -27,9 +27,9 @@ None published. Cache aggressively; historical data changes infrequently.
 
 | Endpoint | Tool | Chain |
 | :--- | :--- | :--- |
-| `/{year}/driverStandings` | `f1_get_standings` | [[f1-standings-chain]] |
-| `/{year}/constructorStandings` | `f1_get_standings` | [[f1-standings-chain]] |
-| `/{year}/results` | fallback for `f1_get_sessions` | [[f1-sessions-chain]] |
+| `/f1/{year}/driverStandings.json` | `f1_get_standings` | [[f1-standings-chain]] |
+| `/f1/{year}/constructorStandings.json` | `f1_get_standings` | [[f1-standings-chain]] |
+| `/f1/{year}/{round}/results.json` | `f1_get_race_results` | [[f1-results-chain]] |
 
 ## Adapter behavior
 

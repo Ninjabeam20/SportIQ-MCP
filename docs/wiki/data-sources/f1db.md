@@ -3,7 +3,7 @@ title: F1DB
 type: data-source
 tags: [f1, circuits, pit-stops, offline-seed, calibration]
 sources: [f1db]
-last_updated: 2026-06-12
+last_updated: 2026-09-25
 related: [[undercut]], [[pit-strategy]], [[f1-undercut-window]], [[f1-predict-pit-strategy]]
 ---
 
@@ -48,10 +48,11 @@ overestimates loss by the bypass-section time and inverts orderings (Monaco tran
 `pit_loss_s` to the gap, so it must be the loss quantity — hence the OpenF1
 lap-based measurement.
 
-**OpenF1 access note (2026-06):** recent-season data (2025+) returns 401 without an
-API key; the build script skips paywalled sessions with a warning and works from
-the free historical seasons. Responses are cached in `datasets/openf1/` so re-runs
-are offline.
+**OpenF1 access note:** the 2026-06 build saw 401s on some recent sessions and
+skipped them with a warning. [OpenF1's current policy](https://openf1.org/docs/)
+allows keyless access to historical sessions from 2023 onward but requires paid
+authentication during live sessions. Cached responses under `datasets/openf1/`
+make re-runs offline.
 
 ## How it reaches the tools
 

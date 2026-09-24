@@ -3,7 +3,7 @@ title: Football Standings Chain
 type: chain
 tags: [football]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[api-football]], [[football-data-org]], [[football-get-standings]]
 ---
 
@@ -12,12 +12,14 @@ related: [[api-football]], [[football-data-org]], [[football-get-standings]]
 `FallbackChain` powering football tools.
 
 ## Resolution order
-api-football -> football-data-org
+api-football -> football-data-org -> derived standings from the fixtures chain
 
 | Adapter | Enabled by default |
 | :-- | :-- |
 | [[api-football]] | Yes — when APIFOOTBALL_KEY set |
-| [[football-data-org]] | Yes — token optional |
+| [[football-data-org]] | Yes when `FOOTBALLDATA_KEY` is set |
+
+The derived source calculates standings from fixtures if both provider standings feeds fail.
 
 ## TTLs
 - Fresh: 10min
@@ -25,4 +27,3 @@ api-football -> football-data-org
 
 ## Cache key
 `sportiq:football:standings:wc2026`
-

@@ -3,7 +3,7 @@ title: cricket_differential_picks
 type: tool
 tags: [cricket, dream11, differential, low-ownership]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[captain-score]], [[cricket-build-dream11-team]]
 ---
 
@@ -15,12 +15,15 @@ Surfaces low-ownership players with positive projected upside — the move you m
 
 ```python
 async def cricket_differential_picks(
-    team_a: str,
-    team_b: str,
-    venue: str,
+    match_id: str | None = None,
+    team_a: str | None = None,
+    team_b: str | None = None,
+    venue: str | None = None,
     ownership_threshold: int = 20,
-) -> dict
+) -> Envelope
 ```
+
+Pass `match_id` to resolve the teams and venue, or pass `team_a`, `team_b`, and `venue` directly.
 
 ## Ownership is estimated
 

@@ -3,7 +3,7 @@ title: Football Scorers Chain
 type: chain
 tags: [football]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[api-football]], [[football-data-org]], [[football-get-top-scorers]]
 ---
 
@@ -17,7 +17,7 @@ api-football -> football-data-org
 | Adapter | Enabled by default |
 | :-- | :-- |
 | [[api-football]] | Yes — when APIFOOTBALL_KEY set |
-| [[football-data-org]] | Yes — token optional |
+| [[football-data-org]] | Yes when `FOOTBALLDATA_KEY` is set |
 
 ## TTLs
 - Fresh: 24h
@@ -25,4 +25,3 @@ api-football -> football-data-org
 
 ## Cache key
 `sportiq:football:scorers:wc2026`
-

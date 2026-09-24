@@ -141,7 +141,7 @@ When you need to understand a domain question (scoring rules, API quirks, model 
   pyproject `addopts` — don't "fix" that; partial local runs must be able to pass.
 - **CBC binary must be on PATH** for the Dream11 solver (`brew install cbc` /
   `apt-get install coinor-cbc`).
-- **OpenF1 401s 2025+ seasons without a key**; 2023–24 stays free. Build scripts skip-with-warn.
+- **OpenF1 historical sessions from 2023 onward are keyless; live-session data requires paid authentication.** This package has no OpenF1 auth wiring. Build scripts skip-with-warn on 401s.
 - **The Elo seed is frozen** (D1 finding) — never re-tune it; `SPORTIQ_FOOTBALL_LIVE_ELO=1`
   walks it forward from real results instead.
 - **sdist safety is an allowlist** (`pyproject.toml` `[tool.hatch.build.targets.sdist] include`

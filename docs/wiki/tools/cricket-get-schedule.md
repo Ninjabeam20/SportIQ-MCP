@@ -3,7 +3,7 @@ title: cricket_get_schedule
 type: tool
 tags: [cricket, schedule, fixtures]
 sources: []
-last_updated: 2026-05-26
+last_updated: 2026-09-25
 related: [[cricket-fixtures-chain]], [[cricapi]]
 ---
 
@@ -14,10 +14,10 @@ Returns upcoming match schedule, optionally filtered by series.
 ## Signature
 
 ```python
-async def cricket_get_schedule(series_id: str | None = None) -> dict
+async def cricket_get_schedule(series_id: str | None = None, limit: int = 50, offset: int = 0) -> Envelope
 ```
 
-`series_id` is optional. Off-season returns `data.matches = []`, not an error.
+`series_id` is optional. `limit` and `offset` paginate the result. Off-season returns `data.matches = []`, not an error.
 
 ## Chain
 

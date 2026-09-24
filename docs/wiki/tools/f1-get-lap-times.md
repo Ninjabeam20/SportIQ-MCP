@@ -3,7 +3,7 @@ title: f1_get_lap_times
 type: tool
 tags: [f1, laps]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[f1-laps-chain]], [[f1-stints-chain]], [[openf1]]
 ---
 
@@ -16,12 +16,13 @@ Returns per-driver lap times for a session.
 ## Signature
 
 ```python
-async def f1_get_lap_times(session_key: int, driver_number: int | None = None) -> dict
+async def f1_get_lap_times(session_key: int, driver_number: int, limit: int = 100, offset: int = 0) -> Envelope
 ```
 
 ## Args
 - `session_key` — OpenF1 session key (obtain from `f1_get_sessions`).
-- `driver_number` — Optional driver number filter. If omitted returns all drivers.
+- `driver_number` — Required driver number.
+- `limit` / `offset` — Paginate the driver's laps.
 
 ## Success response
 

@@ -3,7 +3,7 @@ title: Football Team Stats Chain
 type: chain
 tags: [football]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[api-football]], [[football-data-org]], [[football-get-match-stats]]
 ---
 
@@ -12,12 +12,12 @@ related: [[api-football]], [[football-data-org]], [[football-get-match-stats]]
 `FallbackChain` powering football tools.
 
 ## Resolution order
-api-football -> football-data-org
+api-football -> football-data-org (registered, but its team-stats adapter currently returns `NotFoundError` because `/teams/{id}` is a profile endpoint in a different ID space)
 
 | Adapter | Enabled by default |
 | :-- | :-- |
 | [[api-football]] | Yes — when APIFOOTBALL_KEY set |
-| [[football-data-org]] | Yes — token optional |
+| [[football-data-org]] | Registered; requires `FOOTBALLDATA_KEY`, but cannot serve team stats with the current mapping |
 
 ## TTLs
 - Fresh: 24h
@@ -25,4 +25,3 @@ api-football -> football-data-org
 
 ## Cache key
 `sportiq:football:team_stats:{team}`
-

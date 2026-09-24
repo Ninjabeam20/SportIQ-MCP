@@ -3,26 +3,26 @@ title: Static Seed
 type: data-source
 tags: [cricket, squad, pitch, static]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[cricket-squad-chain]], [[cricket-pitch-data-chain]]
 ---
 
 # Static Seed
 
-Local JSON reader bundled with the package. Always enabled, no credentials, no network — it is the always-on terminator for the squad and pitch-data chains so the depending tools are guaranteed to return a response even when every upstream is down.
+Local JSON reader bundled with the package. Always enabled, no credentials, no network — it is the last source for squad data and the sole source for pitch data, subject to the requested team or venue existing in the seed.
 
 ## Where the data lives
 
 `src/sportiq/cricket/data/` — ships with the package.
 
-- `squads.json` — Phase 1 seed; expanded in Phase 2 to add 4 internationals.
+- `squads.json` — generated seed with 10 IPL and 9 international squads.
 - `venues.json` — Phase 2 seed (added in commit log on 2026-05-28).
 
 ### squads.json coverage
 
-IPL franchises: `CSK, MI, RCB, KKR, RR, DC, PBKS, SRH, LSG, GT` (10 teams, Dream11-flavoured rosters with `name / role / credits`).
+IPL franchises: `CSK, MI, RCB, KKR, RR, DC, PBKS, SRH, LSG, GT` (10 teams, player records with `name / role / credits`).
 
-Internationals (Phase 2 addition): `IND, AUS, ENG, NZ`.
+Internationals: `IND, AUS, ENG, NZ, SA, PAK, SL, WI, BAN` (9 teams).
 
 Roles are `BAT`, `BOWL`, `ALL`, `WK-BAT`.
 
@@ -35,7 +35,7 @@ Roles are `BAT`, `BOWL`, `ALL`, `WK-BAT`.
 - `StaticSeedSquadAdapter` is the final adapter in [[cricket-squad-chain]]. Whenever upstreams (cricapi) fail, this serves.
 - `StaticSeedVenueAdapter` is the *only* adapter in [[cricket-pitch-data-chain]] for Phase 2.
 
-Because the JSON ships with the package, it cannot fail at runtime — the chains always terminate.
+The bundled JSON provides offline fallback in a healthy installation. An unknown venue returns `NotFoundError`; a missing or corrupt data file can still fail.
 
 ## Adapter behaviour
 

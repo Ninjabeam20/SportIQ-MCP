@@ -3,13 +3,13 @@ title: RapidAPI Cricbuzz
 type: data-source
 tags: [cricket, live-scores, fixtures, standings, player-stats, paid, opt-in]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[cricket-live-score-chain]], [[cricket-scorecard-chain]], [[cricket-fixtures-chain]], [[cricket-standings-chain]], [[cricket-player-stats-chain]], [[0007-cricket-fallback-strategy]]
 ---
 
 # RapidAPI Cricbuzz
 
-Licensed Cricbuzz data mirror via RapidAPI (`cricbuzz-cricket.p.rapidapi.com`). The paid escape hatch when scrapers are too fragile. Free tier on RapidAPI allows limited calls; paid plans start at $10/mo.
+Licensed Cricbuzz data mirror via RapidAPI (`cricbuzz-cricket.p.rapidapi.com`). It is the credential-gated escape hatch when free sources fail; plan prices and quotas depend on the operator's RapidAPI subscription.
 
 ## Credentials
 

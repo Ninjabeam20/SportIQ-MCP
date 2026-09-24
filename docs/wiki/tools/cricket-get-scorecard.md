@@ -3,8 +3,8 @@ title: cricket_get_scorecard
 type: tool
 tags: [cricket, scorecard]
 sources: []
-last_updated: 2026-05-26
-related: [[cricket-live-score-chain]], [[cricapi]]
+last_updated: 2026-09-25
+related: [[cricket-scorecard-chain]], [[cricapi]]
 ---
 
 # cricket_get_scorecard
@@ -21,4 +21,4 @@ async def cricket_get_scorecard(match_id: str) -> dict
 
 ## Chain
 
-[[cricket-live-score-chain]]
+[[cricket-scorecard-chain]] uses a cache key per match ID.

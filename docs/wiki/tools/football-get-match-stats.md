@@ -3,7 +3,7 @@ title: football_get_match_stats
 type: tool
 tags: [football, team-stats]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[football-team-stats-chain]], [[api-football]], [[football-data-org]]
 ---
 
@@ -21,3 +21,5 @@ async def football_get_match_stats(team: int) -> dict
 
 ## Returns
 `data.team_stats`: {team, played, wins, goals_for, goals_against}. via [[football-team-stats-chain]].
+
+The football-data.org adapter in that chain cannot currently supply aggregate team stats, so this tool needs API-Football data or a cached result.

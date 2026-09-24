@@ -3,7 +3,7 @@ title: Cricket Pitch Data Chain
 type: chain
 tags: [cricket, pitch, venue, static]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[static-seed]], [[cricket-get-pitch-report]], [[pitch-report]]
 ---
 
@@ -24,6 +24,6 @@ The chain is designed to absorb a future "recent scorecards at this venue" adapt
 
 ## Cache key
 
-`sportiq:cricket:pitch:{venue_slug}` where `venue_slug = venue.lower().replace(' ', '_')`.
+`sportiq:cricket:pitch:{digest}` where `digest` is an eight-byte BLAKE2s hash of the lowercased input venue.
 
-Per-venue keying means one query primes the cache for all subsequent lookups of the same venue, regardless of capitalisation or input form (`Wankhede`, `wankhede`, `Wankhede Stadium` all hash to the same key after normalisation in the adapter).
+Case variants share a cache key. Different aliases such as `Wankhede` and `Wankhede Stadium` can use different keys even when the adapter resolves them to the same venue.

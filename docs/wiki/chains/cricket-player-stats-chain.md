@@ -3,7 +3,7 @@ title: Cricket Player Stats Chain
 type: chain
 tags: [cricket, player-stats, t20]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[cricapi]], [[rapidapi-cricbuzz]], [[cricket-player-form-index]], [[form-index]]
 ---
 
@@ -15,7 +15,7 @@ related: [[cricapi]], [[rapidapi-cricbuzz]], [[cricket-player-form-index]], [[fo
 
 `cricapi_player_info` → `rapidapi_player_stats` → stale cache
 
-CricAPI is the free primary (budgeted at 100 req/day, shared across endpoints). RapidAPI Cricbuzz is the paid escape hatch — different response shape, [[cricket-player-form-index]] handles both via `_t20_career_numbers()`.
+CricAPI is the free primary (budgeted at 100 req/day, shared across endpoints). RapidAPI Cricbuzz is the paid escape hatch; `extract_player_stats()` normalizes both response shapes for [[cricket-player-form-index]] and the matchup tools.
 
 ## TTLs
 

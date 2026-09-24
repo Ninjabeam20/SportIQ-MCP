@@ -3,7 +3,7 @@ title: football-data.org
 type: data-source
 tags: [football, fixtures, standings, scorers]
 sources: []
-last_updated: 2026-07-14
+last_updated: 2026-09-25
 related: [[football-fixtures-chain]], [[football-standings-chain]], [[football-scorers-chain]], [[api-football]], [[openfootball]]
 ---
 
@@ -30,8 +30,10 @@ walks past it to the keyless [[openfootball]] / [[static-seed]] fallbacks.
 | `/competitions/WC/matches` | `{"fixtures": [...]}` |
 | `/competitions/WC/standings` | `{"standings": [...]}` |
 | `/competitions/WC/scorers` | `{"scorers": [...]}` |
-| `/teams/{id}` | `{"team_stats": {...}}` |
+| `/teams/{id}` | Team profile only; not used as an aggregate World Cup stats fallback |
 
-Outputs are normalised to match [[api-football]] so it is a drop-in chain fallback. Fixture `id`
+Fixture, standings, and scorers outputs are normalised to match [[api-football]]. The
+team-stats adapter is registered but returns `NotFoundError` until a valid stats
+endpoint and ID mapping exist. Fixture `id`
 becomes `match_id`, `stage` is preserved, and `score.winner` maps `HOME_TEAM` / `AWAY_TEAM` to the
 winning team name (including level full-time scores decided after regulation).

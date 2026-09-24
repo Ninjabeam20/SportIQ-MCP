@@ -3,7 +3,7 @@ title: F1 Weather Chain
 type: chain
 tags: [f1, weather]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[openf1]], [[f1-get-weather]], [[f1-weather-strategy-impact]], [[f1-predict-pit-strategy]]
 ---
 
@@ -17,7 +17,7 @@ related: [[openf1]], [[f1-get-weather]], [[f1-weather-strategy-impact]], [[f1-pr
 
 | Adapter | Enabled by default |
 | :--- | :--- |
-| [[openf1]] | Yes — no credentials required |
+| [[openf1]] | Yes for historical data; live access needs paid OpenF1 auth (not wired) |
 
 ## TTLs
 

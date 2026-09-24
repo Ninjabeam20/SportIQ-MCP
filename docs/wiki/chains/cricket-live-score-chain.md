@@ -3,13 +3,13 @@ title: Cricket Live Score Chain
 type: chain
 tags: [cricket, live-scores]
 sources: []
-last_updated: 2026-05-26
+last_updated: 2026-09-25
 related: [[cricapi]], [[ndtv-sports-scraper]], [[cricbuzz-scraper]], [[rapidapi-cricbuzz]]
 ---
 
 # Cricket Live Score Chain
 
-`FallbackChain` that powers `cricket_get_live_matches` and `cricket_get_scorecard`.
+`FallbackChain` that powers `cricket_get_live_matches`. `cricket_get_scorecard` uses the separate [[cricket-scorecard-chain]].
 
 ## Resolution order
 

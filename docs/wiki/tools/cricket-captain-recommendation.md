@@ -3,7 +3,7 @@ title: cricket_captain_recommendation
 type: tool
 tags: [cricket, dream11, captain]
 sources: []
-last_updated: 2026-09-02
+last_updated: 2026-09-25
 related: [[captain-score]], [[cricket-squad-chain]], [[cricket-pitch-data-chain]]
 ---
 
@@ -14,8 +14,15 @@ Returns the top-3 captain candidates for a fixture by projected fantasy points. 
 ## Signature
 
 ```python
-async def cricket_captain_recommendation(team_a: str, team_b: str, venue: str) -> dict
+async def cricket_captain_recommendation(
+    match_id: str | None = None,
+    team_a: str | None = None,
+    team_b: str | None = None,
+    venue: str | None = None,
+) -> Envelope
 ```
+
+Pass `match_id` to resolve the teams and venue, or pass `team_a`, `team_b`, and `venue` directly.
 
 ## How it ranks
 

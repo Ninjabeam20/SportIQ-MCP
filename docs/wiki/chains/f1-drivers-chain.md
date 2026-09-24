@@ -3,7 +3,7 @@ title: F1 Drivers Chain
 type: chain
 tags: [f1, drivers]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[openf1]], [[f1-get-drivers]], [[f1-get-race-results]]
 ---
 
@@ -17,7 +17,7 @@ related: [[openf1]], [[f1-get-drivers]], [[f1-get-race-results]]
 
 | Adapter | Enabled by default |
 | :--- | :--- |
-| [[openf1]] | Yes — no credentials required |
+| [[openf1]] | Yes for historical data; live access needs paid OpenF1 auth (not wired) |
 
 ## TTLs
 

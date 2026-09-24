@@ -292,7 +292,7 @@ analytics), `launch/` marketing copy, wiki lint tooling.
    `initialize.serverInfo.version` (bound in `server.py` because FastMCP 1.29 does not
    forward `version=`). `scripts/check_release_build.py` fails CI if `server.json` drifts.
    FastMCP without that bind reports the **SDK** version (e.g. 1.28.1) instead of SportIQ.
-6. **OpenF1 401s recent-season (2025+) data without an API key**; historical 2023–24 is free.
+6. **OpenF1 historical sessions from 2023 onward are keyless; live-session data needs paid authentication.** The package has no OpenF1 auth wiring, so live-session requests can return 401.
    Build scripts skip-with-warning; the runtime adapter is unaffected so far.
 7. **Registration order in `server.py` ≠ import order.** Imports are alphabetical (ruff isort);
    only the `register_*` calls carry the football → F1 → cricket relevance order.

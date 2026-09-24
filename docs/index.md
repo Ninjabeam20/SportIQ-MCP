@@ -97,9 +97,9 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 ### Football
 
 - [[football-fixtures-chain]] — api_football → football_data_org → openfootball → static seed; normalized identity/stage/winner, 30min TTL.
-- [[football-standings-chain]] — api_football → football_data_org; 10min TTL.
+- [[football-standings-chain]] — api_football → football_data_org → derived from fixtures; 10min TTL.
 - [[football-groups-chain]] — static wc2026 terminator (draw + Elo ratings); ~1y TTL.
-- [[football-team-stats-chain]] — api_football → football_data_org; 24h TTL.
+- [[football-team-stats-chain]] — api_football → football_data_org (team-stats fallback currently returns a miss); 24h TTL.
 - [[football-squad-chain]] — api_football → static seed; 12h TTL.
 - [[football-scorers-chain]] — api_football → football_data_org; 24h TTL.
 - [[football-odds-chain]] — the-odds-api (only source) → stale; 5min fresh / 24h stale TTL.
