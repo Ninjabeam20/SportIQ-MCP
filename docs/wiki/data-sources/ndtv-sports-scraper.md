@@ -3,7 +3,7 @@ title: NDTV Sports Scraper
 type: data-source
 tags: [cricket, live-scores, fixtures, scraper, opt-in]
 sources: []
-last_updated: 2026-05-26
+last_updated: 2026-09-25
 related: [[cricket-live-score-chain]], [[cricket-fixtures-chain]], [[0007-cricket-fallback-strategy]]
 ---
 

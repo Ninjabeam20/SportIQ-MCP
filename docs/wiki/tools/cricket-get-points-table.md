@@ -3,7 +3,7 @@ title: cricket_get_points_table
 type: tool
 tags: [cricket, standings, points-table]
 sources: []
-last_updated: 2026-05-26
+last_updated: 2026-09-25
 related: [[cricket-standings-chain]], [[cricapi]]
 ---
 

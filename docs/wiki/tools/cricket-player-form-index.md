@@ -3,7 +3,7 @@ title: cricket_player_form_index
 type: tool
 tags: [cricket, form, stats]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[form-index]], [[cricket-player-stats-chain]]
 ---
 

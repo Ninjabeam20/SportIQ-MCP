@@ -2,8 +2,8 @@
 title: Football Form Trends
 type: tool
 tags: [football, form, xg]
-sources: [api_football, football_data_org, static_seed]
-last_updated: 2026-06-03
+sources: [api_football, football_data_org, openfootball, static_seed]
+last_updated: 2026-09-25
 related: [[football-get-fixtures]], [[football-fixtures-chain]], [[football-find-value-bets]], [[football-xg-model]]
 ---
 
@@ -66,11 +66,11 @@ When there are no completed fixtures for the requested team, the tool still retu
 Form computation lives in `src/sportiq/football/models/form_trends.py` (`compute_form_trends`). It is a pure function with no I/O:
 
 1. Filter fixtures to those where the team appears as `home` or `away` (case-insensitive).
-2. Drop fixtures where either `home_goals` or `away_goals` is `None` (future matches).
+2. Drop fixtures without numeric scores. If `status` is present, require a finished status; scores alone do not mark a match complete.
 3. Sort ascending by `date`.
 4. Derive W/D/L per match from goals-for vs goals-against.
 5. `recent_trend` — compares average goals scored in the last 3 matches vs the 3 before that. Requires ≥ 4 completed matches; otherwise returns `"stable"`.
 
 ## Chain
 
-Routes through `football_fixtures_chain` (api_football → football_data_org → static seed; 6h TTL).
+Routes through `football_fixtures_chain` (api_football → football_data_org → openfootball → static seed; 30min fresh / 24h stale TTL).

@@ -1,5 +1,8 @@
 # Codex Changes Review Blockers Implementation Plan
 
+> **HISTORICAL — integrated into `main`.** The checkboxes and branch restrictions
+> below document the original implementation, not remaining work.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan inline and task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Status:** Completed locally on `codex_changes` on 2026-07-14; full verification results are

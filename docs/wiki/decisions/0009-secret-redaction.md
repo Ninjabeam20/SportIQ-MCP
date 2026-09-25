@@ -3,7 +3,7 @@ title: "ADR-0009: Redact secrets at the fallback capture point"
 type: decision
 tags: [security, fallback, error-envelope, secrets]
 sources: []
-last_updated: 2026-06-03
+last_updated: 2026-09-25
 related: [[error-envelope-secret-leak]], [[cricapi-envelope-leak]], [[0005-fallback-chain-pattern]], [[cricapi]]
 ---
 
@@ -56,7 +56,6 @@ field). `scrub` redacts three ways:
   `tests/chains/test_chain_key_redaction.py` (2).
 - `scrub` is the canonical sanitizer — any future site that turns an exception or
   URL into a stored/logged string should route through it.
-- **Out of scope (tracked in step10 Phase S):** S.5 wraps `structlog` with a
-  redaction processor so *all* log events are scrubbed, not just the chain
-  failure log; S.6 restricts `core/http.py` redirects to same-host so a key in a
-  URL cannot be bounced to another host.
+- **Later implemented:** S.5 added the `structlog` string-field redaction
+  processor in `core/logging.py`; S.6 restricted `core/http.py` redirects to
+  the same host. These were outside the original ADR scope and are now in tree.

@@ -3,7 +3,7 @@ title: football_get_groups
 type: tool
 tags: [football, groups, wc2026]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[football-groups-chain]], [[static-seed]]
 ---
 

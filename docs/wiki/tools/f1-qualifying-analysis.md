@@ -3,7 +3,7 @@ title: f1_qualifying_analysis
 type: tool
 tags: [f1, qualifying, grid]
 sources: []
-last_updated: 2026-06-04
+last_updated: 2026-09-25
 related: [[quali-analysis]], [[f1-tyre-degradation]], [[f1-head-to-head-pace]]
 ---
 

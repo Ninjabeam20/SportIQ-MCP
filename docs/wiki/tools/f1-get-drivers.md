@@ -3,7 +3,7 @@ title: f1_get_drivers
 type: tool
 tags: [f1, drivers]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[f1-drivers-chain]], [[openf1]]
 ---
 

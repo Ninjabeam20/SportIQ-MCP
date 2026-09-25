@@ -3,7 +3,7 @@ title: Product and hosting arc (GCP → paid → free → home server)
 type: finding
 tags: [hosting, cloud-run, home-server, monetization, history]
 sources: [chat, cloud.md, 0011-pro-entitlement-gate, home-server-cutover]
-last_updated: 2026-09-02
+last_updated: 2026-09-25
 related: [[0011-pro-entitlement-gate]], [[home-server-cutover]], [[hosted-url-and-release-drift]], [[mac-cutover-inventory]]
 ---
 
@@ -21,7 +21,7 @@ One-page timeline of how SportIQ was hosted and sold. Read this when GitHub and 
 4. **Home-server migration (2026-08).** Production live is the Dell Compose stack behind Cloudflare Tunnel + Caddy: `https://sportiq.utkarshgupta.org/mcp`. Cutover: [[home-server-cutover]].
 5. **GCP Task 9 teardown (2026-09-02).** Scheduler, Cloud Run, Artifact Registry deleted. Project `sportiq-mcp-prod` shut down (`DELETE_REQUESTED`, billing unlinked). Owner also removed the GCP billing card. `ey2eariulq` HTTP 404.
 
-## Current (2026-09-02)
+## Current (2026-09-25)
 
 | Channel | Reality |
 | :--- | :--- |
@@ -38,6 +38,18 @@ JSONL on, Caddy `flush_interval -1` / no `header_up CF-Connecting-IP`. Public
 initialize 200 / 0.3.2 / stateless; GET `/mcp` 406; `sportiq_health` diskcache
 ok; 44 tools. `ey2eariulq` HTTP 404. Old `329580761892` host NXDOMAIN. Local
 `uv run pytest` green. Never set `K_SERVICE`. Never copy `sportiq-keepwarm`.
+
+## 2026-09-25 push, verify, deploy cycle
+
+`main` and its local `origin/main` tracking ref are at `0bc1232`. Dell git was
+reported at the same commit after the documentation sync; its container was
+rebuilt from `5e9a4fa`, the last code commit. The later two commits are docs
+only. Post-merge local checks reported 871 collected tests, 91.91% coverage,
+Ruff and release-build pass. The Dell container and public MCP initialize,
+44-tool list, diskcache health, and 500-iteration bracket simulation passed in
+the deployment smoke check. GitHub Actions status for `0bc1232` has not been
+verified from this repository snapshot. Source changes after the `v0.3.2` tag
+are deployed on Dell but are not part of the published PyPI 0.3.2 artifact.
 
 ## Do not
 

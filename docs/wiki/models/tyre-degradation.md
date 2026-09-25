@@ -3,7 +3,7 @@ title: Tyre Degradation Model
 type: model
 tags: [f1, tyre, degradation]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[f1-tyre-degradation]], [[f1-predict-pit-strategy]]
 ---
 

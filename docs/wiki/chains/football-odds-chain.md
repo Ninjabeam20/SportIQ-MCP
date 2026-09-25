@@ -3,7 +3,7 @@ title: Football Odds Chain
 type: chain
 tags: [football, odds]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[the-odds-api]], [[football-get-odds]]
 ---
 

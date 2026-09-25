@@ -3,7 +3,7 @@ title: The Odds API
 type: data-source
 tags: [cricket, football, odds]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[cricket-odds-chain]], [[football-odds-chain]], [[cricket-get-live-odds]], [[football-get-odds]]
 ---
 

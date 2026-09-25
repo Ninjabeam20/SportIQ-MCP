@@ -3,7 +3,7 @@ title: cricket_get_pitch_report
 type: tool
 tags: [cricket, pitch, venue]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[pitch-report]], [[cricket-pitch-data-chain]], [[static-seed]]
 ---
 
@@ -37,7 +37,7 @@ async def cricket_get_pitch_report(venue: str) -> dict
 ## Behavior
 
 - `pitch_type` is one of `batting`, `bowling`, `balanced` (from venues.json).
-- `batting_friendly` blends the pitch type with a centred shift around the average first-innings total — 175 is the par.
+- `batting_friendly` blends the pitch type with a centred shift around the average first-innings total — 178 is the measured league par.
 - `recommendation` is a short prose string the model is free to surface to the user verbatim.
 
 ## Phase 2 limitations

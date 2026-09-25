@@ -3,7 +3,7 @@ title: Football Squad Chain
 type: chain
 tags: [football]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[api-football]], [[static-seed]], [[football-get-squad]]
 ---
 
@@ -24,6 +24,6 @@ api-football -> static-seed
 - Stale ceiling: 3d
 
 ## Cache key
-`sportiq:football:squad:{team}`
+`sportiq:football:squad:{team_hash}` — the lowercased team value is hashed with an 8-byte BLAKE2s digest.
 
 No rosters are bundled yet — the static terminator returns an empty-but-valid squad (follow-up).

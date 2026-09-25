@@ -135,7 +135,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 ### F1
 
-- [[openf1]] — Free public F1 telemetry API; no credentials; endpoints: sessions, drivers, laps, stints, weather.
+- [[openf1]] — Keyless historical F1 telemetry from 2023 onward; live data requires paid authentication, which SportIQ does not implement. Endpoints: sessions, drivers, laps, stints, weather.
 - [[jolpica]] — Free public Ergast successor; no credentials; historical standings and race results.
 - [[fastf1]] — Optional Python library for offline F1 data; lazy-imported; install with `pip install sportiq-mcp[f1]`.
 - [[f1db]] — Offline-only F1 database (CC BY 4.0); supplies stop-count/lap-length fields of `circuits.json` (per-circuit pit LOSS measured offline from OpenF1 laps); never shipped or fetched live.
@@ -175,6 +175,6 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[0007-cricket-fallback-strategy]] — Opt-in scrapers + paid escape hatch; CricSheet dropped in Phase 1 cleanup.
 - [[0008-football-fallback-strategy]] — Football source ladder + the WC 2026 48-team / 12-group / best-thirds format encoding.
 - [[0009-secret-redaction]] — Redact secrets at the fallback capture point (`core/redact.py:scrub`); query-param keys must never reach `sources_tried` or logs.
-- [[0010-trusted-publishing]] — PyPI Trusted Publishing via OIDC: no long-lived token, GitHub Actions JWT identity proof, one-time PyPI UI setup required.
+- [[0010-trusted-publishing]] — PyPI release workflow uses OIDC; current PyPI publisher binding and GitHub secret settings require an external account check.
 - [[0011-pro-entitlement-gate]] — **REVERSED 2026-07-01: paywall removed, SportIQ is fully free.** Historical record of the V1/V2a Pro gate (`core/entitlements.py`); all gate code deleted from `main`, paid edition preserved at tag `v0.2.3`.
 - [[0012-hosted-abuse-controls]] — Pure-ASGI 1 MiB/60-client/300-global request admission, bounded telemetry, atomic counters, and expensive-tool concurrency two; requires one hosted process.

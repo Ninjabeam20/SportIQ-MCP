@@ -3,7 +3,7 @@ title: football_get_squad
 type: tool
 tags: [football, squad]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[football-squad-chain]], [[api-football]], [[static-seed]]
 ---
 

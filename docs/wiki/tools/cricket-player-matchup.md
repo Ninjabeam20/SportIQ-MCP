@@ -3,7 +3,7 @@ title: cricket_player_matchup
 type: tool
 tags: [cricket, player, matchup]
 sources: []
-last_updated: 2026-06-04
+last_updated: 2026-09-25
 related: [[player-matchup]], [[cricket-build-dream11-team]]
 ---
 

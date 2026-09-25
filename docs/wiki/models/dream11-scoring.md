@@ -3,7 +3,7 @@ title: Dream11 T20 Scoring
 type: model
 tags: [cricket, dream11, scoring, t20]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[dream11-solver]], [[captain-score]], [[cricket-build-dream11-team]]
 ---
 

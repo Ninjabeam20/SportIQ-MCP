@@ -3,7 +3,7 @@ title: football_knockout_path
 type: tool
 tags: [football, monte-carlo, intel]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[bracket-sim]], [[football-simulate-bracket]], [[football-groups-chain]]
 ---
 

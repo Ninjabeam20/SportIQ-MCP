@@ -3,7 +3,7 @@ title: Form Index
 type: model
 tags: [cricket, form, t20]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[cricket-player-form-index]], [[cricket-player-stats-chain]], [[captain-score]]
 ---
 

@@ -3,7 +3,7 @@ title: Player Matchup Model
 type: model
 tags: [cricket, matchup, heuristic]
 sources: []
-last_updated: 2026-06-04
+last_updated: 2026-09-25
 related: [[cricket-player-matchup]]
 ---
 

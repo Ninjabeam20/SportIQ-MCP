@@ -3,7 +3,7 @@ title: football_get_top_scorers
 type: tool
 tags: [football, scorers]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[football-scorers-chain]], [[api-football]], [[football-data-org]]
 ---
 

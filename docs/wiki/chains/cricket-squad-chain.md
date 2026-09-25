@@ -3,7 +3,7 @@ title: Cricket Squad Chain
 type: chain
 tags: [cricket, squad, roster]
 sources: []
-last_updated: 2026-05-27
+last_updated: 2026-09-25
 related: [[cricapi]], [[static-seed]]
 ---
 
@@ -24,4 +24,4 @@ related: [[cricapi]], [[static-seed]]
 
 ## Cache key
 
-`sportiq:cricket:squad:{team|all}:{series_id|none}`
+`sportiq:cricket:squad:{team_hash}:{series_id_hash}` — each value (`team`/`all`, `series_id`/`none`) is lowercased and hashed with an 8-byte BLAKE2s digest.

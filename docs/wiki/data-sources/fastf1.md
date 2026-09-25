@@ -3,7 +3,7 @@ title: FastF1
 type: data-source
 tags: [f1, laps, standings, offline, optional]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[f1-laps-chain]], [[f1-standings-chain]]
 ---
 

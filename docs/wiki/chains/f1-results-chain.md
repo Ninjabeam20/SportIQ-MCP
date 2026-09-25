@@ -3,7 +3,7 @@ title: F1 Results Chain
 type: chain
 tags: [f1, race-results]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[jolpica]], [[f1-get-race-results]]
 ---
 

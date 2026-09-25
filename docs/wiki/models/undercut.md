@@ -3,7 +3,7 @@ title: Undercut Window Model
 type: model
 tags: [f1, undercut, strategy]
 sources: [f1db]
-last_updated: 2026-06-12
+last_updated: 2026-09-25
 related: [[f1-undercut-window]], [[f1-predict-pit-strategy]], [[f1db]]
 ---
 

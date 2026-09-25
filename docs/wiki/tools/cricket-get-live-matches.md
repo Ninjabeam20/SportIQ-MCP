@@ -3,7 +3,7 @@ title: cricket_get_live_matches
 type: tool
 tags: [cricket, live-scores]
 sources: []
-last_updated: 2026-05-26
+last_updated: 2026-09-25
 related: [[cricket-live-score-chain]], [[cricapi]]
 ---
 

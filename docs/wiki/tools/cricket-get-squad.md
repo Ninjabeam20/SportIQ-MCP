@@ -3,7 +3,7 @@ title: cricket_get_squad
 type: tool
 tags: [cricket, squad, roster]
 sources: []
-last_updated: 2026-05-27
+last_updated: 2026-09-25
 related: [[cricket-squad-chain]], [[cricapi]], [[static-seed]]
 ---
 

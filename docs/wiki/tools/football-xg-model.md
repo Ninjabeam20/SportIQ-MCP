@@ -3,7 +3,7 @@ title: football_xg_model
 type: tool
 tags: [football, xg, intel]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[poisson-xg]], [[elo]], [[football-groups-chain]]
 ---
 

@@ -3,7 +3,7 @@ title: Cricket Standings Chain
 type: chain
 tags: [cricket, standings, points-table]
 sources: []
-last_updated: 2026-05-26
+last_updated: 2026-09-25
 related: [[cricapi]], [[rapidapi-cricbuzz]]
 ---
 
@@ -22,4 +22,4 @@ related: [[cricapi]], [[rapidapi-cricbuzz]]
 
 ## Cache key
 
-`sportiq:cricket:standings:{series_id}`
+`sportiq:cricket:standings:{safe_series_id}` — IDs containing characters outside letters, digits, `_`, and `-` use an 8-byte BLAKE2s digest.

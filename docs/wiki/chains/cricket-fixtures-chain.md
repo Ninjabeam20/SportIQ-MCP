@@ -3,7 +3,7 @@ title: Cricket Fixtures Chain
 type: chain
 tags: [cricket, fixtures, schedule]
 sources: []
-last_updated: 2026-05-26
+last_updated: 2026-09-25
 related: [[cricapi]], [[ndtv-sports-scraper]], [[rapidapi-cricbuzz]]
 ---
 
@@ -22,4 +22,4 @@ related: [[cricapi]], [[ndtv-sports-scraper]], [[rapidapi-cricbuzz]]
 
 ## Cache key
 
-`sportiq:cricket:fixtures:{series_id|all}`
+`sportiq:cricket:fixtures:{safe_series_id|all}` — IDs containing characters outside letters, digits, `_`, and `-` use an 8-byte BLAKE2s digest.

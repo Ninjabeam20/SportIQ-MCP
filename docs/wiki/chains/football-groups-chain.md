@@ -3,7 +3,7 @@ title: Football Groups Chain
 type: chain
 tags: [football]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[static-seed]], [[football-get-groups]], [[bracket-sim]]
 ---
 

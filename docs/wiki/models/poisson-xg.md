@@ -3,7 +3,7 @@ title: Poisson xG Match Engine
 type: model
 tags: [football, poisson, xg, scipy]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[elo]], [[group-sim]], [[bracket-sim]], [[football-xg-model]], [[football-match-predictor]]
 ---
 

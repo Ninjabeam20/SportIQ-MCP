@@ -3,7 +3,7 @@ title: Parlay Builder
 type: model
 tags: [parlay, accumulator, core]
 sources: [football-build-accumulator]
-last_updated: 2026-06-03
+last_updated: 2026-09-25
 related: [[football-build-accumulator]], [[football-find-value-bets]], [[value-bet]]
 ---
 

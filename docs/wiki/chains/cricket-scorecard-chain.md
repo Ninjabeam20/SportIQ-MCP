@@ -3,7 +3,7 @@ title: Cricket Scorecard Chain
 type: chain
 tags: [cricket, scorecard, live-scores]
 sources: []
-last_updated: 2026-05-27
+last_updated: 2026-09-25
 related: [[cricapi]], [[rapidapi-cricbuzz]]
 ---
 
@@ -27,4 +27,4 @@ related: [[cricapi]], [[rapidapi-cricbuzz]]
 
 ## Cache key
 
-`sportiq:cricket:scorecard:{match_id}` — keyed per match so concurrent lookups don't collide.
+`sportiq:cricket:scorecard:{safe_match_id}` — keyed per match so concurrent lookups don't collide. IDs containing characters outside letters, digits, `_`, and `-` use an 8-byte BLAKE2s digest.

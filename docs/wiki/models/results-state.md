@@ -3,7 +3,7 @@ title: Results State
 type: model
 tags: [football, live, name-join, standings, wc2026]
 sources: [src/sportiq/football/models/results_state.py]
-last_updated: 2026-06-16
+last_updated: 2026-09-25
 related: [[live-conditioning]], [[bracket-sim]], [[group-sim]]
 ---
 

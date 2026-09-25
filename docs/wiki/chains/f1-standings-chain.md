@@ -3,7 +3,7 @@ title: F1 Standings Chain
 type: chain
 tags: [f1, standings]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[jolpica]], [[fastf1]], [[f1-get-standings]]
 ---
 

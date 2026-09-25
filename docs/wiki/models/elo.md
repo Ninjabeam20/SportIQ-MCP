@@ -3,7 +3,7 @@ title: Elo Ratings
 type: model
 tags: [football, elo]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[poisson-xg]], [[bracket-sim]], [[football-groups-chain]]
 ---
 

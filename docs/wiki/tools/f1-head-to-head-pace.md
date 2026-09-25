@@ -3,7 +3,7 @@ title: f1_head_to_head_pace
 type: tool
 tags: [f1, pace, head-to-head, intel]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[f1-laps-chain]]
 ---
 

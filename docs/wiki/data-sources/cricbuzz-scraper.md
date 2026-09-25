@@ -3,7 +3,7 @@ title: Cricbuzz Scraper
 type: data-source
 tags: [cricket, live-scores, scraper, opt-in]
 sources: []
-last_updated: 2026-05-26
+last_updated: 2026-09-25
 related: [[cricket-live-score-chain]], [[0007-cricket-fallback-strategy]]
 ---
 

@@ -1,5 +1,10 @@
 # Codex Changes Hardening and Football Correctness Implementation Plan
 
+> **HISTORICAL — integrated into `main`.** The branch-specific restrictions and
+> checkboxes below record the original work on `codex_changes`; they are not
+> remaining steps in the current push, verify, and deploy cycle. Current
+> limitations are tracked in `GAPS.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Repair the verified security/runtime defects and correct World Cup qualification/result behavior in five ordered, independently verified batches on `codex_changes`.

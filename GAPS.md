@@ -2,8 +2,10 @@
 
 > Written 2026-07-07 against v0.3.1 (commit `b7a1392`); status refreshed 2026-07-14 on
 > `codex_changes`, **2026-08-13** on `grok_changes`, and **2026-09-02** after the home-server
-> flip and GCP teardown (PyPI **0.3.2**). Ordered by severity. Each remaining entry:
-> what it is, where it lives, why it matters. Severity: **HIGH / MEDIUM / LOW**.
+> flip and GCP teardown (PyPI **0.3.2**). Status snapshot checked against `main`
+> on 2026-09-25. The original findings and proposed fixes remain below as audit
+> history; do not execute a suggested fix for an item marked resolved. Severity:
+> **HIGH / MEDIUM / LOW**.
 >
 > Context that shapes severity: the **live** hosted instance is the Dell home
 > server (`https://sportiq.utkarshgupta.org/mcp`, one Compose replica, no host
@@ -17,15 +19,15 @@
 
 ---
 
-## Status snapshot 2026-09-11
+## Status snapshot 2026-09-25
 
 | # | Item | Status |
 |---|---|---|
-| 1 | Hosted per-client rate limit | **DEPLOYED** 2026-07-14 on `sportiq-mcp-00035-vam` (`maxScale: 1`). CF-Connecting-IP path in-tree for home server |
+| 1 | Hosted per-client rate limit | **DEPLOYED** on the Dell (one Compose replica, `SPORTIQ_TRUST_CLOUDFLARE=1`); Cloud Run revision is historical |
 | 2 | Peek→fetch quota race | **RESOLVED IN TREE** — `reserve()` / `refund()` + `incr_counter_if_below` |
 | 3 | Uncaught `NotFoundError` | **RESOLVED** (football/F1 2026-07-14; cricket RAW 2026-09-11; api_football standings/scorers empty guards 2026-09-11) |
 | 4 | Relative `Location` redirects | **RESOLVED** 2026-07-14 |
-| 5 | Per-process state × N instances | **GUARDRAIL DEPLOYED** (`maxScale: 1`; Compose one replica). Redis still absent |
+| 5 | Per-process state × N instances | **GUARDRAIL DEPLOYED** (Dell Compose one replica). Redis still absent |
 | 6 | sdist leak | **RESOLVED** — allowlist, not a blocklist |
 | 7 | Dead server semaphore | **RESOLVED** 2026-07-14 |
 | 8 | Envelope vs Pydantic rule | **RESOLVED AS DOCUMENTATION** |
@@ -39,8 +41,8 @@
 
 ## 1. HIGH — No per-client rate limiting on the hosted endpoint; shared upstream quotas are a public DoS surface
 
-- **Status 2026-08-13: DEPLOYED** on Cloud Run revision `sportiq-mcp-00035-vam` (2026-07-14),
-  `autoscaling.knative.dev/maxScale: '1'`. Pure-ASGI admission enforces 1 MiB POST bodies,
+- **Status 2026-09-25: DEPLOYED** on the Dell; Cloud Run revision
+  `sportiq-mcp-00035-vam` (2026-07-14) is historical. Pure-ASGI admission enforces 1 MiB POST bodies,
   60 requests/client/minute, and 300 requests/process/minute. Client keys are hashed.
   Forwarded IPs: Cloud Run trusts rightmost `X-Forwarded-For` only when `K_SERVICE` is set;
   home-server Compose sets `SPORTIQ_TRUST_CLOUDFLARE=1` and keys on `CF-Connecting-IP`
@@ -125,7 +127,7 @@
   `urllib.parse.urljoin` before the host check and the follow-up GET. Add a respx test with a
   relative-Location 302 in `tests/unit/test_s6_http_hardening.py`.
 
-## 5. MEDIUM — Stampede guard and cache/rate-limit state are per-process; multi-instance Cloud Run multiplies quota burn
+## 5. MEDIUM — Stampede guard and cache/rate-limit state are per-process; a second replica would multiply quota burn
 
 - **Status 2026-09-02: GUARDRAIL DEPLOYED on Dell.** One Compose replica
   (`container_name: sportiq`, no `deploy.replicas`). Cloud Run `maxScale: 1` was the
@@ -133,7 +135,7 @@
   admission/cache state (Redis). No Redis was added (zero-spend). Do not start a
   second compose project for the same image.
 
-- **What:** three pieces of state assume one process: `FallbackChain._key_locks`
+- **What (historical multi-instance risk):** three pieces of state assume one process: `FallbackChain._key_locks`
   (`src/sportiq/core/fallback.py:74,101-113`) serializes concurrent misses per key;
   the diskcache backend (`src/sportiq/core/cache.py`) is a per-container filesystem; and the
   rate-limit counters live in that cache. Cloud Run can scale to N instances (and replaces
@@ -274,26 +276,23 @@
   runs in CI and in the release workflow) asserting `server.json`'s version equals
   `pyproject.toml`'s — fail the build on drift instead of relying on memory.
 
-## 13. LOW — Coverage blind spots: `server.py` transport wiring and all of `scripts/` are untested
+## 13. LOW — Coverage blind spots remain in generator scripts
 
-- **Status 2026-08-13: PARTIAL.** `tests/unit/test_server_http_wiring.py` monkeypatches
+- **Status 2026-09-25: PARTIAL.** `tests/unit/test_server_http_wiring.py` monkeypatches
   `uvicorn.run`, asserts `LegacyKeyPathMiddleware` is outermost, and checks bind host/port.
   `server.py` stays in the coverage omit list (stdio branch blocks forever). `scripts/` generators
   remain untested except via committed JSON invariants.
 
-- **What:** `src/sportiq/server.py` is excluded from coverage (`pyproject.toml:113-117`) and has
-  no direct tests — the stdio/HTTP branch of `main()`, middleware ordering (LegacyKeyPath must be
-  outermost), and the "don't use `mcp.run('streamable-http')` or middlewares drop" invariant are
-  enforced only by comments. The middlewares themselves ARE unit-tested
-  (`test_path_compat_middleware.py`, `test_client_info_middleware.py`), and prod deploys go
-  through a manual canary smoke test — so the risk is a wiring regression, not component bugs.
-  Separately, `scripts/build_wc2026_*.py` regenerate committed data files with only downstream
+- **What remains:** `server.py` is still excluded from coverage because the stdio
+  branch blocks by design, but HTTP bind settings and middleware order have a
+  direct regression test. The "don't use `mcp.run('streamable-http')`" invariant
+  still depends on that wiring test and production smoke checks.
+  `scripts/build_wc2026_*.py` regenerate committed data files with only downstream
   validation (`test_bracket_data.py` checks invariants of the artifact, not the generator).
 - **Where:** `src/sportiq/server.py`, `pyproject.toml` coverage omit list, `scripts/`.
-- **Suggested fix (single task):** add one unit test that imports `sportiq.server`, monkeypatches
-  `uvicorn.run` to capture the app, sets `SPORTIQ_TRANSPORT=http`, calls `main()`, and asserts
-  middleware order (`LegacyKeyPathMiddleware` before `ClientInfoMiddleware`) and port/host
-  settings. Keep server.py in the coverage omit list (the stdio branch blocks forever by design).
+- **Remaining fix, if pursued:** test the bracket data generator against a
+  checked-in fixture or source-independent expectations before replacing its
+  committed JSON output. The HTTP wiring test is already present.
 
 ## 14. INFO — Accepted risks worth restating so nobody "fixes" them
 

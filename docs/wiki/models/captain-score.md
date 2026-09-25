@@ -3,7 +3,7 @@ title: Captain Score (expected_points)
 type: model
 tags: [cricket, dream11, projection]
 sources: []
-last_updated: 2026-05-28
+last_updated: 2026-09-25
 related: [[dream11-solver]], [[dream11-scoring]], [[form-index]], [[pitch-report]]
 ---
 

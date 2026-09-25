@@ -1,5 +1,10 @@
 # C1 — Official FIFA Bracket Seeding Implementation Plan
 
+> **HISTORICAL — implemented.** The official bracket data is in
+> `src/sportiq/football/data/wc2026_bracket.json` and the live simulation loads
+> it from `bracket_sim.py`. The checkboxes below record the original plan; they
+> are not instructions to execute now.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the global strength-reseed in `football_simulate_bracket` with the official FIFA 2026 knockout structure (R32 slot template + 495-row Annex C best-thirds allocation + fixed R16→Final tree).

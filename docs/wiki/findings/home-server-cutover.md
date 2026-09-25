@@ -3,7 +3,7 @@ title: Home-server cutover of the public MCP
 type: finding
 tags: [home-server, cloudflare, caddy, cloud-run, deploy]
 sources: [chat]
-last_updated: 2026-09-02
+last_updated: 2026-09-25
 related: [[0012-hosted-abuse-controls]], [[hosted-url-and-release-drift]], [[mac-cutover-inventory]], [[product-hosting-arc]]
 ---
 
@@ -39,15 +39,15 @@ the header on non-tunnel requests and collapses every client into one 429 bucket
 One replica, diskcache volume, scrapers off, no Redis.
 Always-on idle (`restart: unless-stopped`): MCP only computes on a tool call.
 Cloud Run `sportiq-keepwarm` was deleted with Task 9.
-Stay on MCP SDK 1.x Streamable HTTP; SDK v2 is a follow-up after the hostname
-is proven. Stateless HTTP is already landed (`grok_changes13.md`).
+The production transport uses MCP SDK 1.x Streamable HTTP with stateless
+sessions (`mcp<2`). SDK v2 would be a separate migration, not a cutover step.
 
 ## Do not
 
 - Apply the full vault `Caddyfile.intended` (it also changes `www` and dead routes).
   Live Caddy still 301s `www` to HTTP apex and still routes `jobs`/`video`/`outfit`.
-- Point README / `links.ts` at `sportiq.utkarshgupta.org` before Task 8 flip
-  (that would repeat the dead-URL bug in [[hosted-url-and-release-drift]]).
+- The historical Task 8 rule was to wait for the Dell smoke checks before
+  changing README / `links.ts`; that flip completed on 2026-08-30.
 - Tear down the Dell without another host. There is no Cloud Run failback.
   Historical URL (404): `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp`.
 - Copy `sportiq-keepwarm` onto the Dell, or stop the container until the next

@@ -3,7 +3,7 @@ title: Football Build Accumulator
 type: tool
 tags: [football, accumulator, value-bets]
 sources: [football-find-value-bets, parlay-builder]
-last_updated: 2026-06-03
+last_updated: 2026-09-25
 related: [[football-find-value-bets]], [[parlay-builder]], [[football-get-odds]], [[value-bet]]
 ---
 

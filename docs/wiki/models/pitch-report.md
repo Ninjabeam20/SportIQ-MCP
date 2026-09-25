@@ -3,7 +3,7 @@ title: Pitch Report
 type: model
 tags: [cricket, pitch, venue]
 sources: []
-last_updated: 2026-06-12
+last_updated: 2026-09-25
 related: [[cricket-get-pitch-report]], [[cricket-pitch-data-chain]], [[captain-score]]
 ---
 

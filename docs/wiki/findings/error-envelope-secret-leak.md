@@ -3,7 +3,7 @@ title: API key leak via the error envelope
 type: finding
 tags: [security, fallback, cricapi, theodds, error-envelope]
 sources: [chat, 2026-06-03-step10-s1, core/http.py, core/fallback.py]
-last_updated: 2026-06-03
+last_updated: 2026-09-25
 related: [[cricapi-envelope-leak]], [[0009-secret-redaction]], [[0005-fallback-chain-pattern]], [[cricapi]], [[cricket-get-live-odds]], [[football-get-odds]]
 ---
 
@@ -56,8 +56,9 @@ New `core/redact.py:scrub(text)` — a single choke point that redacts:
 Applied at both `fallback.py` capture sites (attempt `error` + failure log). It
 is **not** applied inside `get_json`: re-raising there would change the exception
 type and defeat `core/http.py:_should_retry` (tenacity). The envelope leak is
-fully closed at the capture point; broader log-processor redaction is tracked as
-step10 S.5, same-host-redirect hardening as S.6. Rationale recorded in
+fully closed at the capture point. The later `core/logging.py` processor scrubs
+string fields in structlog events, and `core/http.py` restricts redirects to the
+same host. Rationale recorded in
 [[0009-secret-redaction]].
 
 CricAPI + The Odds API have no header-auth alternative, so `scrub` is their only
@@ -78,5 +79,5 @@ mitigation — keep it airtight.
 
 ## Status
 
-Shipped 2026-06-03 (commit `4ddd8f6`). Suite 318 → 328, coverage 87%.
-Follow-ups: S.5 (log-processor redaction), S.6 (same-host redirects) — step10 Phase S.
+Shipped 2026-06-03 (commit `4ddd8f6`). Suite 318 → 328, coverage 87% at that time.
+The S.5 log processor and S.6 same-host redirect follow-ups are now implemented.

@@ -3,7 +3,7 @@ title: f1_race_pace_compare
 type: tool
 tags: [f1, race-pace, strategy]
 sources: []
-last_updated: 2026-06-04
+last_updated: 2026-09-25
 related: [[race-pace]], [[f1-tyre-degradation]]
 ---
 

@@ -3,7 +3,7 @@ title: f1_get_race_results
 type: tool
 tags: [f1, race-results]
 sources: []
-last_updated: 2026-05-29
+last_updated: 2026-09-25
 related: [[f1-results-chain]], [[jolpica]]
 ---
 
