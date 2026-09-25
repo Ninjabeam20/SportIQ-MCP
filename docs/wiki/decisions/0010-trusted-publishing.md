@@ -8,7 +8,7 @@ related: []
 
 # ADR-0010 — PyPI Trusted Publishing (OIDC)
 
-## Status: Implemented in the release workflow; PyPI account settings need an external check
+## Status: Published successfully; current PyPI account binding is not visible without login
 
 ## Context
 
@@ -19,10 +19,11 @@ a short-lived JWT, no stored token required.
 ## Decision
 
 Use Trusted Publishing for all PyPI releases. `.github/workflows/release.yml`
-uses `pypa/gh-action-pypi-publish` with OIDC and no explicit token; the project
-documents a published 0.3.2 release. The repo cannot prove the current PyPI
-publisher binding or GitHub secret settings; check those in their UIs before
-claiming the one-time setup is complete.
+uses `pypa/gh-action-pypi-publish` with OIDC and no explicit token. The
+`v0.3.2` release workflow's "Publish to PyPI" step succeeded on 2026-09-02.
+GitHub listed no repository secrets on 2026-09-25, including no `PYPI_TOKEN`.
+These checks show the setup worked for that release; the current PyPI publisher
+binding is private and needs an authenticated PyPI account check.
 
 ## External settings to verify before the next release
 
@@ -32,7 +33,7 @@ claiming the one-time setup is complete.
    - Repository: SportIQ-MCP
    - Workflow name: release.yml
    - Environment: `pypi` (must match `release.yml`)
-3. Confirm there is no unused `PYPI_TOKEN` secret in GitHub repository secrets.
+3. GitHub repository secrets were empty on 2026-09-25; recheck if credentials are added later.
 
 ## Consequences
 

@@ -175,6 +175,6 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[0007-cricket-fallback-strategy]] — Opt-in scrapers + paid escape hatch; CricSheet dropped in Phase 1 cleanup.
 - [[0008-football-fallback-strategy]] — Football source ladder + the WC 2026 48-team / 12-group / best-thirds format encoding.
 - [[0009-secret-redaction]] — Redact secrets at the fallback capture point (`core/redact.py:scrub`); query-param keys must never reach `sources_tried` or logs.
-- [[0010-trusted-publishing]] — PyPI release workflow uses OIDC; current PyPI publisher binding and GitHub secret settings require an external account check.
+- [[0010-trusted-publishing]] — PyPI OIDC publish succeeded for v0.3.2 and GitHub has no repository secrets; the current private PyPI publisher binding needs an authenticated check.
 - [[0011-pro-entitlement-gate]] — **REVERSED 2026-07-01: paywall removed, SportIQ is fully free.** Historical record of the V1/V2a Pro gate (`core/entitlements.py`); all gate code deleted from `main`, paid edition preserved at tag `v0.2.3`.
 - [[0012-hosted-abuse-controls]] — Pure-ASGI 1 MiB/60-client/300-global request admission, bounded telemetry, atomic counters, and expensive-tool concurrency two; requires one hosted process.
