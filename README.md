@@ -7,6 +7,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/sportiq-mcp.svg)](https://pypi.org/project/sportiq-mcp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![MCP Registry](https://img.shields.io/badge/MCP%20Registry-listed-blue)](https://registry.modelcontextprotocol.io)
+[![MCP Queen operational grade](https://mcpqueen.com/badge/io.github.Ninjabeam20/sportiq-mcp.svg)](https://mcpqueen.com/s/io.github.Ninjabeam20/sportiq-mcp)
 
 MCP server that turns any AI assistant into a sports analyst across **FIFA World Cup 2026 football, Formula 1, and IPL cricket** — 44 AI-callable tools.
 
