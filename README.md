@@ -8,9 +8,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![MCP Registry](https://img.shields.io/badge/MCP%20Registry-listed-blue)](https://registry.modelcontextprotocol.io)
 [![MCP Queen operational grade](https://mcpqueen.com/badge/io.github.Ninjabeam20/sportiq-mcp.svg)](https://mcpqueen.com/s/io.github.Ninjabeam20/sportiq-mcp)
-[![Glama MCP score](https://glama.ai/mcp/servers/Ninjabeam20/SportIQ-MCP/badges/score.svg)](https://glama.ai/mcp/servers/Ninjabeam20/SportIQ-MCP)
+[![sportiq-mcp MCP connector – tool definition quality and endpoint health on Glama](https://glama.ai/mcp/connectors/io.github.Ninjabeam20/sportiq-mcp/badges/score.svg)](https://glama.ai/mcp/connectors/io.github.Ninjabeam20/sportiq-mcp)
 [![Listed on Skillselion](https://skillselion.com/badge/mcp/tool/io.github.Ninjabeam20/sportiq-mcp.svg)](https://skillselion.com/mcp/tool/io.github.Ninjabeam20/sportiq-mcp)
-[![Marchward tool capability (not a quality score)](https://marchward.ai/api/badge/sportiq-mcp)](https://marchward.ai/servers/sportiq-mcp)
 
 MCP server that turns any AI assistant into a sports analyst across **FIFA World Cup 2026 football, Formula 1, and IPL cricket** — 44 AI-callable tools.
 
