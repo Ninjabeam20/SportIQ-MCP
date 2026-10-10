@@ -8,8 +8,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![MCP Registry](https://img.shields.io/badge/MCP%20Registry-listed-blue)](https://registry.modelcontextprotocol.io)
 [![MCP Queen operational grade](https://mcpqueen.com/badge/io.github.Ninjabeam20/sportiq-mcp.svg)](https://mcpqueen.com/s/io.github.Ninjabeam20/sportiq-mcp)
+[![Glama MCP score](https://glama.ai/mcp/servers/Ninjabeam20/SportIQ-MCP/badges/score.svg)](https://glama.ai/mcp/servers/Ninjabeam20/SportIQ-MCP)
+[![Listed on Skillselion](https://skillselion.com/badge/mcp/tool/io.github.Ninjabeam20/sportiq-mcp.svg)](https://skillselion.com/mcp/tool/io.github.Ninjabeam20/sportiq-mcp)
+[![Marchward tool capability (not a quality score)](https://marchward.ai/api/badge/sportiq-mcp)](https://marchward.ai/servers/sportiq-mcp)
 
 MCP server that turns any AI assistant into a sports analyst across **FIFA World Cup 2026 football, Formula 1, and IPL cricket** — 44 AI-callable tools.
+
+<a href="https://mcpbeat.com/mcp-servers/ninjabeam20/sportiq-mcp/"><img src="https://mcpbeat.com/badge/ninjabeam20/sportiq-mcp.svg?style=card&amp;corners=round&amp;metric=security&amp;theme=light&amp;w=auto" alt="SportIQ on MCPbeat — live status and code findings" width="300"></a>
 
 ![SportIQ demo — Claude calling football_simulate_bracket for World Cup 2026 title probabilities](docs/assets/demo.gif)
 
