@@ -59,6 +59,26 @@ async def test_f1_tyre_degradation_invalid_compound():
     assert result["error"]["code"] == "INVALID_INPUT"
 
 
+async def test_tyre_degradation_accepts_intermediate_input():
+    from sportiq.f1 import intel_tools
+
+    # OpenF1 stints say "INTERMEDIATE"; both spellings of the input fit those laps.
+    laps = {"laps": [{"lap_duration": 95.0 + 0.1 * i, "lap_number": i + 1} for i in range(8)]}
+    stints = {"stints": [{"compound": "INTERMEDIATE", "lap_start": 1, "lap_end": 8}]}
+    for compound in ("INTER", "INTERMEDIATE"):
+        with (
+            patch("sportiq.f1.intel_tools.f1_laps_chain") as mock_laps,
+            patch("sportiq.f1.intel_tools.f1_stints_chain") as mock_stints,
+        ):
+            mock_laps.fetch = AsyncMock(return_value=_fr(laps))
+            mock_stints.fetch = AsyncMock(return_value=_fr(stints))
+            result = await intel_tools.f1_tyre_degradation(
+                session_key=9094, driver_number=1, compound=compound
+            )
+        assert result["data"]["sample_count"] == 8
+        assert result["meta"]["compound"] == "INTER"
+
+
 async def test_f1_tyre_degradation_all_sources_failed():
     from sportiq.f1 import intel_tools
 

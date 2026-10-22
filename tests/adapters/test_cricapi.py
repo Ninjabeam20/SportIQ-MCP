@@ -96,9 +96,7 @@ async def test_live_matches_healthcheck_makes_no_http_call():
 @respx.mock
 async def test_schedule_adapter_parses_matches():
     fixture = _load("schedule.json")
-    respx.get("https://api.cricapi.com/v1/matches").mock(
-        return_value=Response(200, json=fixture)
-    )
+    respx.get("https://api.cricapi.com/v1/matches").mock(return_value=Response(200, json=fixture))
     adapter = CricAPIScheduleAdapter()
     result = await adapter.fetch()
     assert "matches" in result
@@ -162,7 +160,8 @@ async def test_squad_adapter_filters_by_team():
         return_value=Response(200, json=fixture)
     )
     adapter = CricAPISquadAdapter()
-    result = await adapter.fetch(series_id="series001", team="mumbai")
+    result = await adapter.fetch(series_id="series001", team="MI")
+    assert result["players"]
     assert all(p["team"] == "Mumbai Indians" for p in result["players"])
 
 
@@ -237,8 +236,5 @@ async def test_player_info_adapter_returns_profile_and_stats():
     assert result["id"] == "p_kohli_001"
     assert result["name"] == "Virat Kohli"
     assert "apikey" not in result
-    t20i_runs = next(
-        s for s in result["stats"]
-        if s["matchtype"] == "t20i" and s["stat"] == "Runs"
-    )
+    t20i_runs = next(s for s in result["stats"] if s["matchtype"] == "t20i" and s["stat"] == "Runs")
     assert t20i_runs["value"] == "4008"

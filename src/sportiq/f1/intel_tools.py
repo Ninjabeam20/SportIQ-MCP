@@ -3,6 +3,7 @@
 Five tools composing chains + models into actionable strategy answers.
 Flagship: f1_predict_pit_strategy.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -17,6 +18,7 @@ from sportiq.f1.chains import (
     f1_weather_chain,
 )
 from sportiq.f1.circuits import profile_for_circuit_key
+from sportiq.f1.data.tyres import normalize_compound
 from sportiq.f1.models.pit_strategy import _DEFAULT_PIT_LOSS_S
 from sportiq.f1.models.pit_strategy import predict as _predict_strategy
 from sportiq.f1.models.quali_analysis import best_lap_per_driver, gap_to_pole, grid_projection
@@ -72,7 +74,7 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
     Args:
         session_key: OpenF1 session identifier.
         driver_number: Driver's race number.
-        compound: Tyre compound (SOFT, MEDIUM, HARD, INTER, WET).
+        compound: Tyre compound (SOFT, MEDIUM, HARD, INTER, WET; "INTERMEDIATE" = INTER).
 
     Returns:
         data: {intercept, slope, residual_std, sample_count}.
@@ -83,12 +85,13 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
             code="INVALID_INPUT",
             message="session_key must be positive and driver_number must be 1-99.",
         )
-    compound_upper = compound.upper()
-    if compound_upper not in {"SOFT", "MEDIUM", "HARD", "INTER", "WET"}:
+    normalized = normalize_compound(compound)  # accepts OpenF1's "INTERMEDIATE"
+    if normalized is None:
         return error_envelope(
             code="INVALID_INPUT",
-            message="compound must be SOFT, MEDIUM, HARD, INTER, or WET.",
+            message="compound must be SOFT, MEDIUM, HARD, INTER (INTERMEDIATE), or WET.",
         )
+    compound_upper = str(normalized)
 
     # OpenF1 /laps carries no compound/tyre_life — those live on /stints, which we
     # merge in to enrich the fit. Laps are required; stint enrichment is
@@ -234,9 +237,7 @@ async def f1_head_to_head_pace(session_key: int, driver_a: int, driver_b: int) -
     if session_key <= 0:
         return error_envelope(code="INVALID_INPUT", message="session_key must be positive.")
     if not 1 <= driver_a <= 99 or not 1 <= driver_b <= 99:
-        return error_envelope(
-            code="INVALID_INPUT", message="driver_a and driver_b must be 1-99."
-        )
+        return error_envelope(code="INVALID_INPUT", message="driver_a and driver_b must be 1-99.")
     if driver_a == driver_b:
         return error_envelope(code="INVALID_INPUT", message="driver_a and driver_b must differ.")
 
@@ -301,7 +302,9 @@ async def f1_weather_strategy_impact(session_key: int) -> Envelope:
 
     weather = weather_result.value.get("weather", [])
     has_rain = any(_rainfall_mm(w) > 0 for w in weather)
-    temps = [float(w["track_temperature"]) for w in weather if w.get("track_temperature") is not None]
+    temps = [
+        float(w["track_temperature"]) for w in weather if w.get("track_temperature") is not None
+    ]
     avg_temp = round(sum(temps) / len(temps), 1) if temps else None
 
     if has_rain:
@@ -309,10 +312,14 @@ async def f1_weather_strategy_impact(session_key: int) -> Envelope:
         recommendation = "Switch to intermediate tyres immediately — rainfall detected."
     elif avg_temp is not None and avg_temp > 45:
         compound_rec = "HARD"
-        recommendation = f"High track temperature ({avg_temp}°C) — prefer HARD to reduce thermal degradation."
+        recommendation = (
+            f"High track temperature ({avg_temp}°C) — prefer HARD to reduce thermal degradation."
+        )
     elif avg_temp is not None and avg_temp < 25:
         compound_rec = "SOFT"
-        recommendation = f"Cool track ({avg_temp}°C) — SOFT tyres will reach operating temperature faster."
+        recommendation = (
+            f"Cool track ({avg_temp}°C) — SOFT tyres will reach operating temperature faster."
+        )
     else:
         compound_rec = "MEDIUM"
         recommendation = "Nominal conditions — MEDIUM is the baseline choice."
@@ -367,13 +374,9 @@ async def f1_predict_pit_strategy(
             message="session_key must be positive and driver_number must be 1-99.",
         )
     if not 1 <= current_lap <= 200:
-        return error_envelope(
-            code="INVALID_INPUT", message="current_lap must be in [1, 200]."
-        )
+        return error_envelope(code="INVALID_INPUT", message="current_lap must be in [1, 200].")
     if total_laps is not None and not 1 <= total_laps <= 200:
-        return error_envelope(
-            code="INVALID_INPUT", message="total_laps must be in [1, 200]."
-        )
+        return error_envelope(code="INVALID_INPUT", message="total_laps must be in [1, 200].")
     if total_laps is not None and current_lap > total_laps:
         return error_envelope(
             code="INVALID_INPUT",
@@ -495,16 +498,10 @@ async def f1_qualifying_analysis(session_key: int) -> Envelope:
 
     driver_list = drivers_result.value.get("drivers", [])
     driver_info = {
-        str(d.get("driver_number", "")): d
-        for d in driver_list
-        if d.get("driver_number")
+        str(d.get("driver_number", "")): d for d in driver_list if d.get("driver_number")
     }
 
-    tasks = [
-        _fetch_driver_laps(session_key, int(dn))
-        for dn in driver_info
-        if dn.isdigit()
-    ]
+    tasks = [_fetch_driver_laps(session_key, int(dn)) for dn in driver_info if dn.isdigit()]
     raw_results = await asyncio.gather(*tasks, return_exceptions=True)
 
     all_laps: list[dict] = []
@@ -554,9 +551,7 @@ async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -
     if session_key <= 0:
         return error_envelope(code="INVALID_INPUT", message="session_key must be positive.")
     if not 1 <= driver_a <= 99 or not 1 <= driver_b <= 99:
-        return error_envelope(
-            code="INVALID_INPUT", message="driver_a and driver_b must be 1-99."
-        )
+        return error_envelope(code="INVALID_INPUT", message="driver_a and driver_b must be 1-99.")
     if driver_a == driver_b:
         return error_envelope(code="INVALID_INPUT", message="driver_a and driver_b must differ.")
 
@@ -592,9 +587,13 @@ async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -
             stints_r, (AllSourcesFailedError, NotFoundError)
         ):
             raise stints_r
-    stints_a = stints_a_r.value.get("stints", []) if not isinstance(stints_a_r, BaseException) else []
+    stints_a = (
+        stints_a_r.value.get("stints", []) if not isinstance(stints_a_r, BaseException) else []
+    )
     laps_b = laps_b_r.value.get("laps", [])
-    stints_b = stints_b_r.value.get("stints", []) if not isinstance(stints_b_r, BaseException) else []
+    stints_b = (
+        stints_b_r.value.get("stints", []) if not isinstance(stints_b_r, BaseException) else []
+    )
 
     result = compare_race_pace(laps_a, stints_a, laps_b, stints_b, driver_a, driver_b)
     stint_results = [r for r in (stints_a_r, stints_b_r) if not isinstance(r, BaseException)]

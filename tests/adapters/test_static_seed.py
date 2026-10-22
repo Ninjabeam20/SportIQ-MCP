@@ -33,6 +33,15 @@ async def test_team_lookup_is_case_insensitive():
     assert upper["players"] == lower["players"]
 
 
+async def test_static_seed_squad_resolves_full_team_name():
+    adapter = StaticSeedSquadAdapter()
+    by_name = await adapter.fetch(team="Mumbai Indians")
+    by_code = await adapter.fetch(team="MI")
+    assert by_name["players"]
+    assert by_name["players"] == by_code["players"]
+    assert by_name["team"] == "MI"
+
+
 async def test_healthcheck_true_when_json_exists():
     adapter = StaticSeedSquadAdapter()
     assert await adapter.healthcheck() is True
@@ -56,6 +65,24 @@ async def test_venue_adapter_raises_for_unknown_venue():
     adapter = StaticSeedVenueAdapter()
     with pytest.raises(NotFoundError):
         await adapter.fetch(venue="unknown-stadium")
+
+
+async def test_venue_adapter_matches_provider_venue_string():
+    adapter = StaticSeedVenueAdapter()
+    result = await adapter.fetch(venue="Wankhede Stadium, Mumbai")
+    assert result["key"] == "wankhede"
+
+
+async def test_venue_adapter_matches_slug_and_city_to_same_key():
+    adapter = StaticSeedVenueAdapter()
+    assert (await adapter.fetch(venue="wankhede"))["key"] == "wankhede"
+    assert (await adapter.fetch(venue="Mumbai"))["key"] == "wankhede"
+
+
+async def test_venue_adapter_not_found_lists_known_keys():
+    adapter = StaticSeedVenueAdapter()
+    with pytest.raises(NotFoundError, match="wankhede"):
+        await adapter.fetch(venue="Nowhere Ground")
 
 
 async def test_venue_adapter_healthcheck_true_when_json_exists():

@@ -16,6 +16,7 @@ import asyncio
 
 from sportiq.core.errors import AllSourcesFailedError, InvalidInputError, NotFoundError
 from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta, tool_response
+from sportiq.cricket.adapters.static_seed import seed_team_codes
 from sportiq.cricket.chains import (
     odds_chain,
     pitch_data_chain,
@@ -35,6 +36,7 @@ from sportiq.cricket.models.player_matchup import (
     extract_player_stats,
 )
 from sportiq.cricket.models.win_probability import win_prob
+from sportiq.cricket.teams import resolve_team_code
 
 # Cap concurrent per-player stats fetches during H2H analysis.
 _PLAYER_STATS_SEMAPHORE = asyncio.Semaphore(5)
@@ -57,6 +59,31 @@ def _estimated_ownership_pct(credits: float) -> float:
     frac = (credits - _OWN_MIN_CREDITS) / span if span else 0.0
     pct = _OWN_MIN_PCT + frac * (_OWN_MAX_PCT - _OWN_MIN_PCT)
     return max(1.0, min(99.0, pct))
+
+
+def _team_args_error() -> Envelope:
+    """INVALID_INPUT for the match-scoped tools when neither argument form is given."""
+    return error_envelope(
+        code="INVALID_INPUT",
+        message="Provide match_id, or team_a + team_b + venue.",
+        suggestion="e.g. team_a='MI', team_b='CSK', venue='wankhede', or a match_id.",
+    )
+
+
+def _resolve_teams(team_a: str, team_b: str) -> tuple[str, str] | Envelope:
+    """Map codes or official names to seed codes; NOT_FOUND lists the known teams."""
+    codes = seed_team_codes()
+    resolved = []
+    for team in (team_a, team_b):
+        code = resolve_team_code(team, codes)
+        if code is None:
+            return error_envelope(
+                code="NOT_FOUND",
+                message=f"Unknown team {team!r}.",
+                suggestion=f"Known teams: {', '.join(sorted(codes))}",
+            )
+        resolved.append(code)
+    return resolved[0], resolved[1]
 
 
 async def _candidate_pool(team_a: str, team_b: str, venue_record: dict) -> tuple[list[dict], list]:
@@ -127,8 +154,15 @@ async def cricket_build_dream11_team(
         team_b = resolved["team_b"]
         venue = venue or resolved["venue"]
 
-    if not team_a or not team_a.strip() or not team_b or not team_b.strip():
-        return error_envelope(code="INVALID_INPUT", message="team_a and team_b must be non-empty.")
+    if (
+        not team_a
+        or not team_a.strip()
+        or not team_b
+        or not team_b.strip()
+        or not venue
+        or not venue.strip()
+    ):
+        return _team_args_error()
     if len(team_a) > 100:
         return error_envelope(
             code="INVALID_INPUT", message="team_a must not exceed 100 characters."
@@ -137,10 +171,12 @@ async def cricket_build_dream11_team(
         return error_envelope(
             code="INVALID_INPUT", message="team_b must not exceed 100 characters."
         )
-    if not venue or not venue.strip():
-        return error_envelope(code="INVALID_INPUT", message="venue must be non-empty.")
     if len(venue) > 200:
         return error_envelope(code="INVALID_INPUT", message="venue must not exceed 200 characters.")
+    teams = _resolve_teams(team_a, team_b)
+    if isinstance(teams, dict):
+        return teams
+    team_a, team_b = teams
 
     try:
         venue_result = await pitch_data_chain.fetch(venue=venue)
@@ -210,9 +246,7 @@ async def cricket_captain_recommendation(
         or not venue
         or not venue.strip()
     ):
-        return error_envelope(
-            code="INVALID_INPUT", message="team_a, team_b, venue must all be non-empty."
-        )
+        return _team_args_error()
     if len(team_a) > 100:
         return error_envelope(
             code="INVALID_INPUT", message="team_a must not exceed 100 characters."
@@ -223,6 +257,10 @@ async def cricket_captain_recommendation(
         )
     if len(venue) > 200:
         return error_envelope(code="INVALID_INPUT", message="venue must not exceed 200 characters.")
+    teams = _resolve_teams(team_a, team_b)
+    if isinstance(teams, dict):
+        return teams
+    team_a, team_b = teams
 
     try:
         venue_result = await pitch_data_chain.fetch(venue=venue)
@@ -290,9 +328,7 @@ async def cricket_differential_picks(
         or not venue
         or not venue.strip()
     ):
-        return error_envelope(
-            code="INVALID_INPUT", message="team_a, team_b, venue must all be non-empty."
-        )
+        return _team_args_error()
     if len(team_a) > 100:
         return error_envelope(
             code="INVALID_INPUT", message="team_a must not exceed 100 characters."
@@ -303,6 +339,10 @@ async def cricket_differential_picks(
         )
     if len(venue) > 200:
         return error_envelope(code="INVALID_INPUT", message="venue must not exceed 200 characters.")
+    teams = _resolve_teams(team_a, team_b)
+    if isinstance(teams, dict):
+        return teams
+    team_a, team_b = teams
     if not 0 <= ownership_threshold <= 100:
         return error_envelope(
             code="INVALID_INPUT", message="ownership_threshold must be in [0, 100]."

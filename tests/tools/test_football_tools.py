@@ -170,6 +170,17 @@ async def test_match_predictor_returns_scoreline():
     assert result["data"]["predicted_winner"] in {"BRA", "QAT", "DRAW"}
 
 
+async def test_xg_model_accepts_full_team_names():
+    from sportiq.football import intel_tools
+
+    with patch("sportiq.football.intel_tools.football_groups_chain") as mock:
+        mock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        by_name = await intel_tools.football_xg_model(home_team="Spain", away_team="Argentina")
+        by_code = await intel_tools.football_xg_model(home_team="ESP", away_team="ARG")
+    assert by_name["data"] == by_code["data"]
+    assert by_name["data"]["home_team"] == "ESP"
+
+
 async def test_simulate_group_models_contextual_best_third_advancement():
     from sportiq.football import intel_tools
 
@@ -209,6 +220,22 @@ async def test_simulate_group_rejects_blank_or_multichar_group_before_chain():
             result = await intel_tools.football_simulate_group(group=group)
             assert result["error"]["code"] == "INVALID_INPUT"
         mock.fetch.assert_not_awaited()
+
+
+async def test_simulate_group_accepts_group_prefix():
+    from sportiq.football import intel_tools
+
+    groups = []
+    with (
+        patch("sportiq.football.intel_tools.football_groups_chain") as gmock,
+        patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock,
+    ):
+        gmock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        fmock.fetch = AsyncMock(return_value=_fr({"fixtures": []}))
+        for group in ("Group A", "group a", "A"):
+            result = await intel_tools.football_simulate_group(group=group, iterations=100)
+            groups.append(result["data"]["group"])
+    assert groups == ["A", "A", "A"]
 
 
 async def test_simulation_seed_bounds_reject_before_chain():
@@ -396,6 +423,21 @@ async def test_find_value_bets_empty_when_edge_below_threshold():
         mock_groups.fetch = AsyncMock(return_value=_fr(_draw_payload()))
         result = await intel_tools.football_find_value_bets(min_edge=0.99)
     assert result["data"]["value_bets"] == []
+    assert result["data"]["events_analysed"] == 1
+
+
+async def test_find_value_bets_maps_alias_names():
+    from sportiq.football import intel_tools
+
+    # The seed names KOR "South Korea"; providers send "Korea Republic".
+    event = _odds_event("Korea Republic", "Mexico", home=3.0, draw=3.2, away=2.4)
+    with (
+        patch("sportiq.football.intel_tools.football_odds_chain") as mock_odds,
+        patch("sportiq.football.intel_tools.football_groups_chain") as mock_groups,
+    ):
+        mock_odds.fetch = AsyncMock(return_value=_fr({"events": [event]}, source="theodds"))
+        mock_groups.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        result = await intel_tools.football_find_value_bets(team="KOR", min_edge=0.99)
     assert result["data"]["events_analysed"] == 1
 
 

@@ -26,6 +26,11 @@ def _load(filename: str) -> dict | list:
         return json.load(f)
 
 
+def seed_team_codes() -> list[str]:
+    """Team codes present in the bundled squad seed (e.g. ``MI``, ``IND``)."""
+    return list(_load("squads.json") or {})
+
+
 class StaticSeedSquadAdapter:
     name = "static_seed"
     health_name = "cricket_static_seed"
@@ -33,10 +38,12 @@ class StaticSeedSquadAdapter:
 
     async def fetch(self, team: str | None = None, series_id: str | None = None, **kwargs) -> dict:
         from sportiq.cricket.adapters._normalize import normalise_squad_payload
+        from sportiq.cricket.teams import resolve_team_code
 
         squads = _load("squads.json")
         if team:
-            team_upper = team.upper()
+            # Accept a code ("MI") or an official name ("Mumbai Indians").
+            team_upper = resolve_team_code(team, squads.keys()) or team.upper()
             players = squads.get(team_upper, squads.get(team, []))
             raw = {"players": players}
             return normalise_squad_payload(raw, source="static_seed", team=team_upper)
@@ -55,17 +62,36 @@ class StaticSeedVenueAdapter:
 
     async def fetch(self, venue: str, **kwargs) -> dict:
         venues = _load("venues.json") or {}
-        # Lookup is case-insensitive and tolerates the city or short slug.
+        # Lookup is case-insensitive and tolerates the city or short slug, plus
+        # provider strings like "Wankhede Stadium, Mumbai".
         wanted = venue.strip().lower()
-        for key, record in venues.items():
-            candidates = {
+        head, _, tail = (part.strip() for part in wanted.partition(","))
+
+        def _candidates(key: str, record: dict) -> set[str]:
+            return {
                 key.lower(),
                 (record.get("name") or "").lower(),
-                record.get("city", "").lower(),
+                (record.get("city") or "").lower(),
             }
-            if wanted in candidates:
-                return {**record, "key": key, "source": "static_seed"}
-        raise NotFoundError(f"No venue matching {venue!r} in static seed")
+
+        def _name_prefix(record: dict) -> bool:
+            name = (record.get("name") or "").lower()
+            if len(head) < 5 or len(name) < 5:
+                return False
+            return name.startswith(head) or head.startswith(name)
+
+        matchers = (
+            lambda key, record: wanted in _candidates(key, record),
+            lambda key, record: head in _candidates(key, record),
+            lambda key, record: _name_prefix(record),
+            lambda key, record: bool(tail) and tail == (record.get("city") or "").lower(),
+        )
+        for matches in matchers:
+            for key, record in venues.items():
+                if matches(key, record):
+                    return {**record, "key": key, "source": "static_seed"}
+        known = ", ".join(sorted(venues))
+        raise NotFoundError(f"No venue matching {venue!r} in static seed. Known venues: {known}")
 
     async def healthcheck(self) -> bool:
         return (_DATA_DIR / "venues.json").exists()

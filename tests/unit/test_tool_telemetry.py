@@ -90,7 +90,7 @@ async def test_exception_logs_and_reraises(rec: _Recorder):
 
 async def test_tool_telemetry_logs_scrubbed_exception_detail_and_frame(rec: _Recorder):
     async def fn(**kw):
-        raise RuntimeError("boom https://api.cricapi.com/v1/x?apikey=SECRET123")
+        raise RuntimeError("boom apikey=SECRET123")
 
     wrapped = tool_telemetry._instrument("f1_get_drivers", fn, asyncio.Semaphore(2))
     with pytest.raises(RuntimeError):

@@ -100,7 +100,7 @@ async def test_build_dream11_team_returns_xi_envelope():
         mock_pitch.fetch = AsyncMock(return_value=_fr(_venue_record()))
         mock_squad.fetch = AsyncMock(side_effect=[squad_a, squad_b])
         response = await intel_tools.cricket_build_dream11_team(
-            team_a="Team A", team_b="Team B", venue="wankhede"
+            team_a="MI", team_b="CSK", venue="wankhede"
         )
 
     assert "data" in response
@@ -128,6 +128,67 @@ async def test_build_dream11_team_no_args_returns_invalid_input():
     assert r["error"]["code"] == "INVALID_INPUT"
 
 
+async def test_dream11_without_args_explains_both_forms():
+    from sportiq.cricket import intel_tools
+
+    r = await intel_tools.cricket_build_dream11_team()
+    assert r["error"]["code"] == "INVALID_INPUT"
+    assert "match_id" in r["error"]["message"]
+    assert "team_a" in r["error"]["message"]
+    assert "team_a='MI', team_b='CSK', venue='wankhede'" in r["error"]["suggestion"]
+
+
+async def test_captain_without_args_explains_both_forms():
+    from sportiq.cricket import intel_tools
+
+    r = await intel_tools.cricket_captain_recommendation()
+    assert r["error"]["code"] == "INVALID_INPUT"
+    assert "match_id" in r["error"]["message"]
+    assert "team_a='MI', team_b='CSK', venue='wankhede'" in r["error"]["suggestion"]
+
+
+async def test_differential_without_args_explains_both_forms():
+    from sportiq.cricket import intel_tools
+
+    r = await intel_tools.cricket_differential_picks()
+    assert r["error"]["code"] == "INVALID_INPUT"
+    assert "match_id" in r["error"]["message"]
+    assert "team_a='MI', team_b='CSK', venue='wankhede'" in r["error"]["suggestion"]
+
+
+async def test_dream11_unknown_team_returns_not_found_with_valid_codes():
+    from sportiq.cricket import intel_tools
+
+    r = await intel_tools.cricket_build_dream11_team(team_a="Foo", team_b="CSK", venue="wankhede")
+    assert r["error"]["code"] == "NOT_FOUND"
+    assert "MI" in r["error"]["suggestion"]
+
+
+async def test_dream11_accepts_full_team_names():
+    from sportiq.cricket import intel_tools
+
+    async def _run(team_a: str, team_b: str):
+        squad_a, squad_b = _two_team_squads()
+        with (
+            patch("sportiq.cricket.intel_tools.pitch_data_chain") as mock_pitch,
+            patch("sportiq.cricket.intel_tools.squad_chain") as mock_squad,
+        ):
+            mock_pitch.fetch = AsyncMock(return_value=_fr(_venue_record()))
+            mock_squad.fetch = AsyncMock(side_effect=[squad_a, squad_b])
+            response = await intel_tools.cricket_build_dream11_team(
+                team_a=team_a, team_b=team_b, venue="wankhede"
+            )
+            teams_asked = [c.kwargs["team"] for c in mock_squad.fetch.call_args_list]
+        return response, teams_asked
+
+    by_name, asked_by_name = await _run("Mumbai Indians", "Chennai Super Kings")
+    by_code, asked_by_code = await _run("MI", "CSK")
+    assert asked_by_name == asked_by_code == ["MI", "CSK"]
+    assert "data" in by_name
+    names = sorted(p["name"] for p in by_name["data"]["players"])
+    assert names == sorted(p["name"] for p in by_code["data"]["players"])
+
+
 async def test_build_dream11_team_match_id_resolves_and_builds():
     from sportiq.cricket import intel_tools
 
@@ -137,7 +198,7 @@ async def test_build_dream11_team_match_id_resolves_and_builds():
         patch("sportiq.cricket.intel_tools.pitch_data_chain") as mock_pitch,
         patch("sportiq.cricket.intel_tools.squad_chain") as mock_squad,
     ):
-        mock_resolve.return_value = {"team_a": "Team A", "team_b": "Team B", "venue": "wankhede"}
+        mock_resolve.return_value = {"team_a": "MI", "team_b": "CSK", "venue": "wankhede"}
         mock_pitch.fetch = AsyncMock(return_value=_fr(_venue_record()))
         mock_squad.fetch = AsyncMock(side_effect=[squad_a, squad_b])
         response = await intel_tools.cricket_build_dream11_team(match_id="m123")
@@ -157,7 +218,7 @@ async def test_build_dream11_team_chain_failure_returns_error_envelope():
                 "venue down", attempts=[{"name": "static_seed", "error": "missing"}]
             )
         )
-        r = await intel_tools.cricket_build_dream11_team(team_a="A", team_b="B", venue="x")
+        r = await intel_tools.cricket_build_dream11_team(team_a="MI", team_b="CSK", venue="x")
 
     assert r["error"]["code"] == "ALL_SOURCES_FAILED"
 
@@ -176,7 +237,7 @@ async def test_captain_recommendation_returns_top3():
         mock_pitch.fetch = AsyncMock(return_value=_fr(_venue_record()))
         mock_squad.fetch = AsyncMock(side_effect=[squad_a, squad_b])
         r = await intel_tools.cricket_captain_recommendation(
-            team_a="Team A", team_b="Team B", venue="wankhede"
+            team_a="MI", team_b="CSK", venue="wankhede"
         )
 
     assert len(r["data"]["candidates"]) == 3
@@ -200,7 +261,7 @@ async def test_differential_picks_flags_estimated_meta():
         mock_pitch.fetch = AsyncMock(return_value=_fr(_venue_record()))
         mock_squad.fetch = AsyncMock(side_effect=[squad_a, squad_b])
         r = await intel_tools.cricket_differential_picks(
-            team_a="Team A", team_b="Team B", venue="wankhede", ownership_threshold=80
+            team_a="MI", team_b="CSK", venue="wankhede", ownership_threshold=80
         )
 
     assert r["meta"]["estimated"] is True
@@ -229,7 +290,7 @@ async def test_differential_picks_returns_cheap_players_at_default_threshold():
         mock_pitch.fetch = AsyncMock(return_value=_fr(_venue_record()))
         mock_squad.fetch = AsyncMock(side_effect=[cheap, empty])
         r = await intel_tools.cricket_differential_picks(
-            team_a="Team A", team_b="Team B", venue="wankhede"
+            team_a="MI", team_b="CSK", venue="wankhede"
         )
 
     assert len(r["data"]["picks"]) == 1
@@ -342,7 +403,7 @@ async def test_dream11_solve_does_not_block_event_loop():
         ticker = asyncio.create_task(_ticker())
         try:
             response = await intel_tools.cricket_build_dream11_team(
-                team_a="Team A", team_b="Team B", venue="wankhede"
+                team_a="MI", team_b="CSK", venue="wankhede"
             )
         finally:
             ticker.cancel()

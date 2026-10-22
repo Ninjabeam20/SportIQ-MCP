@@ -105,3 +105,16 @@ def test_predict_non_numeric_rainfall_does_not_raise():
         total_laps=57,
     )
     assert "INTER" not in result["compound_sequence"]
+
+
+def test_pit_strategy_treats_intermediate_stint_as_inter():
+    # OpenF1 labels inters "INTERMEDIATE"; that must not fall back to MEDIUM.
+    stints = [{"compound": "INTERMEDIATE", "lap_start": 1, "lap_end": 20}]
+    result = predict(
+        laps=_make_laps(10, compound="INTERMEDIATE"),
+        stints=stints,
+        weather=[],
+        current_lap=20,
+        total_laps=57,
+    )
+    assert result["compound_sequence"][0] == "INTER"

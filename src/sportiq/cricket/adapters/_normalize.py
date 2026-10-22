@@ -73,10 +73,19 @@ def normalise_squad_payload(
             squads = data.get("squad", [])
         else:
             squads = []
+        from sportiq.cricket.teams import IPL_TEAM_NAMES, resolve_team_code
+
         wanted = (team or "").strip().upper()
+        # Resolve the filter to a code ("Mumbai Indians" → "MI"). Exact matches
+        # only: a substring test matched nothing for "MI" and both PBKS and CSK
+        # for "Kings".
+        wanted_code = resolve_team_code(wanted, IPL_TEAM_NAMES) or wanted
         for block in squads:
-            block_team = block.get("teamName") or block.get("team", "")
-            if wanted and wanted not in block_team.upper():
+            block_team = block.get("teamName") or block.get("team") or ""
+            if wanted and not (
+                resolve_team_code(block_team, IPL_TEAM_NAMES) == wanted_code
+                or block_team.upper() == wanted
+            ):
                 continue
             for p in block.get("players", []):
                 players.append(

@@ -23,7 +23,12 @@ from sportiq.football.models.bracket_sim import simulate_tournament
 from sportiq.football.models.elo_live import nudge_ratings
 from sportiq.football.models.form_trends import compute_form_trends
 from sportiq.football.models.group_sim import simulate_group_stage
-from sportiq.football.models.results_state import ResultsState, build_results_state
+from sportiq.football.models.results_state import (
+    ResultsState,
+    build_code_index,
+    build_results_state,
+    resolve_code,
+)
 from sportiq.football.models.value_bet import find_value
 
 _MAX_ITERATIONS = 20000
@@ -38,6 +43,14 @@ _TIEBREAK_POLICY = (
 async def _groups_payload() -> dict:
     """Fetch the draw + ratings, or raise AllSourcesFailedError."""
     return await football_groups_chain.fetch()
+
+
+def _resolve_team(value: str, teams_meta: dict) -> str | None:
+    """Map a FIFA code, team name or alias ("South Korea") to the draw's team code."""
+    code = value.strip().upper()
+    if code in teams_meta:
+        return code
+    return resolve_code(value, build_code_index(teams_meta))
 
 
 def _clamp_iterations(iterations: int) -> int:
@@ -118,8 +131,8 @@ async def football_xg_model(home_team: str, away_team: str, neutral: bool = True
     """Estimate a match's expected goals and win/draw/loss probabilities.
 
     Args:
-        home_team: First team code (e.g. "ARG").
-        away_team: Second team code (e.g. "BRA").
+        home_team: First team, FIFA code or name (e.g. "ARG" or "Argentina").
+        away_team: Second team, FIFA code or name (e.g. "BRA" or "Brazil").
         neutral: True for a neutral venue (no home advantage). World Cup default.
 
     Returns:
@@ -149,6 +162,11 @@ async def football_xg_model(home_team: str, away_team: str, neutral: bool = True
             code=e.code, message="Could not load ratings.", sources_tried=e.attempts
         )
 
+    teams_meta = result.value.get("teams", {})
+    home = _resolve_team(home_team, teams_meta) or home
+    away = _resolve_team(away_team, teams_meta) or away
+    if home == away:
+        return error_envelope(code="INVALID_INPUT", message="home_team and away_team must differ.")
     ratings = result.value.get("ratings", {})
     if home not in ratings or away not in ratings:
         return error_envelope(
@@ -180,8 +198,8 @@ async def football_match_predictor(
     """Predict a single match: most likely scoreline + outcome probabilities.
 
     Args:
-        home_team: First team code.
-        away_team: Second team code.
+        home_team: First team, FIFA code or name (e.g. "ESP" or "Spain").
+        away_team: Second team, FIFA code or name.
         neutral: True for a neutral venue (World Cup default).
 
     Returns:
@@ -211,6 +229,11 @@ async def football_match_predictor(
             code=e.code, message="Could not load ratings.", sources_tried=e.attempts
         )
 
+    teams_meta = result.value.get("teams", {})
+    home = _resolve_team(home_team, teams_meta) or home
+    away = _resolve_team(away_team, teams_meta) or away
+    if home == away:
+        return error_envelope(code="INVALID_INPUT", message="home_team and away_team must differ.")
     ratings = result.value.get("ratings", {})
     if home not in ratings or away not in ratings:
         return error_envelope(
@@ -247,7 +270,7 @@ async def football_simulate_group(group: str, iterations: int = 5000) -> Envelop
     """Monte Carlo one group within the full 12-group qualification context.
 
     Args:
-        group: Group letter A-L.
+        group: Group letter A-L (also accepts "Group A").
         iterations: Number of simulations (clamped to 100..20000).
 
     Returns:
@@ -256,7 +279,7 @@ async def football_simulate_group(group: str, iterations: int = 5000) -> Envelop
         data.iterations: iterations actually run.
         meta.estimated: true. meta.conditioned_matches: completed matches locked in.
     """
-    key = group.strip().upper()
+    key = group.strip().upper().removeprefix("GROUP").strip()  # "Group A" → "A"
     if len(key) != 1:
         return error_envelope(code="INVALID_INPUT", message="group must be one letter from A to L.")
 
@@ -363,7 +386,7 @@ async def football_knockout_path(
     """Round-by-round survival probabilities for one team in the full sim.
 
     Args:
-        team: Team code (e.g. "FRA").
+        team: FIFA code or name (e.g. "FRA" or "France").
         iterations: Number of tournament simulations (clamped to 100..20000).
         seed: Optional RNG seed.
 
@@ -386,6 +409,7 @@ async def football_knockout_path(
 
     groups = result.value.get("groups", {})
     base_ratings = result.value.get("ratings", {})
+    code = _resolve_team(team, result.value.get("teams", {})) or code
     if code not in base_ratings:
         return error_envelope(
             code="NOT_FOUND", message="Unknown team code; see football_get_groups."
@@ -427,8 +451,9 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
     model's fair odds.
 
     Args:
-        team: Optional team name to filter events (case-insensitive substring,
-            matched against both sides). Omit to scan every WC 2026 odds event.
+        team: Optional FIFA code or team name to filter events (matched against
+            both sides; an unrecognised value falls back to a case-insensitive
+            substring match). Omit to scan every WC 2026 odds event.
         min_edge: Minimum edge (model_prob - devigged_market_prob), 0..1.
             Default 0.05 (5 percentage points).
 
@@ -466,27 +491,38 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
     # Opt-in: nudge the seed forward from live results so value bets compare the
     # market against the same in-tournament form as football_match_predictor.
     ratings, live_elo = await _maybe_nudge_single(groups_result.value, ratings)
-    # Odds carry full team names; ratings are keyed by code. Map name -> code from
-    # the same draw payload (reusing the seed, not re-deriving any ratings/xG).
-    name_to_code = {
-        (meta.get("name") or "").lower(): code
-        for code, meta in groups_result.value.get("teams", {}).items()
-    }
+    # Odds carry full team names; ratings are keyed by code. Resolve names (and
+    # aliases like "Korea Republic") -> code from the same draw payload (reusing
+    # the seed, not re-deriving any ratings/xG).
+    teams_meta = groups_result.value.get("teams", {})
+    index = build_code_index(teams_meta)
 
     events = odds_result.value.get("events", [])
     if team and team.strip():
-        q = team.strip().lower()
-        events = [
-            e
-            for e in events
-            if q in (e.get("home") or "").lower() or q in (e.get("away") or "").lower()
-        ]
+        wanted = _resolve_team(team, teams_meta)
+        if wanted is not None:
+            events = [
+                e
+                for e in events
+                if wanted
+                in (
+                    resolve_code(e.get("home") or "", index),
+                    resolve_code(e.get("away") or "", index),
+                )
+            ]
+        else:
+            q = team.strip().lower()
+            events = [
+                e
+                for e in events
+                if q in (e.get("home") or "").lower() or q in (e.get("away") or "").lower()
+            ]
 
     value_bets: list[dict] = []
     analysed = 0
     for ev in events:
-        home_code = name_to_code.get((ev.get("home") or "").lower())
-        away_code = name_to_code.get((ev.get("away") or "").lower())
+        home_code = resolve_code(ev.get("home") or "", index)
+        away_code = resolve_code(ev.get("away") or "", index)
         if not home_code or not away_code or home_code not in ratings or away_code not in ratings:
             continue
         analysed += 1
@@ -526,7 +562,7 @@ async def football_form_trends(team: str) -> Envelope:
     """Return rolling form, goal record, and xG trend for a football team.
 
     Args:
-        team: Team name (e.g. "Brazil", "Argentina").
+        team: FIFA code (e.g. ARG) or name (e.g. "Argentina", "South Korea").
 
     Returns:
         data: {form_string, wins, draws, losses, goals_scored, goals_conceded,
@@ -545,13 +581,23 @@ async def football_form_trends(team: str) -> Envelope:
             sources_tried=e.attempts,
         )
 
-    fixtures = result.value.get("fixtures", [])
-    trends = compute_form_trends(fixtures, team)
+    # The draw's team metadata lets "ARG", "Argentina" and aliases resolve to one
+    # code. Best-effort: without it, fall back to plain name matching.
+    try:
+        groups_result = await _groups_payload()
+    except (AllSourcesFailedError, NotFoundError):
+        groups_result = None
+    teams_meta = groups_result.value.get("teams", {}) if groups_result else {}
+    code_index = build_code_index(teams_meta) if teams_meta else None
 
+    fixtures = result.value.get("fixtures", [])
+    trends = compute_form_trends(fixtures, team, code_index)
+
+    freshness = (result, groups_result) if groups_result else (result,)
     meta: dict = {
         "source": result.source,
         "estimated": True,
-        **staleness_meta(result),
+        **staleness_meta(*freshness),
     }
     if trends["matches_analysed"] == 0:
         meta["note"] = "No completed fixtures found for this team."

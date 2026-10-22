@@ -45,7 +45,7 @@ Nothing on the Dell, Caddy, Cloudflare, or GCP gets applied until the owner says
 
 ## Global Constraints
 
-- Owner: Utkarsh. Mac writes code. Dell laptop is the headless server (`ssh home-server` → user `ninjabeam20`, LAN `192.168.29.66`).
+- Owner: Utkarsh. Mac writes code. Dell laptop is the headless server (`ssh home-server` → user `ninjabeam20`, LAN `<dell-lan-ip>`).
 - **Do not deploy, ssh apply, reload Caddy, change Cloudflare, rotate keys, flip connectors/docs, or delete GCP resources unless the owner says the matching phrase in the same message** (`yes` / `flip` / `yes, delete GCP`). Inventory SSH (read-only) is allowed in Task 0.
 - Never commit, print, or paste secrets (`.env`, tunnel token, Resend, OpenRouter, `gcal-sa.json`, SportIQ provider keys).
 - Never port-forward on the router. Never publish app ports on the host (`ports:` is forbidden on the SportIQ compose file). Never expose Jarvis anonymously. Do not add Cloudflare Access to Jarvis's allow-list as a side effect.
@@ -774,7 +774,7 @@ Cloudflare dashboard → Zero Trust → Networks → Tunnels → `home-server` �
 
 Do **not** point at `sportiq:8080` (tunnel only sees Caddy on network `edge`).  
 Do **not** create an Access application for this hostname.  
-Do **not** create an A/AAAA to `192.168.29.66` or the IPv6 `2405:201:4:0009:21e:64ff:fed7:a9d3`.  
+Do **not** create an A/AAAA to `<dell-lan-ip>` or the IPv6 `<dell-ipv6-redacted>`.  
 Do **not** add a router port-forward.
 
 Optional defense in depth (same session, still no Access): Cloudflare WAF rate limit 60 req/min / IP on `sportiq.utkarshgupta.org`. Skip if the owner does not want to click WAF today.

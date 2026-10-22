@@ -1,4 +1,5 @@
 """Tyre data ordering invariants and points table correctness."""
+
 from __future__ import annotations
 
 from sportiq.f1.data.points import (
@@ -7,7 +8,7 @@ from sportiq.f1.data.points import (
     race_points_for_position,
     sprint_points_for_position,
 )
-from sportiq.f1.data.tyres import TYRE_SPECS, TyreCompound
+from sportiq.f1.data.tyres import TYRE_SPECS, TyreCompound, normalize_compound
 
 
 def test_soft_faster_than_medium_than_hard():
@@ -22,7 +23,11 @@ def test_soft_degrades_faster_than_medium_than_hard():
     soft = TYRE_SPECS[TyreCompound.SOFT]
     medium = TYRE_SPECS[TyreCompound.MEDIUM]
     hard = TYRE_SPECS[TyreCompound.HARD]
-    assert soft.degradation_rate_s_per_lap > medium.degradation_rate_s_per_lap > hard.degradation_rate_s_per_lap
+    assert (
+        soft.degradation_rate_s_per_lap
+        > medium.degradation_rate_s_per_lap
+        > hard.degradation_rate_s_per_lap
+    )
 
 
 def test_soft_shorter_window_than_hard():
@@ -36,10 +41,10 @@ def test_all_compounds_present():
 
 
 def test_race_points_table_fia():
-    assert RACE_POINTS[0] == 25   # P1
-    assert RACE_POINTS[1] == 18   # P2
-    assert RACE_POINTS[2] == 15   # P3
-    assert RACE_POINTS[9] == 1    # P10
+    assert RACE_POINTS[0] == 25  # P1
+    assert RACE_POINTS[1] == 18  # P2
+    assert RACE_POINTS[2] == 15  # P3
+    assert RACE_POINTS[9] == 1  # P10
     assert len(RACE_POINTS) == 10
 
 
@@ -72,3 +77,13 @@ def test_sprint_points_for_position():
     assert sprint_points_for_position(1) == 8
     assert sprint_points_for_position(8) == 1
     assert sprint_points_for_position(9) == 0
+
+
+def test_normalize_compound_maps_intermediate_to_inter():
+    assert normalize_compound("INTERMEDIATE") is TyreCompound.INTER
+    assert normalize_compound("intermediate") is TyreCompound.INTER
+    assert normalize_compound("inter") is TyreCompound.INTER
+    assert normalize_compound("WET") is TyreCompound.WET
+    assert normalize_compound("soft") is TyreCompound.SOFT
+    assert normalize_compound("UNKNOWN") is None
+    assert normalize_compound(None) is None

@@ -6,8 +6,8 @@ projected lap-time savings exceed pit-lane loss.
 
 from __future__ import annotations
 
-from sportiq.f1.data.tyres import TYRE_SPECS, TyreCompound
-from sportiq.f1.models.tyre_deg import fit_degradation
+from sportiq.f1.data.tyres import TYRE_SPECS, TyreCompound, normalize_compound
+from sportiq.f1.models.tyre_deg import compound_key, fit_degradation
 
 _DEFAULT_PIT_LOSS_S = 22.0  # seconds (typical pit-lane loss; circuits vary)
 
@@ -61,14 +61,11 @@ def predict(
     current_compound = "MEDIUM"
     if stints:
         latest = max(stints, key=lambda s: s.get("lap_start", 0))
-        raw_compound = latest.get("compound", "MEDIUM")
-        if raw_compound is None or (isinstance(raw_compound, str) and not raw_compound.strip()):
-            current_compound = "MEDIUM"
-        else:
-            current_compound = str(raw_compound).upper()
+        # "INTERMEDIATE" (OpenF1) → INTER; missing or unknown → MEDIUM.
+        current_compound = str(normalize_compound(latest.get("compound")) or "MEDIUM")
 
     # Fit degradation per compound from available laps
-    compounds = list({lap.get("compound", "").upper() for lap in laps if lap.get("compound")})
+    compounds = list({compound_key(lap.get("compound")) for lap in laps if lap.get("compound")})
     deg_models: dict[str, dict] = {}
     for c in compounds:
         model = fit_degradation(laps, c)

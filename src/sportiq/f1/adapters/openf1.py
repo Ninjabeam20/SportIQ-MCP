@@ -2,9 +2,24 @@
 
 from __future__ import annotations
 
+import httpx
+
 from sportiq.core.errors import NotFoundError
 from sportiq.core.http import get_json_burst
 from sportiq.f1.adapters.base import _OPENF1_BASE
+
+
+async def _openf1_get(path: str, params: dict) -> list | dict:
+    """GET an OpenF1 endpoint. Its "no results" answer is ``404 {"detail": ...}``,
+    not ``200 []`` — map that to NotFoundError so the chain reports NOT_FOUND
+    instead of an outage. (404 is not retried by ``get_json_burst``.)
+    """
+    try:
+        return await get_json_burst(f"{_OPENF1_BASE}/{path}", params=params)
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            raise NotFoundError(f"OpenF1 has no {path} for {params}") from e
+        raise
 
 
 class OpenF1SessionsAdapter:
@@ -29,8 +44,9 @@ class OpenF1SessionsAdapter:
         if year is not None:
             params["year"] = year
         if country:
-            params["country_name"] = country
-        data = await get_json_burst(f"{_OPENF1_BASE}/sessions", params=params)
+            # OpenF1's country_name filter is case-sensitive ("Monaco").
+            params["country_name"] = country.strip().title()
+        data = await _openf1_get("sessions", params)
         return {"sessions": data if isinstance(data, list) else [data]}
 
     async def healthcheck(self) -> bool:
@@ -42,7 +58,7 @@ class OpenF1DriversAdapter:
     budget = None
 
     async def fetch(self, session_key: int, **kwargs) -> dict:
-        data = await get_json_burst(f"{_OPENF1_BASE}/drivers", params={"session_key": session_key})
+        data = await _openf1_get("drivers", {"session_key": session_key})
         drivers = data if isinstance(data, list) else [data]
         if not drivers:
             raise NotFoundError(f"OpenF1 returned no drivers for session_key={session_key}")
@@ -57,9 +73,8 @@ class OpenF1LapsAdapter:
     budget = None
 
     async def fetch(self, session_key: int, driver_number: int, **kwargs) -> dict:
-        data = await get_json_burst(
-            f"{_OPENF1_BASE}/laps",
-            params={"session_key": session_key, "driver_number": driver_number},
+        data = await _openf1_get(
+            "laps", {"session_key": session_key, "driver_number": driver_number}
         )
         laps = data if isinstance(data, list) else [data]
         if not laps:
@@ -77,9 +92,8 @@ class OpenF1StintsAdapter:
     budget = None
 
     async def fetch(self, session_key: int, driver_number: int, **kwargs) -> dict:
-        data = await get_json_burst(
-            f"{_OPENF1_BASE}/stints",
-            params={"session_key": session_key, "driver_number": driver_number},
+        data = await _openf1_get(
+            "stints", {"session_key": session_key, "driver_number": driver_number}
         )
         stints = data if isinstance(data, list) else [data]
         if not stints:
@@ -97,7 +111,7 @@ class OpenF1WeatherAdapter:
     budget = None
 
     async def fetch(self, session_key: int, **kwargs) -> dict:
-        data = await get_json_burst(f"{_OPENF1_BASE}/weather", params={"session_key": session_key})
+        data = await _openf1_get("weather", {"session_key": session_key})
         return {"weather": data if isinstance(data, list) else [data]}
 
     async def healthcheck(self) -> bool:

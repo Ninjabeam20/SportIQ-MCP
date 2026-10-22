@@ -1,4 +1,5 @@
 """API-Football adapter tests — all HTTP mocked with respx."""
+
 from __future__ import annotations
 
 import json
@@ -102,9 +103,7 @@ async def test_scorers_adapter_empty_response_raises_not_found():
     from sportiq.core.errors import NotFoundError
     from sportiq.football.adapters.api_football import APIFootballScorersAdapter
 
-    respx.get(f"{_BASE}/players/topscorers").mock(
-        return_value=Response(200, json={"response": []})
-    )
+    respx.get(f"{_BASE}/players/topscorers").mock(return_value=Response(200, json={"response": []}))
     with pytest.raises(NotFoundError):
         await APIFootballScorersAdapter().fetch()
 
@@ -114,11 +113,25 @@ async def test_squad_adapter_empty_response_raises_not_found():
     from sportiq.core.errors import NotFoundError
     from sportiq.football.adapters.api_football import APIFootballSquadAdapter
 
-    # A country code (e.g. "ARG") where api_football expects a numeric id yields
-    # an empty `response`; the adapter must miss so the chain reaches the seed.
+    # A numeric id with no squad yields an empty `response`; the adapter must
+    # miss so the chain reaches the seed.
     respx.get(f"{_BASE}/players/squads").mock(return_value=Response(200, json={"response": []}))
     with pytest.raises(NotFoundError):
+        await APIFootballSquadAdapter().fetch(team=99999)
+
+
+@respx.mock(assert_all_called=False)
+async def test_api_football_squad_rejects_non_numeric_team_without_request():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.football.adapters.api_football import APIFootballSquadAdapter
+
+    # A FIFA code can never match API-Football's integer team id; don't spend quota.
+    route = respx.get(f"{_BASE}/players/squads").mock(
+        return_value=Response(200, json=_load("squads.json"))
+    )
+    with pytest.raises(NotFoundError):
         await APIFootballSquadAdapter().fetch(team="ARG")
+    assert not route.called
 
 
 async def test_missing_key_raises_missing_credentials(monkeypatch):

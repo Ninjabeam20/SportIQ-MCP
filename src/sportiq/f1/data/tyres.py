@@ -3,6 +3,7 @@
 Values are seeded from public 2024-25 race-engineer references.
 Per-race auto-calibration is a Phase 3.1 follow-up.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -20,10 +21,27 @@ class TyreCompound(StrEnum):
 @dataclass(frozen=True)
 class TyreSpec:
     compound: TyreCompound
-    base_lap_delta_s: float      # seconds vs reference (MEDIUM=0); negative = faster
+    base_lap_delta_s: float  # seconds vs reference (MEDIUM=0); negative = faster
     degradation_rate_s_per_lap: float  # linear time loss per lap on this compound
-    safe_window_laps: int        # typical stint length before cliff
-    crossover_lap: int           # lap where next compound overtakes this one
+    safe_window_laps: int  # typical stint length before cliff
+    crossover_lap: int  # lap where next compound overtakes this one
+
+
+# OpenF1 /stints labels inters "INTERMEDIATE"; the model uses "INTER".
+_COMPOUND_ALIASES: dict[str, TyreCompound] = {"INTERMEDIATE": TyreCompound.INTER}
+
+
+def normalize_compound(raw: str | None) -> TyreCompound | None:
+    """Map a provider compound label to a TyreCompound, or None if unknown."""
+    if not raw or not str(raw).strip():
+        return None
+    key = str(raw).strip().upper()
+    if key in _COMPOUND_ALIASES:
+        return _COMPOUND_ALIASES[key]
+    try:
+        return TyreCompound(key)
+    except ValueError:
+        return None
 
 
 TYRE_SPECS: dict[TyreCompound, TyreSpec] = {

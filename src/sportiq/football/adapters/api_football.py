@@ -5,6 +5,7 @@ raises MissingCredentialsError when absent so the chain walks past silently.
 Each adapter normalises the provider's ``{"response": [...]}`` envelope into the
 common per-chain output shape (see base.py).
 """
+
 from __future__ import annotations
 
 from sportiq.config import settings
@@ -152,6 +153,10 @@ class APIFootballSquadAdapter:
     budget = _APIFOOTBALL_BUDGET
 
     async def fetch(self, team: int, **kwargs) -> dict:
+        # API-Football's `team` is an integer id; a FIFA code ("ARG") is a
+        # guaranteed miss that would still cost one of the 100 daily requests.
+        if not str(team).isdigit():
+            raise NotFoundError("API-Football squads need a numeric team id")
         data = await get_json(
             f"{_APIFOOTBALL_BASE}/players/squads",
             params={"team": team},
@@ -159,8 +164,7 @@ class APIFootballSquadAdapter:
         )
         squad = []
         response = data.get("response", [])
-        # An empty response means no squad for this arg (e.g. a country code was
-        # passed where a numeric id is expected). Treat it as a miss so the chain
+        # An empty response means no squad for this id. Treat it as a miss so the chain
         # walks past to the static seed instead of stopping on an empty success.
         if not response:
             raise NotFoundError(f"No api_football squad for team={team!r}")

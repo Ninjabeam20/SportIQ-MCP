@@ -24,19 +24,22 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y coinor-cbc
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
 
       - name: Pin Python
         run: uv python install 3.13
 
       - name: Sync deps
-        run: uv sync --extra dev --python 3.13
+        run: uv sync --locked --extra dev --python 3.13
 
-      - name: Test (release quality gate)
-        run: uv run --python 3.13 --extra dev python -m pytest
+      - name: Lint (release quality gate)
+        run: uv run --python 3.13 --extra dev ruff check .
+
+      - name: Test + coverage (release quality gate; a tag can't publish a red tree)
+        run: uv run --python 3.13 --extra dev python -m pytest -q --cov=sportiq --cov-fail-under=84
 
       - name: Verify build artifacts (security gate, also builds dist/)
         run: uv run --python 3.13 --extra dev python scripts/check_release_build.py
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3

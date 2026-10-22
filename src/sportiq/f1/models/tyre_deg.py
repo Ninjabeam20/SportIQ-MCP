@@ -3,9 +3,21 @@
 fit_degradation() fits a linear model (lap_time = intercept + slope * lap_on_tyre)
 to a list of lap dicts, returning the model parameters.
 """
+
 from __future__ import annotations
 
 import numpy as np
+
+from sportiq.f1.data.tyres import normalize_compound
+
+
+def compound_key(raw: str | None) -> str:
+    """Canonical compound label for grouping/comparison ("INTERMEDIATE" → "INTER").
+
+    Unknown labels pass through upper-cased so nothing is silently re-bucketed.
+    """
+    compound = normalize_compound(raw)
+    return str(compound) if compound is not None else (raw or "").strip().upper()
 
 
 def annotate_laps_with_stints(laps: list[dict], stints: list[dict]) -> list[dict]:
@@ -68,8 +80,9 @@ def fit_degradation(laps: list[dict], compound: str) -> dict:
             sample_count (int): number of valid laps used in the fit
     """
     valid = [
-        lap for lap in laps
-        if lap.get("compound", "").upper() == compound.upper()
+        lap
+        for lap in laps
+        if compound_key(lap.get("compound")) == compound_key(compound)
         and lap.get("lap_duration") is not None
         and float(lap["lap_duration"]) > 0
     ]
@@ -87,15 +100,17 @@ def fit_degradation(laps: list[dict], compound: str) -> dict:
         durations = durations[mask]
 
     if len(valid) < 2:
-        return {"intercept": float(durations[0]), "slope": 0.0, "residual_std": 0.0, "sample_count": 1}
+        return {
+            "intercept": float(durations[0]),
+            "slope": 0.0,
+            "residual_std": 0.0,
+            "sample_count": 1,
+        }
 
     # Tyre age axis: use tyre_life if present, else fallback to enumerate index i.
     # Note on intercept: with tyre_life telemetry, the intercept extrapolates to tyre_age=0
     # (brand-new tyre); without tyre_life, 0-based index i anchors intercept at the first valid lap.
-    tyre_ages = np.array([
-        float(lap.get("tyre_life", i))
-        for i, lap in enumerate(valid)
-    ])
+    tyre_ages = np.array([float(lap.get("tyre_life", i)) for i, lap in enumerate(valid)])
 
     coeffs = np.polyfit(tyre_ages, durations, deg=1)
     fitted = np.polyval(coeffs, tyre_ages)

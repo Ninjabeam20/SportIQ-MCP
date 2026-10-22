@@ -55,7 +55,7 @@ async def _lifespan(_server):
 
 
 mcp = FastMCP("sportiq", lifespan=_lifespan)
-# FastMCP 1.27/1.28 does not forward version= to the low-level Server, so
+# FastMCP 1.27/1.28 (still required on 1.30) does not forward version= to the low-level Server, so
 # initialize.serverInfo.version would be the SDK version. Bind the package
 # version explicitly.
 mcp._mcp_server.version = __version__
