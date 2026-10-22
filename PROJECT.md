@@ -12,7 +12,7 @@
 
 **sportiq-mcp** is a Python MCP (Model Context Protocol) server that turns any AI assistant
 (Claude, ChatGPT, Cursor, …) into a sports analyst across three sports: **FIFA World Cup 2026
-football, Formula 1, and IPL cricket**. It exposes **44 AI-callable tools** (including the
+football, Formula 1, and IPL cricket**. It exposes **46 AI-callable tools** (including the
 meta-tool `sportiq_health`) over stdio (local install via `uvx sportiq-mcp`) or streamable-HTTP (hosted
 on the Dell home server at `https://sportiq.utkarshgupta.org/mcp`. Cloud Run was
 deleted in Task 9 (2026-09-02); old `*.run.app` URLs 404.
@@ -86,8 +86,9 @@ TOOLS  (src/sportiq/{sport}/tools.py = RAW, intel_tools.py = INTEL)
 FallbackChain singletons  (src/sportiq/{sport}/chains.py — module level)
         │   1. fresh cache hit? return
         │   2. per-key asyncio.Lock (stampede guard), re-check cache
-        │   3. walk adapters in order: budget peek → fetch (12s wall cap)
-        │      → success: consume budget token, cache write, return
+        │   3. walk adapters in order: budget reserve → fetch (12s per adapter,
+        │      15s total per chain) → failure: refund token; success: keep
+        │      token, cache write (fail-open), return
         │   4. all failed: stale cache within stale_ttl? return is_stale=True
         │   5. else raise NotFoundError (all raised NF) / AllSourcesFailedError
         ▼
@@ -160,9 +161,10 @@ core/http.py (shared httpx client: retry, same-host redirects, 10MB cap)
   fixtures + results). Groups: static seed only (effectively infinite TTL). Odds: The Odds API only.
 - **F1:** OpenF1 (live telemetry, keyless) and Jolpica (Ergast successor, keyless); optional
   local fastf1. No quotas, but cached aggressively for latency.
-- **Cricket:** CricAPI (100 req/day!) → RapidAPI Cricbuzz (paid escape hatch) → opt-in scrapers
-  (NDTV `SPORTIQ_ENABLE_NDTV=1`, Cricbuzz `SPORTIQ_ENABLE_CRICBUZZ=1`; disabled by default for
-  ToS reasons, ADR-0007) → static seed terminators.
+- **Cricket live:** CricAPI (100 req/day!) → NDTV scraper (opt-in, `SPORTIQ_ENABLE_NDTV=1`) →
+  Cricbuzz scraper (opt-in, `SPORTIQ_ENABLE_CRICBUZZ=1`; scrapers disabled by default for ToS
+  reasons, ADR-0007) → RapidAPI Cricbuzz (paid escape hatch). Squads and venues end in static
+  seed terminators.
 - **The Odds API** budget is shared cricket+football: one `theodds` source, `per_day=16`
   ≈ 480/month under the 500/month cap (there is no per-month unit in `Budget`).
 
@@ -220,8 +222,10 @@ toggle so a developer's `.env` can never cause live HTTP in tests). CI gates: ru
 1. **Everything routes through `FallbackChain`** (ADR-0005). Free-tier APIs die routinely; the
    product promise is "the tool always answers something honest." The envelope's `meta.source` /
    `is_stale` / `fallback_used` lets the AI adapt its wording ("as of ~4 minutes ago…").
-2. **Budget tokens consumed only after success** (peek before, consume after). A failed or
-   missing-key call must not burn quota — CricAPI's 100/day dies for *everyone* when exhausted.
+2. **Budget tokens are reserved before the fetch and refunded on failure** (`fallback.py`
+   `reserve`/`refund`). A failed or missing-key call must not burn quota — CricAPI's 100/day
+   dies for *everyone* when exhausted. Each chain also has a 15 s total budget
+   (`total_budget_s`); adapters left when it runs out are skipped without reserving a token.
 3. **429 is never retried on quota-capped APIs** (`get_json`), but IS retried on burst-limited
    no-quota sources (`get_json_burst`, OpenF1 only). Getting this backwards burns 3× quota on
    guaranteed failures.
@@ -254,7 +258,7 @@ toggle so a developer's `.env` can never cause live HTTP in tests). CI gates: ru
 ## 5. Critical paths — what's load-bearing vs. safe
 
 **Maximum blast radius (change with tests + review, never casually):**
-- `src/sportiq/core/fallback.py` — every one of the 44 tools flows through it.
+- `src/sportiq/core/fallback.py` — every one of the 46 tools flows through it.
 - `src/sportiq/core/tool_response.py` + `errors.py` — the envelope contract every client depends on.
 - `src/sportiq/core/cache.py`, `ratelimit.py`, `http.py` — quota protection; a bug here can
   exhaust a shared free-tier key for all users of the hosted instance.

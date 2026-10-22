@@ -45,7 +45,9 @@ _EXPENSIVE_TOOLS = frozenset(
         "football_simulate_group",
         "football_simulate_bracket",
         "football_knockout_path",
+        "football_what_if",
         "f1_predict_pit_strategy",
+        "f1_simulate_championship",
         "cricket_build_dream11_team",
     }
 )

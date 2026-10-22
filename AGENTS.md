@@ -45,7 +45,7 @@ Utkarsh — software engineer building an automated job application pipeline. Fa
 - NEVER bypass the cache to "make sure data is fresh." If TTL is wrong, change the TTL.
 - NEVER commit `.env`, `*.local.md`, or `docs/graphify/`.
 - Wiki pages MUST have YAML frontmatter (see `.claude/rules/wiki-conventions.md`).
-- Append a `## [YYYY-MM-DD] op | subject` entry to `docs/log.md` after every meaningful operation (ingest, decision, lint, release, tool-added, adapter-added, finding-filed).
+- Append a `## [YYYY-MM-DD] op | subject` entry to `docs/log.md` after every meaningful operation (ingest, decision, lint, release, tool-added, adapter-added, finding-filed). `docs/log.md` is local-only (gitignored): create it if missing; never `git add` it.
 - **Local dev assumes `diskcache`, not Redis.** Do not write code, tests, or health checks that require a running Redis daemon. `core/cache.py` auto-detects and downgrades to `diskcache` when `REDIS_URL` is unset or the daemon is unreachable. `diskcache` is a healthy state for local dev — do not flag it as degraded.
 - **`pyproject.toml` MUST declare `[project.scripts] sportiq-mcp = "sportiq.server:main"`** and `server.py` MUST expose a `main()` function that calls `mcp.run()`. This is the uvx contract — do not break it.
 - **Scrapers are opt-in.** Adapters whose data source has a no-scraping ToS (currently: NDTV Sports, Cricbuzz) MUST be disabled by default in the shipped package. They register in the chain but are skipped unless the operator explicitly opts in via env flag (`SPORTIQ_ENABLE_NDTV=1`, `SPORTIQ_ENABLE_CRICBUZZ=1`). See ADR-0007.
@@ -100,7 +100,7 @@ When you need to understand a domain question (scoring rules, API quirks, model 
   TypedDict from `core/tool_response.py` — this is the sanctioned exception to
   "Pydantic models preferred" (see its docstring; do not convert tools to per-tool models).
 - **Error handling in tools:** catch `AllSourcesFailedError` (and `NotFoundError` where the
-  chain can raise it — copy the pattern in `cricket/tools.py:71`) → `error_envelope(...)`.
+  chain can raise it — copy the pattern in `cricket/tools.py:80`) → `error_envelope(...)`.
   Never a bare `{"ok": False}`, never construct envelopes by hand.
 - **Multi-chain INTEL tools** aggregate freshness with `staleness_meta(*results)` — never
   swallow `is_stale`.
@@ -116,7 +116,8 @@ When you need to understand a domain question (scoring rules, API quirks, model 
   `tests/{unit,adapters,chains,tools}/`; respx cassettes in `tests/fixtures/{source}/`,
   re-recorded manually only.
 - **Log discipline:** `docs/log.md` is the project journal — read its tail to learn recent
-  history; append after every meaningful operation (hard rule above).
+  history; append after every meaningful operation (hard rule above). It is local-only
+  (gitignored): create it if missing; never `git add` it.
 
 ## Gotchas (looks like it should work one way — doesn't)
 
@@ -126,9 +127,14 @@ When you need to understand a domain question (scoring rules, API quirks, model 
   `server.py` only). No `Mcp-Session-Id`, so an in-place `docker compose up --build` on the
   home server does not strand live connectors. stdio/uvx is unaffected. Keep
   `json_response` **False** — SSE framing is how tool results stream. This is a plain
-  FastMCP setting on `mcp` 1.29.0; it does NOT require SDK v2.
+  FastMCP setting on `mcp` 1.30.0; it does NOT require SDK v2.
 - **Don't call `mcp.run("streamable-http")` in the HTTP branch** — it rebuilds the Starlette
   app and drops the middlewares. `server.py` builds the app manually; keep it that way.
+- **Shared singletons close at HTTP app shutdown, never in the FastMCP lifespan** — stateless
+  mode runs that lifespan per request (see `server.build_http_app`). Closing the cache/client
+  there broke every in-flight request (the 11 production AttributeErrors).
+- **diskcache `expire()` is a purge, not a per-key TTL** — `expire(now=…)` deletes expired
+  items, and a string `now` wiped every TTL'd entry. Use `touch(key, expire=…)`.
 - **Registration order ≠ import order** in `server.py`: imports stay alphabetical (ruff isort);
   only the `register_*` calls carry football → F1 → cricket relevance.
 - **Football fixture `status` differs per adapter** (api-football `FT`/`AET`/`PEN` vs
@@ -138,7 +144,7 @@ When you need to understand a domain question (scoring rules, API quirks, model 
   separate. Picking the wrong one burns 3× quota on guaranteed failures.
 - **Version lives in 3 places:** `pyproject.toml` (truth), `__init__.__version__` (dynamic —
   leave it), `server.json` (MCP registry). `scripts/check_release_build.py` fails CI if
-  `server.json` drifts. FastMCP 1.29 does not take `version=`; `server.py` binds
+  `server.json` drifts. FastMCP 1.29–1.30 does not take `version=`; `server.py` binds
   `mcp._mcp_server.version = __version__` so initialize reports SportIQ, not the SDK.
 - **Coverage gate is in CI only** (`--cov-fail-under=84` in `test.yml`), deliberately not in
   pyproject `addopts` — don't "fix" that; partial local runs must be able to pass.

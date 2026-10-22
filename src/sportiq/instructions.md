@@ -9,8 +9,8 @@ efficiently, and how to interpret every response.
 
 | Module | Tools | Data scope |
 |--------|-------|-----------|
-| **Football** | 15 tools | FIFA WC 2026 — groups, fixtures, odds, Monte Carlo bracket |
-| **F1** | 13 tools | OpenF1 telemetry, tyre deg, pit strategy, pace comparison |
+| **Football** | 16 tools | FIFA WC 2026 — groups, fixtures, odds, Monte Carlo bracket, what-if replay |
+| **F1** | 14 tools | OpenF1 telemetry, tyre deg, pit strategy, pace comparison, title-race simulator |
 | **Cricket** | 14 tools | IPL live scores, squads, odds, fantasy XI, probability edge |
 | **Cross-sport** | 1 tool | Joint multi-match model across football + cricket |
 | **Core** | 1 tool | Health / quota status |
@@ -40,6 +40,14 @@ extra informational calls unless the user explicitly asks for them.
    replayed and `meta.champion` is the actual winner; `pre_tournament_prior`
    means no result data was available, so the output is only the model's
    pre-tournament view, not a forecast.
+
+### "What if France had beaten Spain in the semi-final?"
+1. `football_what_if(replay_from="final", flip_winner_of="ESP-FRA")` — 1 call.
+   Keeps the real results before `replay_from`, flips that tie's winner, simulates the rest.
+
+### "Who can still win the F1 drivers' title?"
+1. `f1_simulate_championship(year=2026)` — 1 call. Title probabilities plus exact
+   mathematical elimination (`eliminated: true` means the title is out of reach).
 
 ### "Predict Argentina vs France"
 1. `football_match_predictor(home_team="ARG", away_team="FRA")` — 1 call.
@@ -106,7 +114,8 @@ Every tool returns one of two shapes:
   "As of about X minutes ago…" and advise retrying in a few minutes.
 - `meta.estimated: true` → output is model-generated (ILP solver, Monte Carlo, tyre fit).
   Qualify with "model estimate" in your response.
-- Live scorecard TTL: 30 s. Odds TTL: 5 min. Fixtures: 6 h. Standings: 10 min.
+- Cricket live scorecard TTL: 30 s. Odds TTL: 5 min. Football fixtures: 6 h (the WC 2026 is over).
+  F1 completed-session laps/stints: 24 h. Standings: 10 min.
 
 ---
 
@@ -117,8 +126,8 @@ Every tool returns one of two shapes:
 | `ALL_SOURCES_FAILED` | Tell user data is temporarily unavailable. Check `sources_tried` for context. |
 | `NOT_FOUND` | Entity doesn't exist — re-check the team code or match ID. |
 | `INVALID_INPUT` | Fix the argument; `message` states what's wrong. |
-| `RATE_LIMITED` | Quota exhausted for the day. Advise retrying after midnight UTC. |
-| `UPSTREAM_TIMEOUT` | Upstream slow; retry once after 60 s. |
+| `RATE_LIMITED` | Defined but not currently emitted: budget exhaustion surfaces as `ALL_SOURCES_FAILED` with `skipped` / `rate_limited` attempts. Advise retrying after midnight UTC. |
+| `UPSTREAM_TIMEOUT` | The call hit the per-tool deadline (30 s by default); upstreams were slow or a simulation was queued. Retry once after 60 s. |
 
 ---
 
@@ -133,8 +142,10 @@ tell the user to set the appropriate key:
 | `CRICAPI_KEY` | Live cricket scores, schedules, squads |
 | `APIFOOTBALL_KEY` | Football fixtures and standings |
 | `THEODDS_KEY` | Live market odds (cricket + football) |
+| `FOOTBALLDATA_KEY` | football-data.org World Cup endpoints (they return 403 without it) |
 
-Tools that use only static seeds or OpenF1 (which is public/free) work without any key.
+Tools that use only static seeds or historical OpenF1 sessions (keyless) work without any key.
+Live-session OpenF1 telemetry needs paid authentication, which SportIQ does not wire.
 
 ---
 

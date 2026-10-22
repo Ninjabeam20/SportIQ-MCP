@@ -299,7 +299,7 @@
 Not debt, but each looks like a bug to fresh eyes:
 - **diskcache pickle CVE (CVE-2025-69872) is deliberately ignored** in pip-audit
   (`.github/workflows/security.yml`) — the cache is local-only, values are self-produced JSON.
-- **DNS-rebinding protection disabled** on HTTP transport (`server.py:72-74`) — required for
+- **DNS-rebinding protection disabled** on HTTP transport (`server.py:109-111`, in `build_http_app`) — required for
   custom Host headers; live perimeter is Cloudflare Tunnel + Caddy. Not a hole to "fix".
 - **`time_budget_s=12` cannot preempt sync-blocking adapters** (fastf1) — documented in
   `fallback.py:66-70`.

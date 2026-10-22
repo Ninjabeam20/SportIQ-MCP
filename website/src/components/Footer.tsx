@@ -26,7 +26,8 @@ export default function Footer() {
             <h4 className="font-inter font-medium text-white mb-4">Support</h4>
             <ul className="space-y-3">
               <li><a href={LINKS.sponsors} target="_blank" rel="noopener noreferrer" className="text-sm text-white/60 hover:text-white transition-colors">GitHub Sponsors</a></li>
-              <li><a href={LINKS.hostedMcp} target="_blank" rel="noopener noreferrer" className="text-sm text-white/60 hover:text-white transition-colors">Free hosted server</a></li>
+              <li><Link href="/setup#hosted" className="text-sm text-white/60 hover:text-white transition-colors">Free hosted server</Link></li>
+              <li><code className="select-all font-mono text-xs text-white/50 break-all">{LINKS.hostedMcp}</code></li>
             </ul>
           </div>
 

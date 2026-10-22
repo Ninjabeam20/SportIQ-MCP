@@ -139,7 +139,7 @@ async def f1_get_standings(year: int) -> Envelope:
     """Return F1 driver and constructor championship standings for a year.
 
     Use this for "who is leading / who will win the F1 championship this year".
-    There is no F1 title Monte Carlo — current points and position are the answer.
+    For title probabilities use f1_simulate_championship.
     This is not a cricket or football tool.
 
     Args:

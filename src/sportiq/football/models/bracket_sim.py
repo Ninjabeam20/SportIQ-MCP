@@ -177,3 +177,49 @@ def simulate_tournament(
         "champion": champion,
         "tiebreak_fallbacks": fallback_rows,
     }
+
+
+# Knockout rounds, in order, with how many teams each one holds.
+_EXACT_ROUNDS = (("r32", 32), ("r16", 16), ("qf", 8), ("sf", 4), ("final", 2))
+
+
+def tournament_from_results(groups: dict[str, list[str]], results: ResultsState) -> dict | None:
+    """Exact per-team round outcomes (1.0 / 0.0) from a fully decided knockout.
+
+    Returns the same shape as :func:`simulate_tournament` with ``iterations=0``,
+    or ``None`` when the locked knockout is incomplete (champion unknown, or any
+    of R32..final missing a labelled tie) so the caller falls back to the sim.
+    """
+    if results.champion is None:
+        return None
+    teams_by_round: dict[str, set[str]] = {r: set() for r, _ in _EXACT_ROUNDS}
+    for a, b, _w in results.knockout:
+        ko_round = results.knockout_rounds.get(frozenset((a, b)))
+        if ko_round in teams_by_round:
+            teams_by_round[ko_round].update((a, b))
+    if any(len(teams_by_round[r]) != size for r, size in _EXACT_ROUNDS):
+        return None
+    if results.champion not in teams_by_round["final"]:
+        return None
+
+    keys = ["reach_r32", "reach_r16", "reach_qf", "reach_sf", "reach_final"]
+    all_teams = [t for teams in groups.values() for t in teams]
+    teams_out = {
+        t: {
+            **{
+                key: float(t in teams_by_round[r])
+                for key, (r, _) in zip(keys, _EXACT_ROUNDS, strict=True)
+            },
+            "win": float(t == results.champion),
+        }
+        for t in all_teams
+    }
+    ranked = dict(
+        sorted(teams_out.items(), key=lambda kv: tuple(reversed(kv[1].values())), reverse=True)
+    )
+    return {
+        "teams": ranked,
+        "iterations": 0,
+        "champion": results.champion,
+        "tiebreak_fallbacks": 0,
+    }

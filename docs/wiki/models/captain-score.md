@@ -3,11 +3,11 @@ title: Captain Score (expected_points)
 type: model
 tags: [cricket, dream11, projection]
 sources: []
-last_updated: 2026-09-25
+last_updated: 2026-10-22
 related: [[dream11-solver]], [[dream11-scoring]], [[form-index]], [[pitch-report]]
 ---
 
-# Captain Score (`expected_points`)
+# Captain Score (expected_points)
 
 Pure function `expected_points(player, venue, opposition_strength, form_score) -> float`. Returns the projected fantasy-point total for one player in one fixture. Used as:
 

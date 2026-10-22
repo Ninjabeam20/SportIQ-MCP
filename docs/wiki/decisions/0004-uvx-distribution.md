@@ -3,8 +3,8 @@ title: uvx distribution
 type: decision
 tags: [packaging, distribution]
 sources: [chat]
-last_updated: 2026-05-26
-related: []
+last_updated: 2026-10-22
+related: [[0001-fastmcp-over-raw-mcp]], [[0010-trusted-publishing]]
 ---
 
 # ADR 0004 — uvx as the primary distribution channel

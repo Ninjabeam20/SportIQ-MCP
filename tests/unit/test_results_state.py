@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import pytest
+
 from sportiq.football.models.results_state import (
     build_code_index,
     build_results_state,
     derived_standings,
+    flip_knockout_winner,
     resolve_code,
+    truncate_results_state,
 )
 
 # A two-group toy draw is enough to exercise the partitioning logic.
@@ -243,3 +247,67 @@ def test_derived_standings_points_and_order():
     assert group_a[0]["played"] == 1
     assert sorted(r["points"] for r in group_a) == [0, 1, 1, 3]
     assert out["source"] == "derived_standings"
+
+
+# -- what-if helpers (opus cook11 T11.2) ----------------------------------------
+
+
+def _staged_state():
+    """Two group games, one QF (ARG beat FRA) and the final (ARG beat COL)."""
+    fixtures = [
+        _fx("Argentina", "Colombia", 2, 0, date="2026-06-12", stage="Matchday 1"),
+        _fx("France", "Morocco", 1, 1, date="2026-06-13", stage="Matchday 1"),
+        _fx("Argentina", "France", 1, 0, date="2026-07-10", stage="Quarter-final"),
+        _fx("Argentina", "Colombia", 0, 0, date="2026-07-19", stage="Final", winner="Argentina"),
+    ]
+    return build_results_state(fixtures, _GROUPS, _TEAMS)
+
+
+def test_results_state_labels_knockout_rounds_from_stage():
+    state = _staged_state()
+    assert state.knockout_rounds == {
+        frozenset(("ARG", "FRA")): "qf",
+        frozenset(("ARG", "COL")): "final",
+    }
+    assert state.champion == "ARG"
+
+
+def test_truncate_results_state_from_group_keeps_nothing():
+    state = _staged_state()
+    out = truncate_results_state(state, "group")
+    assert out.knockout == [] and out.completed_chrono == [] and out.matched == 0
+    assert all(not g.completed for g in out.groups.values())
+    assert all(len(g.remaining) == 6 for g in out.groups.values())
+    assert out.champion is None
+    assert state.matched == 4  # the input is not mutated
+
+
+def test_truncate_results_state_from_final_keeps_earlier_knockout_only():
+    out = truncate_results_state(_staged_state(), "final")
+    assert out.knockout == [("ARG", "FRA", "ARG")]
+    assert out.champion is None
+    # The group ARG-COL game stays in the Elo walk; the final ARG-COL is dropped.
+    assert out.completed_chrono == [
+        ("ARG", "COL", 2, 0),
+        ("FRA", "MAR", 1, 1),
+        ("ARG", "FRA", 1, 0),
+    ]
+    assert out.matched == 3
+
+
+def test_truncate_results_state_rejects_unknown_stage():
+    with pytest.raises(ValueError):
+        truncate_results_state(_staged_state(), "playoffs")
+
+
+def test_flip_knockout_winner_returns_new_state_with_other_winner():
+    state = truncate_results_state(_staged_state(), "final")
+    flipped = flip_knockout_winner(state, "FRA", "ARG")
+    assert flipped.knockout == [("ARG", "FRA", "FRA")]
+    assert state.knockout == [("ARG", "FRA", "ARG")]
+
+
+def test_flip_knockout_winner_rejects_tie_not_in_state():
+    state = truncate_results_state(_staged_state(), "qf")
+    with pytest.raises(ValueError):
+        flip_knockout_winner(state, "ARG", "FRA")

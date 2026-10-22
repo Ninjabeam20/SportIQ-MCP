@@ -165,3 +165,37 @@ async def test_jolpica_standings_adapter_partial_constructor_only():
     result = await JolpicaStandingsAdapter().fetch(year=2025)
     assert result["drivers"] == []
     assert result["constructors"][0]["team"] == "Red Bull"
+
+
+@respx.mock
+async def test_jolpica_schedule_adapter_maps_rounds_dates_and_sprints():
+    # schedule_2026.json: one keyless GET of /ergast/f1/2026.json on 2026-10-22, saved unmodified.
+    from sportiq.f1.adapters.jolpica import JolpicaScheduleAdapter
+
+    respx.get("https://api.jolpi.ca/ergast/f1/2026.json").mock(
+        return_value=Response(200, json=_load("schedule_2026.json"))
+    )
+    result = await JolpicaScheduleAdapter().fetch(year=2026)
+    races = result["races"]
+    assert result["season"] == 2026
+    assert len(races) == 23
+    assert set(races[0]) == {"round", "raceName", "date", "sprint"}
+    singapore = next(r for r in races if r["round"] == 17)
+    assert singapore["sprint"] is True
+    assert races[-1] == {
+        "round": 23,
+        "raceName": "Abu Dhabi Grand Prix",
+        "date": "2026-12-06",
+        "sprint": False,
+    }
+
+
+@respx.mock
+async def test_jolpica_schedule_adapter_empty_raises_not_found():
+    from sportiq.f1.adapters.jolpica import JolpicaScheduleAdapter
+
+    respx.get("https://api.jolpi.ca/ergast/f1/2031.json").mock(
+        return_value=Response(200, json={"MRData": {"RaceTable": {"Races": []}}})
+    )
+    with pytest.raises(NotFoundError):
+        await JolpicaScheduleAdapter().fetch(year=2031)

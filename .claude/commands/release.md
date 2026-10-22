@@ -16,12 +16,12 @@ Cut a release. Argument is the semver bump kind.
 5. After approval:
    - `uv run pytest` (must pass).
    - `uv run ruff check .` (must pass).
-   - Bump version in `pyproject.toml`.
+   - Bump version in `pyproject.toml` **and** `server.json` (MCP registry; `__init__.__version__` is dynamic — leave it).
+   - `uv lock` and `uv run python scripts/check_release_build.py` (fails if `server.json` drifts or the sdist allowlist leaks).
    - `git commit -m "release: vX.Y.Z"`.
    - `git tag vX.Y.Z`.
    - `git push && git push --tags` (only after explicit confirmation).
-   - `uv build`.
-   - The `publish.yml` workflow handles `uv publish` on tag push (added in Phase 5).
+   - The `release.yml` workflow runs lint + tests + coverage + the release-build check on tag push, then publishes to PyPI via Trusted Publishing.
 6. **Append to `docs/log.md`:** `## [YYYY-MM-DD] release | vX.Y.Z to PyPI. {tools added | bugfixes | breaking changes}.`
 7. **End with Rule #8 format.**
 

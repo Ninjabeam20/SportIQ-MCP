@@ -24,14 +24,14 @@ export default function HowItWorks() {
           <div className="text-center">
             <div className="w-12 h-12 rounded-full bg-action-blue/20 flex items-center justify-center font-oswald text-2xl mx-auto mb-6 text-action-blue border border-action-blue/30">2</div>
             <h3 className="font-oswald text-xl uppercase tracking-tight mb-3">Start asking</h3>
-            <p className="text-sm text-white/60">All 44 tools are live immediately.</p>
-            <p className="text-sm text-white/60 mt-2">No key, no account. Done.</p>
+            <p className="text-sm text-white/60">All 46 tools are free and live immediately.</p>
+            <p className="text-sm text-white/60 mt-2">The hosted server needs no key; some live feeds need provider keys when self-hosting.</p>
           </div>
         </div>
 
         <p className="text-center text-sm text-white/50 mb-16 max-w-xl mx-auto">
           Like it? You can optionally{" "}
-          <Link href="/#pricing" className="text-action-blue hover:underline">sponsor the project</Link>{" "}
+          <Link href="/#sponsor" className="text-action-blue hover:underline">sponsor the project</Link>{" "}
           to help cover hosting — everything stays free either way.
         </p>
 

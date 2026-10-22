@@ -1,13 +1,16 @@
 ---
 title: cross_sport_build_accumulator
+aliases: [cross-sport-build-accumulator, cross_sport_build_accumulator]
 type: tool
 tags: [football, cricket, accumulator, cross-sport]
 sources: []
-last_updated: 2026-09-25
+last_updated: 2026-10-22
 related: [[football-build-accumulator]], [[parlay-builder]]
 ---
 
 # cross_sport_build_accumulator
+
+> Page slug `cross-sport-accumulator`; the MCP tool name is `cross_sport_build_accumulator`.
 
 Builds a multi-leg accumulator bet by combining value picks from both football and cricket, selecting the highest-edge legs across sports up to the requested count.
 

@@ -3,8 +3,8 @@ title: Group-Stage Monte Carlo
 type: model
 tags: [football, monte-carlo, group]
 sources: [FIFA World Cup 2026 regulations]
-last_updated: 2026-07-14
-related: [[poisson-xg]], [[bracket-sim]], [[football-simulate-group]]
+last_updated: 2026-10-22
+related: [[poisson-xg]], [[bracket-sim]], [[football-simulate-group]], [[live-conditioning]]
 ---
 
 # Group-Stage Monte Carlo
@@ -31,3 +31,7 @@ model has the required fields.
 
 Invariants: automatic-advance mass per group is 2; best-third mass over the tournament is 8;
 combined R32 mass is 32. Seeded calls are reproducible.
+
+Entrants without a seed rating play at `DEFAULT_RATING` (1500, see [[bracket-sim]]) and are disclosed in
+the tool's `meta.default_rating_teams`. The sim is CPU-bound and pure; the tools run it with
+`asyncio.to_thread` so it never blocks the event loop.

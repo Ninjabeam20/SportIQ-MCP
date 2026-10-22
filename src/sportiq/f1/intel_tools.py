@@ -16,12 +16,15 @@ from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta
 from sportiq.f1.chains import (
     f1_drivers_chain,
     f1_laps_chain,
+    f1_schedule_chain,
     f1_session_meta_chain,
+    f1_standings_chain,
     f1_stints_chain,
     f1_weather_chain,
 )
 from sportiq.f1.circuits import profile_for_circuit_key
 from sportiq.f1.data.tyres import normalize_compound
+from sportiq.f1.models.championship_sim import simulate_championship
 from sportiq.f1.models.pit_strategy import _DEFAULT_PIT_LOSS_S
 from sportiq.f1.models.pit_strategy import predict as _predict_strategy
 from sportiq.f1.models.quali_analysis import best_lap_per_driver, gap_to_pole, grid_projection
@@ -556,6 +559,94 @@ async def f1_predict_pit_strategy(
     }
 
 
+_CHAMPIONSHIP_MIN_ITER = 1000
+_CHAMPIONSHIP_MAX_ITER = 20000
+
+
+def _remaining_rounds(races: list[dict], completed_round: int) -> list[dict]:
+    """Rounds dated after the last completed round (all rounds when none is known)."""
+    done = next((r for r in races if r.get("round") == completed_round), None)
+    if done is None or not done.get("date"):
+        return [
+            {"round": r["round"], "sprint": bool(r.get("sprint"))}
+            for r in races
+            if r.get("round", 0) > completed_round
+        ]
+    return [
+        {"round": r["round"], "sprint": bool(r.get("sprint"))}
+        for r in races
+        if (r.get("date") or "") > done["date"]
+    ]
+
+
+async def f1_simulate_championship(
+    year: int = 2026, iterations: int = 10000, seed: int | None = None
+) -> Envelope:
+    """Estimate each driver's F1 drivers' title probability for the rest of a season.
+
+    Monte Carlo over the remaining races and sprints (Plackett-Luce finishing
+    orders weighted by each driver's season points rate), plus exact
+    elimination maths: a driver who cannot catch the leader's current points
+    even by winning every remaining race and sprint has title_prob 0.0.
+    This is not a cricket or football tool.
+
+    Args:
+        year: Championship season (2018-2030, default 2026).
+        iterations: Monte Carlo iterations, clamped to 1000-20000 (default 10000).
+        seed: Optional RNG seed for reproducible probabilities.
+
+    Returns:
+        data.drivers: [{code, points_now, title_prob, expected_points,
+            eliminated, max_possible}] sorted by title_prob.
+        data.max_remaining_points: most points one driver can still score.
+        data.rounds_remaining: races left after the last completed round.
+        meta.estimated: true. meta.model: "plackett-luce-points-rate".
+        meta.is_stale: true if standings or schedule came from stale cache.
+    """
+    if year < 2018 or year > 2030:
+        return error_envelope(code="INVALID_INPUT", message="year must be between 2018 and 2030.")
+    if seed is not None and not (0 <= seed <= 2**64 - 1):
+        return error_envelope(code="INVALID_INPUT", message="seed must be in [0, 2**64 - 1].")
+    try:
+        standings_r, schedule_r = await asyncio.gather(
+            f1_standings_chain.fetch(year=year), f1_schedule_chain.fetch(year=year)
+        )
+    except (AllSourcesFailedError, NotFoundError) as e:
+        return error_envelope(
+            code=e.code,
+            message=f"Could not load F1 standings or schedule for {year}.",
+            sources_tried=e.attempts,
+        )
+    drivers = standings_r.value.get("drivers") or []
+    if not drivers:
+        return error_envelope(code="NOT_FOUND", message=f"No driver standings for {year} yet.")
+    completed = int(standings_r.value.get("round") or 0)
+    remaining = _remaining_rounds(schedule_r.value.get("races") or [], completed)
+    n_iter = max(_CHAMPIONSHIP_MIN_ITER, min(_CHAMPIONSHIP_MAX_ITER, iterations))
+    sim = await asyncio.to_thread(
+        simulate_championship,
+        drivers,
+        remaining,
+        year=year,
+        n_iter=n_iter,
+        seed=seed,
+        rounds_completed=completed,
+    )
+    return {
+        "data": sim,
+        "meta": {
+            "source": standings_r.source,
+            "year": year,
+            "rounds_completed": completed,
+            "iterations": n_iter,
+            "seed": seed,
+            "estimated": True,
+            "model": "plackett-luce-points-rate",
+            **staleness_meta(standings_r, schedule_r),
+        },
+    }
+
+
 async def f1_qualifying_analysis(session_key: int) -> Envelope:
     """Analyse a qualifying session: best lap per driver, gap to pole, projected grid.
 
@@ -705,5 +796,6 @@ def register_f1_intel_tools(mcp) -> None:
     mcp.tool(annotations=READ_ONLY)(f1_head_to_head_pace)
     mcp.tool(annotations=READ_ONLY)(f1_weather_strategy_impact)
     mcp.tool(annotations=READ_ONLY)(f1_predict_pit_strategy)
+    mcp.tool(annotations=READ_ONLY)(f1_simulate_championship)
     mcp.tool(annotations=READ_ONLY)(f1_qualifying_analysis)
     mcp.tool(annotations=READ_ONLY)(f1_race_pace_compare)

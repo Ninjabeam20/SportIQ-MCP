@@ -20,7 +20,7 @@ export default function ComparisonTable() {
                 Everything&apos;s free
               </h3>
               <p className="text-white/60 text-sm">
-                All 44 tools — data layer and full intelligence layer. No key, no account.
+                All 46 tools are free — data layer and full intelligence layer. The hosted server needs no key; some live feeds need provider keys when self-hosting.
               </p>
             </div>
 
@@ -31,11 +31,11 @@ export default function ComparisonTable() {
               </li>
               <li className="flex items-start gap-4 text-white">
                 <span className="text-action-blue mt-1">✦</span>
-                <span className="font-medium">Monte Carlo bracket &amp; group sims</span>
+                <span className="font-medium">World Cup 2026 replay &amp; what-if sims</span>
               </li>
               <li className="flex items-start gap-4 text-white">
                 <span className="text-action-blue mt-1">✦</span>
-                <span className="font-medium">F1 pit-strategy + tyre degradation</span>
+                <span className="font-medium">F1 title-race sim, pit strategy + tyre degradation</span>
               </li>
               <li className="flex items-start gap-4 text-white">
                 <span className="text-action-blue mt-1">✦</span>
@@ -43,7 +43,7 @@ export default function ComparisonTable() {
               </li>
               <li className="flex items-start gap-4 text-white">
                 <span className="text-action-blue mt-1">✦</span>
-                <span className="font-medium">+EV value bets — model probability vs the bookmaker line</span>
+                <span className="font-medium">Model-vs-market edges (positive-EV filtered) — model probability vs the bookmaker line</span>
               </li>
               <li className="flex items-start gap-4 text-white/80">
                 <span className="text-white/40 mt-1">✓</span>

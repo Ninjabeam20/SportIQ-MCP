@@ -54,9 +54,8 @@ client_secret*.json
 # Generated artifacts
 docs/graphify/
 
-# Local planning docs — keep out of new commits. NOTE: step5–9.md are already
-# tracked and stay on origin; gitignore does not untrack them. This only stops
-# brand-new step*.md (and the local step10.md working copy) from being added.
+# Local planning docs — keep out of commits. No step*.md is tracked today; this
+# stops any new step*.md working copy from being added.
 step*.md
 
 # Local go-to-market / strategy / brain-dump docs — NEVER commit (repo is public;
@@ -83,9 +82,9 @@ LEARNING-GUIDE.md
 # Local-only; never commit. Anything inside is finished history, not live work.
 done/
 
-# Monetization — strategy docs + the LIVE Pro key ledger. NEVER commit (repo is
-# public; sponsor-ledger.md holds the working SPORTIQ_PRO_KEY — committing it
-# would unlock Pro for everyone for free).
+# Monetization — strategy docs and sponsor-ledger.md. NEVER commit (repo is public).
+# The paid Pro tier and its SPORTIQ_PRO_KEY were removed 2026-07-01; these files
+# are kept local as history.
 sponsor-ledger.md
 monetization-paths.md
 monetization-progress.md
@@ -157,3 +156,6 @@ sep.md
 sportiq-analytics-dashboard*.png
 .playwright-mcp/
 
+
+# Local-only remediation planning files.
+opus-*.md

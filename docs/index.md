@@ -9,14 +9,15 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[football-get-groups]] — Returns the World Cup 2026 group draw (12 groups of 4) and advancement format.
 - [[football-get-fixtures]] — Returns WC 2026 fixtures (live providers, else the group schedule).
 - [[football-get-standings]] — Returns current WC 2026 group standings.
-- [[football-get-squad]] — Returns a national team's WC squad (empty-but-valid via static seed without a key).
+- [[football-get-squad]] — Returns a national team's WC squad from API-Football; with no key, an empty-but-valid squad plus a note (no football squads are bundled).
 - [[football-get-match-stats]] — Returns a team's aggregate WC tournament statistics.
 - [[football-get-top-scorers]] — Returns the WC 2026 top scorers.
 - [[football-xg-model]] — Expected goals + win/draw/loss probabilities for a matchup (Elo-driven Poisson).
 - [[football-match-predictor]] — Most likely scoreline + outcome for a single match.
 - [[football-simulate-group]] — Contextual 12-group Monte Carlo, returning one group's automatic/best-third qualification probabilities.
-- [[football-simulate-bracket]] — **Flagship**: Monte Carlo the full 48-team WC into per-team round + title probabilities.
+- [[football-simulate-bracket]] — **Flagship**: Monte Carlo the full 48-team WC into per-team round + title probabilities; exact (no Monte Carlo) once the tournament is complete.
 - [[football-knockout-path]] — Round-by-round survival probabilities for one team.
+- [[football-what-if]] — Replay WC 2026 from a chosen stage, keeping earlier real results, optionally flipping one knockout tie.
 - [[football-get-odds]] — Live market h2h odds for WC 2026 matches; optional team-name filter.
 - [[football-find-value-bets]] — Largest gaps between de-vigged market odds and the match model's probabilities (edge %).
 - [[football-form-trends]] — Rolling form string, W/D/L record, goals, and xG trajectory for a national team.
@@ -24,7 +25,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 ### F1
 
-- [[f1-get-sessions]] — Returns F1 sessions for a given year, optionally filtered by country.
+- [[f1-get-sessions]] — Returns F1 sessions for a given year, optionally filtered by country, session name, or just the latest completed session.
 - [[f1-get-drivers]] — Returns the driver list for a given F1 session.
 - [[f1-get-lap-times]] — Returns per-driver lap times for a session (compound lives on stints, not laps).
 - [[f1-get-standings]] — Returns driver and constructor championship standings (who is leading the title race) for a given F1 season.
@@ -35,6 +36,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[f1-head-to-head-pace]] — Compares median lap-time pace between two drivers in the same session.
 - [[f1-weather-strategy-impact]] — Analyzes session weather and returns a compound recommendation.
 - [[f1-predict-pit-strategy]] — **Flagship**: predict optimal pit stops + compound sequence using tyre-degradation fits.
+- [[f1-simulate-championship]] — Drivers' title probabilities for the rest of a season (Plackett–Luce Monte Carlo + exact elimination).
 - [[f1-qualifying-analysis]] — Analyse a qualifying session: best lap per driver, gap to pole, projected grid.
 - [[f1-race-pace-compare]] — Compare race-pace and tyre degradation between two drivers by compound using linear degradation fits.
 
@@ -57,7 +59,11 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 ### Cross-sport
 
-- [[cross-sport-accumulator]] — Cross-sport joint model: combines football + cricket edge picks into a single multi-leg model; one sport failure is non-fatal.
+- [[cross-sport-accumulator]] — `cross_sport_build_accumulator`. Cross-sport joint model: combines football + cricket edge picks into a single multi-leg model; one sport failure is non-fatal.
+
+### Meta
+
+- [[sportiq-health]] — Reports the cache backend, every registered adapter's healthcheck, and the remaining quota per budgeted source.
 
 ## Models
 
@@ -70,8 +76,8 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[bracket-sim]] — Full 48-team tournament Monte Carlo (groups + best-thirds + 32-team knockout).
 - [[results-state]] — Joins stage-aware live fixtures onto team codes; separates group results, knockout winners, and rematches.
 - [[live-conditioning]] — Locks completed results into the sims (eliminated teams → 0) + opt-in in-tournament Elo nudge.
-- [[value-bet]] — De-vig market odds (multiplicative) and flag outcomes where model_prob beats market by an edge.
-- [[parlay-builder]] — `build_accumulator()` pure function: edge filter, dedup, combined odds under independence assumption.
+- [[value-bet]] — De-vig market odds (multiplicative) and flag outcomes where model_prob beats market by an edge **and** the price has positive EV; started events skipped.
+- [[parlay-builder]] — `build_accumulator()` pure function: edge filter, dedup, combined odds under independence assumption (best price per leg; `None` when no leg qualifies).
 
 ### F1
 
@@ -79,28 +85,29 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[tyre-degradation]] — Linear fit (lap_time = intercept + slope × tyre_age) per compound with outlier filtering.
 - [[undercut]] — Pure-arithmetic undercut viability calculator.
 - [[pit-strategy]] — Predicts optimal stop laps and compound sequence for the remainder of a race.
+- [[championship-sim]] — Pure title-race Monte Carlo: points-rate Plackett–Luce finishing orders plus exact max-remaining-points elimination.
 - [[race-pace]] — Per-compound linear degradation comparison between two drivers; fresh-tyre intercept delta and overall winner.
 
 ### Cricket
 
-- [[dream11-scoring]] — T20 fantasy scoring constants + per-component helpers.
+- [[dream11-scoring]] — Official Dream11 T20 scoring constants (profile `dream11-t20-2026-10-10`) + per-component helpers.
 - [[dream11-solver]] — Binary ILP picking the optimal 11 + captain + vice-captain.
 - [[captain-score]] — `expected_points(player, venue, opp, form)` projection used as solver objective.
 - [[form-index]] — 0-100 score blending recent innings with career baseline.
 - [[pitch-report]] — Friendliness profile + recommendation derived from a venue record.
 - [[cricket-win-probability]] — Heuristic pre-match T20 win probability using form (50%), H2H (30%), and venue tilt (20%).
-- [[cricket-head-to-head]] — `summarise_h2h()` scores squads by player form edges and derives an H2H win-rate estimate.
+- [[cricket-h2h-model]] — `summarise_h2h()` scores two squads by per-player form and turns the form-edge count into an estimated H2H win rate.
 - [[player-matchup]] — Role-aware heuristic comparing batter avg, bowler avg, and strike rate to assign an edge holder.
 
 ## Chains
 
 ### Football
 
-- [[football-fixtures-chain]] — api_football → football_data_org → openfootball → static seed; normalized identity/stage/winner, 30min TTL.
+- [[football-fixtures-chain]] — api_football → football_data_org → openfootball → static seed; normalized identity/stage/winner (ET + penalties); 6h fresh / 24h stale (post-tournament).
 - [[football-standings-chain]] — api_football → football_data_org → derived from fixtures; 10min TTL.
-- [[football-groups-chain]] — static wc2026 terminator (draw + Elo ratings); ~1y TTL.
+- [[football-groups-chain]] — static wc2026 terminator (draw + Elo ratings); ~1y TTL; version-keyed.
 - [[football-team-stats-chain]] — api_football → football_data_org (team-stats fallback currently returns a miss); 24h TTL.
-- [[football-squad-chain]] — api_football → static seed; 12h TTL.
+- [[football-squad-chain]] — api_football → static seed (no bundled squads: empty + note); 12h TTL.
 - [[football-scorers-chain]] — api_football → football_data_org; 24h TTL.
 - [[football-odds-chain]] — the-odds-api (only source) → stale; 5min fresh / 24h stale TTL.
 
@@ -108,10 +115,12 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 - [[f1-sessions-chain]] — openf1 (only source); 6h TTL.
 - [[f1-results-chain]] — jolpica (only source); keyed by year + round; 24h TTL.
-- [[f1-laps-chain]] — openf1 → fastf1_local; 10s fresh / 60s stale TTL.
-- [[f1-stints-chain]] — openf1; 10s fresh / 60s stale TTL.
+- [[f1-laps-chain]] — openf1 → fastf1_local; completed sessions, 24h fresh / 7d stale TTL.
+- [[f1-stints-chain]] — openf1; completed sessions, 24h fresh / 7d stale TTL.
 - [[f1-weather-chain]] — openf1; 10min TTL.
-- [[f1-standings-chain]] — jolpica → fastf1_local; 24h TTL.
+- [[f1-standings-chain]] — jolpica → fastf1_local; one normalised shape; 24h / 7d TTL; version-keyed.
+- [[f1-session-meta-chain]] — Resolves one OpenF1 session by session_key to recover its circuit_key for per-circuit pit-loss profiles; 6h / 24h TTL.
+- [[f1-schedule-chain]] — One season's calendar (round, name, date, sprint) from jolpica, used by the title simulator; 6h / 24h TTL.
 - [[f1-drivers-chain]] — openf1; 24h TTL.
 
 ### Cricket
@@ -120,9 +129,9 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[cricket-scorecard-chain]] — cricapi → rapidapi; 30s TTL; isolated cache key per match_id.
 - [[cricket-fixtures-chain]] — cricapi → ndtv → rapidapi; 6h TTL.
 - [[cricket-standings-chain]] — cricapi → rapidapi; 10min TTL.
-- [[cricket-squad-chain]] — cricapi → static_seed; 12h TTL; always terminates.
+- [[cricket-squad-chain]] — cricapi → static_seed (Cricsheet-generated IPL 2026 squads); team code or full name; 12h TTL; always terminates.
 - [[cricket-player-stats-chain]] — cricapi_player_info → rapidapi_player_stats; 24h TTL.
-- [[cricket-pitch-data-chain]] — static_venue terminator only; 1y TTL (v1 offline-only).
+- [[cricket-pitch-data-chain]] — static_venue terminator only; 1y TTL (v1 offline-only); version-keyed.
 - [[cricket-odds-chain]] — the-odds-api (only source) → stale; 5min fresh / 24h stale TTL.
 
 ## Data sources
@@ -131,7 +140,7 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 
 - [[api-football]] — Primary football source; requires APIFOOTBALL_KEY; fixtures, standings, team stats, squads, scorers; 100 req/day.
 - [[football-data-org]] — Free fallback; a free token is required for the World Cup (token-less 403s); fixtures, standings, scorers; 10 req/min, 100/day.
-- [[openfootball]] — Keyless public-domain WC 2026 fixtures + real results; no credentials, no quota; hand-updated ~daily so scores can lag.
+- [[openfootball]] — Keyless public-domain WC 2026 fixtures + real results (incl. extra time, penalties, winner); no credentials, no quota; complete since the 2026-07-19 final.
 
 ### F1
 
@@ -146,8 +155,8 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[ndtv-sports-scraper]] — Opt-in scraper (SPORTIQ_ENABLE_NDTV=1); live scores + fixtures.
 - [[cricbuzz-scraper]] — Opt-in scraper (SPORTIQ_ENABLE_CRICBUZZ=1); live scores.
 - [[rapidapi-cricbuzz]] — Paid licensed Cricbuzz mirror; escape hatch; requires RAPIDAPI_KEY; serves player career stats.
-- [[static-seed]] — Local JSON reader; always-on; ships 19 squads (10 IPL + 9 internationals) + 14 IPL venues.
-- [[cricsheet]] — Offline-only IPL ball-by-ball data; derives measured venue scoring priors in `venues.json` (aggregates only, no explicit license); never shipped or fetched live.
+- [[static-seed]] — Local JSON reader; always-on; ships 10 Cricsheet-generated IPL 2026 squads (203 players with `player_id`) + 16 IPL venues.
+- [[cricsheet]] — Offline-only IPL ball-by-ball data; derives venue scoring priors (`venues.json`) and the IPL squad seed (`squads.json`); licence to be confirmed; never shipped or fetched live.
 
 ### Odds
 
@@ -163,6 +172,9 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[mac-cutover-inventory]] — Snapshot (2026-08-30, pre-flip) of the Mac worktree that shipped 0.3.2 + Compose while Cloud Run was still the advertised URL.
 - [[product-hosting-arc]] — GCP → paid plan → free on GCP → home server. Task 9 + billing card gone; Dell live; Glama synced 2026-09-02.
 - [[local-analytics-dashboard]] — Maintainer-local `scripts/dashboard.py`: GCP archive + GitHub/PyPI + Dell JSONL after compose rebuild.
+- [[2026-10-22-full-audit]] — The 2026-10-22 five-agent platform audit and the 2026-10-10 sports-model audit: findings, and where each was fixed.
+- [[stateless-lifespan-teardown]] — Stateless HTTP ran the FastMCP lifespan per request, closing the shared cache/client under in-flight calls (the 11 production AttributeErrors); cleanup moved to app shutdown + `/healthz`.
+- [[diskcache-expire-purge]] — `_disk.expire(key, ttl)` is diskcache's purge, so each first counter increment deleted every TTL'd cache entry; fixed with `touch(key, expire=…)`.
 
 ## Decisions (ADRs)
 

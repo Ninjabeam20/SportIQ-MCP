@@ -576,3 +576,113 @@ async def test_f1_predict_pit_strategy_weather_unexpected_error_reraises():
         mock_weather.fetch = AsyncMock(side_effect=RuntimeError("unexpected weather error"))
         with pytest.raises(RuntimeError, match="unexpected weather error"):
             await intel_tools.f1_predict_pit_strategy(session_key=9877, driver_number=1)
+
+
+# -- f1_simulate_championship --------------------------------------------------
+
+
+def _standings_payload() -> dict:
+    return {
+        "season": 2026,
+        "round": 21,
+        "drivers": [
+            {"position": 1, "code": "NOR", "points": 400.0},
+            {"position": 2, "code": "PIA", "points": 370.0},
+            {"position": 3, "code": "VER", "points": 300.0},
+        ],
+        "constructors": [],
+    }
+
+
+def _schedule_payload() -> dict:
+    return {
+        "season": 2026,
+        "races": [
+            {"round": 20, "raceName": "R20", "date": "2026-11-08", "sprint": False},
+            {"round": 21, "raceName": "R21", "date": "2026-11-22", "sprint": False},
+            {"round": 22, "raceName": "R22", "date": "2026-11-29", "sprint": True},
+            {"round": 23, "raceName": "R23", "date": "2026-12-06", "sprint": False},
+        ],
+    }
+
+
+def _stale_fr(value):
+    return FallbackResult(
+        value=value,
+        source="cache:stale",
+        is_stale=True,
+        data_age_seconds=900,
+        fallback_used=True,
+        duration_ms=1,
+    )
+
+
+async def test_f1_simulate_championship_returns_envelope_and_eliminates():
+    from sportiq.f1 import intel_tools
+
+    with (
+        patch("sportiq.f1.intel_tools.f1_standings_chain") as mock_st,
+        patch("sportiq.f1.intel_tools.f1_schedule_chain") as mock_sc,
+    ):
+        mock_st.fetch = AsyncMock(return_value=_fr(_standings_payload(), source="jolpica"))
+        mock_sc.fetch = AsyncMock(return_value=_fr(_schedule_payload(), source="jolpica"))
+        result = await intel_tools.f1_simulate_championship(year=2026, iterations=1000, seed=5)
+    data, meta = result["data"], result["meta"]
+    # Rounds 22 (sprint) + 23 remain: 25 + 8 + 25 = 58.
+    assert data["rounds_remaining"] == 2
+    assert data["max_remaining_points"] == 58
+    ver = next(d for d in data["drivers"] if d["code"] == "VER")
+    assert ver["eliminated"] is True and ver["title_prob"] == 0.0
+    assert sum(d["title_prob"] for d in data["drivers"]) == pytest.approx(1.0, abs=1e-3)
+    assert meta["estimated"] is True
+    assert meta["model"] == "plackett-luce-points-rate"
+    assert meta["iterations"] == 1000
+    assert meta["is_stale"] is False
+
+
+async def test_f1_simulate_championship_propagates_staleness():
+    from sportiq.f1 import intel_tools
+
+    with (
+        patch("sportiq.f1.intel_tools.f1_standings_chain") as mock_st,
+        patch("sportiq.f1.intel_tools.f1_schedule_chain") as mock_sc,
+    ):
+        mock_st.fetch = AsyncMock(return_value=_fr(_standings_payload(), source="jolpica"))
+        mock_sc.fetch = AsyncMock(return_value=_stale_fr(_schedule_payload()))
+        result = await intel_tools.f1_simulate_championship(year=2026, iterations=1000, seed=5)
+    assert result["meta"]["is_stale"] is True
+    assert result["meta"]["data_age_seconds"] == 900
+    assert result["meta"]["fallback_used"] is True
+
+
+async def test_f1_simulate_championship_clamps_iterations():
+    from sportiq.f1 import intel_tools
+
+    with (
+        patch("sportiq.f1.intel_tools.f1_standings_chain") as mock_st,
+        patch("sportiq.f1.intel_tools.f1_schedule_chain") as mock_sc,
+    ):
+        mock_st.fetch = AsyncMock(return_value=_fr(_standings_payload(), source="jolpica"))
+        mock_sc.fetch = AsyncMock(return_value=_fr(_schedule_payload(), source="jolpica"))
+        result = await intel_tools.f1_simulate_championship(year=2026, iterations=5, seed=1)
+    assert result["meta"]["iterations"] == 1000
+
+
+async def test_f1_simulate_championship_all_sources_failed():
+    from sportiq.f1 import intel_tools
+
+    with (
+        patch("sportiq.f1.intel_tools.f1_standings_chain") as mock_st,
+        patch("sportiq.f1.intel_tools.f1_schedule_chain") as mock_sc,
+    ):
+        mock_st.fetch = AsyncMock(side_effect=AllSourcesFailedError("down", attempts=[]))
+        mock_sc.fetch = AsyncMock(return_value=_fr(_schedule_payload(), source="jolpica"))
+        result = await intel_tools.f1_simulate_championship(year=2026)
+    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+async def test_f1_simulate_championship_invalid_year():
+    from sportiq.f1 import intel_tools
+
+    result = await intel_tools.f1_simulate_championship(year=1999)
+    assert result["error"]["code"] == "INVALID_INPUT"

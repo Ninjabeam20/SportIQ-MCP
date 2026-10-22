@@ -41,9 +41,9 @@ The AI sees `is_stale: true` and adapts wording ("As of about 4 minutes ago…")
 | Code | When |
 | :--- | :--- |
 | `ALL_SOURCES_FAILED` | Every adapter in the chain raised; no stale cache. |
-| `RATE_LIMITED` | A specific source returned 429 AND no fallback succeeded. |
+| `RATE_LIMITED` | Defined; **not currently emitted** — budget exhaustion surfaces as `ALL_SOURCES_FAILED` with `skipped` / `rate_limited` attempts. |
 | `INVALID_INPUT` | pydantic validation failed before any I/O. |
-| `UPSTREAM_TIMEOUT` | All upstreams exceeded timeout; subset of `ALL_SOURCES_FAILED`. |
+| `UPSTREAM_TIMEOUT` | Emitted by the per-tool deadline (`core/tool_telemetry.py`, `TOOL_DEADLINE_SECONDS`, default 30 s) with `retry_after_seconds=60`. |
 | `NOT_FOUND` | Source responded successfully but the requested entity does not exist. |
 | ~~`SUBSCRIPTION_REQUIRED`~~ | **Removed 2026-07-01** with the paywall (ADR-0011 reversed). Not in `core/errors.ErrorCode`; never emitted. Do not reintroduce. |
 

@@ -3,8 +3,8 @@ title: FastMCP over raw MCP SDK
 type: decision
 tags: [mcp, framework]
 sources: [chat]
-last_updated: 2026-09-25
-related: []
+last_updated: 2026-10-22
+related: [[0004-uvx-distribution]], [[0005-fallback-chain-pattern]]
 ---
 
 # ADR 0001 — FastMCP over raw MCP SDK

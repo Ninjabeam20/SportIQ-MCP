@@ -3,8 +3,8 @@ title: Cricket Squad Chain
 type: chain
 tags: [cricket, squad, roster]
 sources: []
-last_updated: 2026-09-25
-related: [[cricapi]], [[static-seed]]
+last_updated: 2026-10-22
+related: [[cricapi]], [[static-seed]], [[cricsheet]], [[cricket-build-dream11-team]]
 ---
 
 # Cricket Squad Chain
@@ -15,7 +15,10 @@ related: [[cricapi]], [[static-seed]]
 
 `cricapi` → `static_seed`
 
-`static_seed` is always enabled and serves IPL 2026 rosters from `src/sportiq/cricket/data/squads.json`.
+`static_seed` is always enabled and serves IPL 2026 rosters from `src/sportiq/cricket/data/squads.json`,
+generated from [[cricsheet]] by `scripts/build_cricket_squads.py`. Team input may be a code (`MI`) or the
+official franchise name (`Mumbai Indians`); there is no substring matching. The tools pass `series_id`
+through from match resolution, so a CricAPI squad is fetched for the right series.
 
 ## TTLs
 

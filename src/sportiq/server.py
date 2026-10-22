@@ -25,6 +25,7 @@ from sportiq.core.instructions import register_instructions_resource
 from sportiq.core.logging import configure_logging
 from sportiq.core.param_docs import apply_param_descriptions
 from sportiq.core.prompts import register_prompts
+from sportiq.core.resources import register_static_resources
 from sportiq.core.tool_telemetry import instrument_tools
 from sportiq.cricket.tools import register_cricket_tools
 from sportiq.f1.tools import register_f1_tools
@@ -62,6 +63,7 @@ mcp._mcp_server.version = __version__
 
 register_health_tool(mcp)
 register_instructions_resource(mcp)
+register_static_resources(mcp)
 register_prompts(mcp)
 # Registration order is the order of relevance (football → F1 → cricket); it
 # determines how tools are listed to MCP clients. Imports above stay alphabetical

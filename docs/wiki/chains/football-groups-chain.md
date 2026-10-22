@@ -3,7 +3,7 @@ title: Football Groups Chain
 type: chain
 tags: [football]
 sources: []
-last_updated: 2026-09-25
+last_updated: 2026-10-22
 related: [[static-seed]], [[football-get-groups]], [[bracket-sim]]
 ---
 
@@ -26,7 +26,9 @@ static-seed
 The ~1-year TTL is intentional. The groups payload represents the static draw structure (12 groups of 4) and frozen pre-tournament baseline Elo ratings for FIFA World Cup 2026. This structure is immutable across the tournament and remains valid post-tournament as the canonical baseline. In-tournament dynamic conditioning (actual match scores, knockout progression, and live Elo nudges) is applied downstream in memory via `_maybe_nudge_single` and `results_state`, leaving the underlying seed cache invariant.
 
 ## Cache key
-`sportiq:football:groups:wc2026`
+`sportiq:football:groups:wc2026:{version}` (package `__version__`). With a ~1-year TTL, an unversioned
+key would keep serving the old payload after a release that changes the seed; the version makes each
+release read its own seed.
 
 The terminator returns the canonical 2026 draw **plus** Elo ratings; all INTEL tools read it.
 

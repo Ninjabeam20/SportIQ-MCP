@@ -1,4 +1,4 @@
-"""Jolpica (Ergast successor) adapters — season standings and race results."""
+"""Jolpica (Ergast successor) adapters — season standings, race results and schedule."""
 
 from __future__ import annotations
 
@@ -116,6 +116,38 @@ class JolpicaResultsAdapter:
         if not races or not races[0].get("Results"):
             raise NotFoundError(f"Jolpica returned no race results for {year} round {round}")
         return {"results": data}
+
+    async def healthcheck(self) -> bool:
+        return True
+
+
+class JolpicaScheduleAdapter:
+    """Season calendar: ``{season, races: [{round, raceName, date, sprint}]}``."""
+
+    name = "jolpica"
+    budget = None
+
+    async def fetch(self, year: int, **kwargs) -> dict:
+        data = await get_json(f"{_JOLPICA_BASE}/f1/{year}.json")
+        races = (
+            data.get("MRData", {}).get("RaceTable", {}).get("Races", [])
+            if isinstance(data, dict)
+            else []
+        )
+        if not races:
+            raise NotFoundError(f"Jolpica returned no schedule for {year}")
+        return {
+            "season": year,
+            "races": [
+                {
+                    "round": _int_or_none(r.get("round")) or 0,
+                    "raceName": r.get("raceName", ""),
+                    "date": r.get("date", ""),
+                    "sprint": "Sprint" in r,
+                }
+                for r in races
+            ],
+        }
 
     async def healthcheck(self) -> bool:
         return True

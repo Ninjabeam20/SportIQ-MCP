@@ -21,6 +21,7 @@ const FOOTBALL_TOOLS: Tool[] = [
   { name: "football_simulate_group" },
   { name: "football_simulate_bracket", isFlagship: true },
   { name: "football_knockout_path" },
+  { name: "football_what_if" },
   { name: "football_form_trends" },
   { name: "football_find_value_bets" },
   { name: "football_build_accumulator" },
@@ -40,6 +41,7 @@ const F1_TOOLS: Tool[] = [
   { name: "f1_qualifying_analysis" },
   { name: "f1_race_pace_compare" },
   { name: "f1_predict_pit_strategy", isFlagship: true },
+  { name: "f1_simulate_championship" },
 ];
 
 const CRICKET_TOOLS: Tool[] = [
@@ -73,7 +75,7 @@ export default function ToolExplorer() {
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="font-oswald text-3xl sm:text-4xl uppercase tracking-tight mb-4">
-            44 Tools. Zero Configuration.
+            46 Tools. Zero Configuration.
           </h2>
           <p className="text-white/70 max-w-xl mx-auto">
             A complete arsenal of data retrieval and intelligent modeling tools, exposed natively to your AI. Every one of them is free.
@@ -129,7 +131,7 @@ export default function ToolExplorer() {
             </div>
             
             <div className="mt-6 pt-6 border-t border-white/10 text-center text-sm text-white/50">
-              + cross-sport accumulator & health diagnostics (44 tools total)
+              + cross-sport accumulator & health diagnostics (46 tools total)
             </div>
           </div>
         </div>

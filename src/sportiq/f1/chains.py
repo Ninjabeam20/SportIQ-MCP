@@ -7,6 +7,7 @@ Resolution order:
   weather   : openf1 (only source)
   results   : jolpica (only source; keyed by year + round)
   standings : jolpica → fastf1
+  schedule  : jolpica (only source)
   drivers   : openf1 (only source)
 """
 
@@ -18,7 +19,11 @@ from sportiq import __version__
 from sportiq.core.fallback import FallbackChain
 from sportiq.core.health import register_adapter_for_health
 from sportiq.f1.adapters.fastf1_local import FastF1LapsAdapter, FastF1StandingsAdapter
-from sportiq.f1.adapters.jolpica import JolpicaResultsAdapter, JolpicaStandingsAdapter
+from sportiq.f1.adapters.jolpica import (
+    JolpicaResultsAdapter,
+    JolpicaScheduleAdapter,
+    JolpicaStandingsAdapter,
+)
 from sportiq.f1.adapters.openf1 import (
     OpenF1DriversAdapter,
     OpenF1LapsAdapter,
@@ -36,6 +41,7 @@ _openf1_stints = OpenF1StintsAdapter()
 _openf1_weather = OpenF1WeatherAdapter()
 _jolpica_standings = JolpicaStandingsAdapter()
 _jolpica_results = JolpicaResultsAdapter()
+_jolpica_schedule = JolpicaScheduleAdapter()
 _fastf1_laps = FastF1LapsAdapter()
 _fastf1_standings = FastF1StandingsAdapter()
 
@@ -124,6 +130,15 @@ f1_standings_chain: FallbackChain[dict] = FallbackChain(
     cache_key_fn=lambda year, **_: f"sportiq:f1:standings:{__version__}:{year}",
     fresh_ttl=86400,
     stale_ttl=604800,
+)
+
+f1_schedule_chain: FallbackChain[dict] = FallbackChain(
+    name="f1:schedule",
+    adapters=[_jolpica_schedule],
+    cache_key_fn=lambda year, **_: f"sportiq:f1:schedule:{year}",
+    # Fixtures / schedule (static) class in caching-policy.md.
+    fresh_ttl=21600,
+    stale_ttl=86400,
 )
 
 f1_drivers_chain: FallbackChain[dict] = FallbackChain(

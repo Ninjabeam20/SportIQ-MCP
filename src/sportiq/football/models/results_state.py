@@ -18,7 +18,7 @@ fallback for legacy payloads without a stage.
 from __future__ import annotations
 
 import unicodedata
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 # Naming variants that differ from ``wc2026.json`` team names across the live
 # sources. These normalise *labels*, not curated sports facts.
@@ -107,6 +107,9 @@ class ResultsState:
     goals_b)`` in date order (for the Elo walk). ``matched`` / ``dropped`` count
     how many finished fixtures were resolved vs. skipped. ``champion`` is the
     winner of a finished fixture whose stage is the final, else None.
+    ``knockout_rounds`` maps each decided tie's pair to its round (``r32`` |
+    ``r16`` | ``qf`` | ``sf`` | ``third`` | ``final``) when the provider's stage
+    label names one; unlabelled ties are absent.
     """
 
     groups: dict[str, GroupResults] = field(default_factory=dict)
@@ -115,6 +118,7 @@ class ResultsState:
     matched: int = 0
     dropped: int = 0
     champion: str | None = None
+    knockout_rounds: dict[frozenset[str], str] = field(default_factory=dict)
 
 
 # Finished-match status markers across the fixture sources. football-data.org and
@@ -150,6 +154,31 @@ def _stage_class(
     return "group" if same_group else "knockout"
 
 
+def _knockout_round(stage: object) -> str | None:
+    """Map a provider knockout stage label to a round id, or None if unrecognised.
+
+    Covers openfootball ("Round of 32", "Quarter-final", "Match for third place"),
+    football-data.org ("LAST_32", "QUARTER_FINALS", "THIRD_PLACE") and
+    api-football ("Round of 16", "Semi-finals", "3rd Place Final").
+    """
+    value = _normalize(str(stage or ""))
+    if not value:
+        return None
+    if "third" in value or "3rd" in value:
+        return "third"
+    if "semi" in value:
+        return "sf"
+    if "quarter" in value:
+        return "qf"
+    if value in ("round of 32", "last 32", "1 16 final", "1 16 finals"):
+        return "r32"
+    if value in ("round of 16", "last 16", "1 8 final", "1 8 finals"):
+        return "r16"
+    if value == "final" or value == "finals":
+        return "final"
+    return None
+
+
 def build_results_state(
     fixtures: list[dict],
     groups: dict[str, list[str]],
@@ -172,8 +201,10 @@ def build_results_state(
 
     # Per provider match ID keep one report; legacy payloads without an ID are
     # deduplicated by stage class + pairing. The latest report by date wins.
-    # Values hold (code_a, code_b, goals_a, goals_b, date, stage_class, winner, is_final).
-    record: dict[tuple[str, object], tuple[str, str, int, int, str, str, str | None, bool]] = {}
+    # Values hold (code_a, code_b, goals_a, goals_b, date, stage_class, winner, ko_round).
+    record: dict[
+        tuple[str, object], tuple[str, str, int, int, str, str, str | None, str | None]
+    ] = {}
     dropped = 0
 
     for fx in fixtures:
@@ -208,8 +239,8 @@ def build_results_state(
         )
         if key in record and date < record[key][4]:
             continue  # older report of a pairing we already have
-        is_final = stage_class == "knockout" and _normalize(str(fx.get("stage") or "")) == "final"
-        record[key] = (a, b, ga, gb, date, stage_class, winner, is_final)
+        ko_round = _knockout_round(fx.get("stage")) if stage_class == "knockout" else None
+        record[key] = (a, b, ga, gb, date, stage_class, winner, ko_round)
 
     completed_by_group: dict[str, dict[frozenset[str], tuple[str, str, int, int]]] = {
         letter: {} for letter in groups
@@ -217,13 +248,16 @@ def build_results_state(
     knockout: list[tuple[str, str, str]] = []
     chrono: list[tuple[str, str, int, int, str]] = []
     champion: str | None = None
-    for a, b, ga, gb, date, stage_class, winner, is_final in record.values():
+    knockout_rounds: dict[frozenset[str], str] = {}
+    for a, b, ga, gb, date, stage_class, winner, ko_round in record.values():
         chrono.append((a, b, ga, gb, date))
         if stage_class == "group":
             completed_by_group[code_to_group[a]][frozenset((a, b))] = (a, b, ga, gb)
         else:
             knockout.append((a, b, winner))
-            if is_final:
+            if ko_round is not None:
+                knockout_rounds[frozenset((a, b))] = ko_round
+            if ko_round == "final":
                 champion = winner
 
     group_states: dict[str, GroupResults] = {}
@@ -245,7 +279,90 @@ def build_results_state(
         matched=len(record),
         dropped=dropped,
         champion=champion,
+        knockout_rounds=knockout_rounds,
     )
+
+
+# Replay stages in tournament order. "Replay from X" keeps every real result
+# played before X and simulates X onward.
+REPLAY_STAGES: tuple[str, ...] = ("group", "r32", "r16", "qf", "sf", "final")
+
+
+def truncate_results_state(state: ResultsState, keep_before: str) -> ResultsState:
+    """Return a new state holding only the real results played before ``keep_before``.
+
+    ``keep_before`` is one of :data:`REPLAY_STAGES`. ``"group"`` keeps nothing
+    (a full pre-tournament replay); ``"r32"`` keeps the group stage; ``"qf"`` keeps
+    the groups plus the R32 and R16 ties; and so on. Dropped group results move
+    back to ``remaining``. Knockout ties without a recognised round label, and the
+    third-place match, are never kept. ``completed_chrono`` (the live-Elo walk) is
+    trimmed to the kept matches; ``champion`` is cleared because the final is
+    never kept.
+
+    Raises:
+        ValueError: ``keep_before`` is not a replay stage.
+    """
+    if keep_before not in REPLAY_STAGES:
+        raise ValueError(f"replay stage must be one of {', '.join(REPLAY_STAGES)}")
+    cut = REPLAY_STAGES.index(keep_before)
+    kept_rounds = set(REPLAY_STAGES[1:cut])  # knockout rounds strictly before the cut
+    keep_groups = cut > 0
+
+    groups: dict[str, GroupResults] = {}
+    for letter, g in state.groups.items():
+        if keep_groups:
+            groups[letter] = GroupResults(completed=list(g.completed), remaining=list(g.remaining))
+        else:
+            replayed = [(a, b) for (a, b, _ga, _gb) in g.completed]
+            groups[letter] = GroupResults(completed=[], remaining=replayed + list(g.remaining))
+
+    knockout = [
+        (a, b, w)
+        for (a, b, w) in state.knockout
+        if state.knockout_rounds.get(frozenset((a, b))) in kept_rounds
+    ]
+    rounds = {frozenset((a, b)): state.knockout_rounds[frozenset((a, b))] for a, b, _w in knockout}
+
+    # Multiset of kept pairings: a pair can occur once in a group and again in a knockout.
+    wanted: dict[frozenset[str], int] = {}
+    for g in groups.values():
+        for a, b, _ga, _gb in g.completed:
+            wanted[frozenset((a, b))] = wanted.get(frozenset((a, b)), 0) + 1
+    for a, b, _w in knockout:
+        wanted[frozenset((a, b))] = wanted.get(frozenset((a, b)), 0) + 1
+    chrono: list[tuple[str, str, int, int]] = []
+    for a, b, ga, gb in state.completed_chrono:
+        pair = frozenset((a, b))
+        if wanted.get(pair, 0) > 0:
+            wanted[pair] -= 1
+            chrono.append((a, b, ga, gb))
+
+    return replace(
+        state,
+        groups=groups,
+        knockout=knockout,
+        completed_chrono=chrono,
+        matched=len(chrono),
+        champion=None,
+        knockout_rounds=rounds,
+    )
+
+
+def flip_knockout_winner(state: ResultsState, code_a: str, code_b: str) -> ResultsState:
+    """Return a new state where the decided knockout tie ``code_a``-``code_b`` went the other way.
+
+    Only the locked winner changes; the recorded goals (and so the live-Elo walk)
+    stay as played. Raises ``ValueError`` when that tie is not in ``state.knockout``.
+    """
+    pair = frozenset((code_a, code_b))
+    knockout = list(state.knockout)
+    for i, (a, b, winner) in enumerate(knockout):
+        if frozenset((a, b)) == pair:
+            flipped = b if winner == a else a
+            knockout[i] = (a, b, flipped)
+            champion = flipped if state.knockout_rounds.get(pair) == "final" else state.champion
+            return replace(state, knockout=knockout, champion=champion)
+    raise ValueError(f"{code_a}-{code_b} is not a decided knockout tie in the kept results.")
 
 
 def derived_standings(

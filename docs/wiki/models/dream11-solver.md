@@ -3,11 +3,11 @@ title: Dream11 Solver (PuLP ILP)
 type: model
 tags: [cricket, dream11, ilp, pulp, cbc]
 sources: []
-last_updated: 2026-09-11
+last_updated: 2026-10-22
 related: [[cricket-build-dream11-team]], [[dream11-scoring]], [[captain-score]], [[0002-pulp-over-ortools]]
 ---
 
-# Dream11 Solver
+# Dream11 Solver (PuLP ILP)
 
 Binary integer linear program that picks the optimal 11 + captain + vice-captain under T20 fantasy constraints. Lives at `src/sportiq/cricket/models/dream11_solver.py`.
 

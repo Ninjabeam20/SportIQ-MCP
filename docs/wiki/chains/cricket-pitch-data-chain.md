@@ -3,7 +3,7 @@ title: Cricket Pitch Data Chain
 type: chain
 tags: [cricket, pitch, venue, static]
 sources: []
-last_updated: 2026-09-25
+last_updated: 2026-10-22
 related: [[static-seed]], [[cricket-get-pitch-report]], [[pitch-report]]
 ---
 
@@ -24,6 +24,8 @@ The chain is designed to absorb a future "recent scorecards at this venue" adapt
 
 ## Cache key
 
-`sportiq:cricket:pitch:{digest}` where `digest` is an eight-byte BLAKE2s hash of the lowercased input venue.
+`sportiq:cricket:pitch:{version}:{digest}`, where `version` is the package `__version__` and `digest` is
+an eight-byte BLAKE2s hash of the lowercased input venue. The version stops a regenerated `venues.json`
+from being shadowed by a year-old cache entry.
 
 Case variants share a cache key. Different aliases such as `Wankhede` and `Wankhede Stadium` can use different keys even when the adapter resolves them to the same venue.

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -9,7 +10,7 @@ import { LINKS } from "@/config/links";
 export const metadata: Metadata = {
   title: "Set up SportIQ — connect it to Claude, ChatGPT or Cursor",
   description:
-    "Step-by-step setup for SportIQ: add the hosted MCP server as a custom connector in Claude, ChatGPT or Cursor and start asking. All 44 tools are free — no key, no account.",
+    "Step-by-step setup for SportIQ: add the hosted MCP server as a custom connector in Claude, ChatGPT or Cursor and start asking. All 46 tools are free; the hosted server needs no key.",
   alternates: { canonical: "/setup" },
 };
 
@@ -22,7 +23,7 @@ const STEPS = [
   {
     n: 2,
     title: "Start asking",
-    body: "That's it. All 44 tools — data and full intelligence layer — are live immediately. No key, no account.",
+    body: "That's it. All 46 tools — data and full intelligence layer — are free and live immediately. The hosted server needs no key; some live feeds need provider keys when self-hosting.",
   },
 ];
 
@@ -87,7 +88,7 @@ export default function SetupPage() {
                 Sponsor the project &rarr;
               </a>
               <Link
-                href="/#pricing"
+                href="/#sponsor"
                 className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-white border border-white/20 rounded-full hover:bg-white/10 transition-colors"
               >
                 Support tiers
@@ -122,7 +123,7 @@ export default function SetupPage() {
         </section>
 
         {/* Hosted URL callout */}
-        <section className="py-12">
+        <section id="hosted" className="py-12 scroll-mt-20">
           <div className="max-w-3xl mx-auto px-4">
             <div className="glass-panel rounded-2xl p-6 sm:p-8 text-center">
               <p className="text-sm text-white/60 mb-3">
@@ -185,19 +186,17 @@ export default function SetupPage() {
                 { n: 1, caption: "Settings → Connectors → Add custom connector" },
                 { n: 2, caption: "Paste the hosted MCP URL and continue" },
                 { n: 3, caption: "Approve the SportIQ tools" },
-                { n: 4, caption: "Start asking — all 44 tools are live" },
+                { n: 4, caption: "Start asking — all 46 tools are live" },
               ].map((shot) => (
                 <figure key={shot.n} className="space-y-3">
-                  <div className="relative aspect-[3/2] w-full rounded-xl overflow-hidden glass-panel border-white/20 shadow-2xl">
-                    {/* Placeholder until public/step-N.png is added. When the
-                        screenshot exists, swap this div for:
-                        <Image src={`/step-${shot.n}.png`} alt={shot.caption} fill
-                          className="object-cover" sizes="(max-width:768px) 100vw, 600px" /> */}
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                      <span className="font-mono text-white/30 text-sm">
-                        step-{shot.n}.png
-                      </span>
-                    </div>
+                  <div className="relative aspect-[3/2] w-full rounded-xl overflow-hidden glass-panel border-white/20 shadow-2xl bg-black/40">
+                    <Image
+                      src={`/step-${shot.n}.png`}
+                      alt={shot.caption}
+                      fill
+                      className="object-contain p-4"
+                      sizes="(max-width:768px) 100vw, 600px"
+                    />
                   </div>
                   <figcaption className="text-sm text-white/60">
                     <span className="font-mono text-action-blue mr-2">
@@ -219,7 +218,7 @@ export default function SetupPage() {
                 Support SportIQ
               </h3>
               <p className="text-sm text-white/70 leading-relaxed mb-4">
-                SportIQ is free — all 44 tools, no key, no account. If it saves
+                SportIQ is free — all 46 tools. If it saves
                 you time, you can sponsor on GitHub to help cover hosting and
                 keep it maintained. Purely voluntary — you get the same
                 fully-unlocked server either way.

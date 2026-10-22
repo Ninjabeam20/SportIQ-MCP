@@ -3,8 +3,8 @@ title: codex_changes Review — Four Confirmed Merge Blockers
 type: finding
 tags: [review, http, middleware, football, tiebreakers, ratelimit, cache, security]
 sources: [chat]
-last_updated: 2026-07-14
-related: [[0012-hosted-abuse-controls]], [[group-sim]], [[bracket-sim]], [[football-simulate-group]], [[football-simulate-bracket]]
+last_updated: 2026-10-22
+related: [[0012-hosted-abuse-controls]], [[group-sim]], [[bracket-sim]], [[football-simulate-group]], [[football-simulate-bracket]], [[home-server-cutover]], [[2026-10-22-full-audit]]
 ---
 
 # codex_changes Review — Four Confirmed Merge Blockers
@@ -17,6 +17,20 @@ on `codex_changes`, re-verified (766 tests, ruff, hook regression), and the bran
 fast-forward merged into `main` at `07dcf99` on 2026-07-14 (docs commit `50530ef`), pushed to
 origin, and canary-deployed to Cloud Run as revision `sportiq-mcp-00035-vam` (100% traffic) after
 verifying the SSE fix live on the tagged URL.
+
+## Status (2026-10-22)
+
+Historical: the Cloud Run revision named above was deleted on 2026-09-02, and production now runs on
+the home server behind Cloudflare ([[home-server-cutover]]). What still holds:
+
+- Fix 1 (SSE replay) and fix 2 (head-to-head goals in the tiebreak) are still the live code.
+- Fix 3 is superseded for production: with `SPORTIQ_TRUST_CLOUDFLARE=1` the client identity is
+  `CF-Connecting-IP`; the rightmost-XFF rule only applies when Cloud Run trust is on, which it never is
+  on the Dell (`K_SERVICE` stays unset).
+- Fix 4 (legacy counters) still holds. The counter path had a separate, worse bug — `_disk.expire()`
+  purged the whole cache — found in the 2026-10-22 audit; see [[diskcache-expire-purge]].
+- Deferred items: `GET`/`DELETE /mcp` are still not rate-limited (only `POST /mcp` is), and
+  `group_sim.simulate_group` is still test-only.
 
 ## Resolution
 

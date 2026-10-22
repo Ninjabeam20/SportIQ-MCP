@@ -31,12 +31,12 @@ Built strictly with **Next.js (App Router)**, **Tailwind CSS v3**, and **TypeScr
 - `src/app/layout.tsx` — Global layout, fonts, and full SEO/JSON-LD metadata configuration.
 - `src/app/globals.css` — Global CSS including custom `.glass-panel` utilities and Tailwind directives.
 - `src/components/` — Individual functional components (Hero, FlagshipCards, PricingSection, etc.).
-- `src/config/links.ts` — The single source of truth for all external URLs and payment provider checkouts.
+- `src/config/links.ts` — The single source of truth for all external URLs and the voluntary GitHub Sponsors tiers.
 - `public/` — Static assets (logos, screenshots, OpenGraph images).
 
 ## Configuration
 
-If you need to update any URLs, download links, or checkout flows, do **not** modify the JSX directly. Edit the `src/config/links.ts` file instead to ensure a single source of truth.
+If you need to update any URLs, download links, or sponsor tiers, do **not** modify the JSX directly. Edit the `src/config/links.ts` file instead to ensure a single source of truth.
 
 ## License
 

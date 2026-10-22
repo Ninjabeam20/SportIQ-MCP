@@ -3,8 +3,8 @@ title: Live Result Conditioning
 type: model
 tags: [football, simulation, monte-carlo, elo, live, wc2026]
 sources: [src/sportiq/football/models/results_state.py, src/sportiq/football/models/elo_live.py]
-last_updated: 2026-07-14
-related: [[bracket-sim]], [[group-sim]], [[elo]], [[results-state]]
+last_updated: 2026-10-22
+related: [[bracket-sim]], [[group-sim]], [[elo]], [[results-state]], [[openfootball]], [[football-what-if]]
 ---
 
 # Live Result Conditioning
@@ -59,3 +59,27 @@ Explicit group tokens (`GROUP`, `GROUP_STAGE`, `MATCHDAY`, and provider group la
 group; other nonempty stages classify as knockout. Same-group membership is used only when legacy
 payloads omit stage. Consequently a later knockout between two teams from the same original group
 no longer overwrites the group result, and both remain in chronological Elo input.
+
+## Simulation mode (`meta.mode`)
+
+Every conditioned sim reports one of three modes:
+
+| `meta.mode` | When |
+| :-- | :-- |
+| `completed` | the state has a `champion` (the winner of a finished fixture whose stage is the final); `meta.champion` is set |
+| `in_progress` | real results were matched but there is no champion yet |
+| `pre_tournament_prior` | no state, nothing matched, or the fixtures came from the scores-less static seed; a note says this is a reconstructed pre-tournament simulation, not the current state |
+
+In `completed` mode the bracket and knockout-path tools skip the Monte Carlo and return the exact rounds
+from [[bracket-sim]] (`meta.iterations == 0`). [[football-what-if]] uses `meta.mode = "what_if"` instead.
+
+## Post-final data (2026-10-22 fixes)
+
+- [[openfootball]] now keeps extra-time and penalty scores and the winner's name, so the 0–0-after-90
+  final and the four shootouts lock as decided ties.
+- [[results-state]] aliases `Cape Verde` / `Cabo Verde` → CPV and `DR Congo` / `Congo DR` → COD, the
+  spellings openfootball uses.
+- Team participation is checked against the draw (not the rating table), and the draw's KSA key is
+  aliased to the rating seed's SAU.
+- With `SPORTIQ_FOOTBALL_LIVE_ELO=1` the single-match tools also pass the fixtures result to
+  `staleness_meta`, so a stale fixtures feed is reported instead of swallowed.

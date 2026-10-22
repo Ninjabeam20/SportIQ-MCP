@@ -24,7 +24,7 @@ export default function FlagshipCards() {
             </div>
             <h3 className="font-oswald text-2xl uppercase tracking-tight mb-3">Monte Carlo Bracket</h3>
             <p className="text-white/70 text-sm leading-relaxed mb-8 h-24">
-              Simulates the full World Cup 2026 with Poisson xG — 12 groups, top 2 + 8 best thirds into a 32-team knockout, played to a champion thousands of times. Conditioned on live results.
+              Replays the World Cup 2026 with Poisson xG — 12 groups, top 2 + 8 best thirds into a 32-team knockout. Lock in the real results, flip one tie, and see who lifts the trophy instead.
             </p>
             
             {/* Signature Animation */}

@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from "react";
 export default function TrustStrip() {
   // Start at the real total so the static render never shows "0 tools";
   // the count-up animation takes over once the strip scrolls into view.
-  const [toolsCount, setToolsCount] = useState(44);
+  const [toolsCount, setToolsCount] = useState(46);
   const sectionRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -13,7 +13,7 @@ export default function TrustStrip() {
       (entries) => {
         if (entries[0].isIntersecting) {
           let start = 0;
-          const target = 44;
+          const target = 46;
           const duration = 1500;
           const increment = target / (duration / 16);
           

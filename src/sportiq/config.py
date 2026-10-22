@@ -25,7 +25,9 @@ class Settings(BaseSettings):
 
     cricapi_key: str | None = None
     apifootball_key: str | None = None
-    footballdata_key: str | None = None  # optional higher tier for football-data.org
+    footballdata_key: str | None = (
+        None  # football-data.org; required for WC endpoints (403 without)
+    )
     rapidapi_key: str | None = None
     theodds_key: str | None = None  # the-odds-api.com — 500 req/month free; cricket + football odds
 

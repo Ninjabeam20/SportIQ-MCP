@@ -2,9 +2,9 @@
 title: openfootball
 type: data-source
 tags: [football, fixtures, keyless]
-sources: []
-last_updated: 2026-07-14
-related: [[football-fixtures-chain]], [[football-data-org]], [[static-seed]]
+sources: [src/sportiq/football/adapters/openfootball.py]
+last_updated: 2026-10-22
+related: [[football-fixtures-chain]], [[football-data-org]], [[static-seed]], [[results-state]], [[live-conditioning]]
 ---
 
 # openfootball
@@ -21,8 +21,11 @@ None. No token, no quota (`budget = None`).
 
 ## Update cadence / caveat
 The upstream is hand-maintained (a wiki-style text source regenerated to JSON via GitHub Action,
-edited ~once/day). Finished-match scores are correct but can **lag several hours** behind kickoff.
-Wherever `FOOTBALLDATA_KEY` is set, [[football-data-org]] runs first and serves fresher scores.
+edited ~once/day). During the tournament finished-match scores could **lag several hours** behind
+kickoff; wherever `FOOTBALLDATA_KEY` is set, [[football-data-org]] runs first and serves fresher scores.
+Since the 2026-07-19 final the file is complete: all 104 matches scored, including 4 shootouts and the
+extra-time final (ESP 1–0 ARG). A copy taken 2026-10-22 is the replay test fixture
+`tests/fixtures/openfootball/worldcup-2026-complete.json`.
 
 ## Parse mapping
 Top-level `matches[]`; each match →
@@ -35,8 +38,14 @@ Top-level `matches[]`; each match →
 | `match_id` | native `id` when present, else `None` |
 | `stage` | `round` |
 | `status` | `FINISHED` if `score.ft` is a 2-list, else `SCHEDULED` |
-| `home_goals` / `away_goals` | `score.ft[0]` / `score.ft[1]`, else `None` |
-| `winner` | `None` (winner inferred from decisive scores; level knockouts stay undecidable) |
+| `home_goals` / `away_goals` | goals after extra time (`score.et`) when present, else `score.ft`; `None` if unplayed |
+| `regulation_home_goals` / `regulation_away_goals` | `score.ft` (90 minutes) |
+| `penalties_home` / `penalties_away` | `score.p` when a shootout was played, else `None` |
+| `winner` | winning team **name**: decided by penalties, then the final score; `None` only when level (a group draw) |
+
+The winner uses the same name convention as [[football-data-org]], so [[results-state]] resolves it to a
+code and locks the tie. Before 2026-10-22 the adapter read only `score.ft` and hard-coded `winner: None`,
+which left the 0–0 final and every shootout undecidable.
 
 Output is normalised to `{"fixtures": [...]}` to match [[api-football]] / [[football-data-org]], so it
 is a drop-in chain fallback. Returns the full fixture list (including future, unplayed matches), so it

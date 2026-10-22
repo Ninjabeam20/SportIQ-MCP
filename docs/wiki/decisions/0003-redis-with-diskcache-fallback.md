@@ -3,8 +3,8 @@ title: Redis with diskcache fallback
 type: decision
 tags: [cache, infra]
 sources: [chat]
-last_updated: 2026-09-25
-related: []
+last_updated: 2026-10-22
+related: [[0005-fallback-chain-pattern]], [[sportiq-health]], [[diskcache-expire-purge]]
 ---
 
 # ADR 0003 — Redis with diskcache fallback

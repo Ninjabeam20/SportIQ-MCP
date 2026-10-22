@@ -2,8 +2,9 @@
 title: ADR-0010 PyPI Trusted Publishing (OIDC)
 type: decision
 tags: [release, security, pypi]
-last_updated: 2026-09-25
-related: []
+sources: [.github/workflows/release.yml]
+last_updated: 2026-10-22
+related: [[0004-uvx-distribution]], [[hosted-url-and-release-drift]]
 ---
 
 # ADR-0010 — PyPI Trusted Publishing (OIDC)

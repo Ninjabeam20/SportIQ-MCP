@@ -15,15 +15,17 @@ export default function Quickstart() {
 
   const uvxCode = `uvx sportiq-mcp`;
   
+  // Env values stay "": leave empty unless you have a key (any non-empty
+  // value, even "optional", is sent upstream as a real key and fails).
   const claudeCode = `{
   "mcpServers": {
     "sportiq": {
       "command": "uvx",
       "args": ["sportiq-mcp"],
       "env": {
-        "CRICAPI_KEY": "optional",
-        "APIFOOTBALL_KEY": "optional",
-        "THEODDS_KEY": "optional"
+        "CRICAPI_KEY": "",
+        "APIFOOTBALL_KEY": "",
+        "THEODDS_KEY": ""
       }
     }
   }
@@ -83,7 +85,7 @@ export default function Quickstart() {
         
         <div className="grid sm:grid-cols-2 gap-4 text-sm">
           <div className="glass-panel-light p-4 rounded-xl">
-            <p className="text-white/90"><strong className="text-white">No keys?</strong> It still runs on free seed + public-source data.</p>
+            <p className="text-white/90"><strong className="text-white">No keys?</strong> Leave the env values empty unless you have a key — it still runs on free seed + public-source data.</p>
           </div>
           <div className="glass-panel-light p-4 rounded-xl">
             <p className="text-white/90"><strong className="text-white">No install?</strong> Add the hosted server as a custom connector — every tool, including the full intelligence layer, is <strong className="text-white">free</strong>: <code className="bg-white/10 text-white px-1 py-0.5 rounded text-xs font-mono">{LINKS.hostedMcp}</code></p>

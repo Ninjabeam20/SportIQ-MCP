@@ -8,10 +8,16 @@ football_groups_chain (the source of the draw + ratings) and surface is_stale.
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
+from typing import Literal
 
+from sportiq import __version__
 from sportiq.config import settings
+from sportiq.core.cache import get_cache
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.fallback import FallbackResult
+from sportiq.core.logging import get_logger
 from sportiq.core.parlay import build_accumulator
 from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta
 from sportiq.core.value_bet import has_commenced
@@ -21,20 +27,31 @@ from sportiq.football.chains import (
     football_odds_chain,
 )
 from sportiq.football.models import poisson_xg
-from sportiq.football.models.bracket_sim import DEFAULT_RATING, simulate_tournament
+from sportiq.football.models.bracket_sim import (
+    DEFAULT_RATING,
+    simulate_tournament,
+    tournament_from_results,
+)
 from sportiq.football.models.elo_live import nudge_ratings
 from sportiq.football.models.form_trends import compute_form_trends
 from sportiq.football.models.group_sim import simulate_group_stage
 from sportiq.football.models.results_state import (
+    REPLAY_STAGES,
     ResultsState,
     build_code_index,
     build_results_state,
+    flip_knockout_winner,
     resolve_code,
+    truncate_results_state,
 )
 from sportiq.football.models.value_bet import find_value
 
+_log = get_logger("football.intel")
+
 _MAX_ITERATIONS = 20000
 _MIN_ITERATIONS = 100
+# Seeded bracket sims are deterministic for fixed inputs, so their output is memoised.
+_SIMMEMO_TTL_S = 6 * 3600
 
 _NO_LIVE_NOTE = "Live results unavailable; simulated from the pre-tournament seed."
 _TIEBREAK_POLICY = (
@@ -137,6 +154,73 @@ def _conditioned_ratings(base_ratings: dict, state: ResultsState | None) -> dict
     if settings.football_live_elo and state is not None:
         return nudge_ratings(base_ratings, state.completed_chrono)
     return base_ratings
+
+
+def _results_fingerprint(state: ResultsState | None) -> dict | None:
+    """Order-independent summary of the locked results (the memo key's results part)."""
+    if state is None:
+        return None
+    return {
+        "groups": {
+            letter: sorted([list(match) for match in g.completed])
+            for letter, g in sorted(state.groups.items())
+        },
+        "knockout": sorted([list(tie) for tie in state.knockout]),
+        "champion": state.champion,
+    }
+
+
+def _simmemo_key(
+    groups: dict, ratings: dict, n_iter: int, seed: int, state: ResultsState | None
+) -> str:
+    payload = json.dumps(
+        {
+            "groups": groups,
+            "results": _results_fingerprint(state),
+            "ratings": ratings,
+            "n_iter": n_iter,
+            "seed": seed,
+            "version": __version__,
+        },
+        sort_keys=True,
+    )
+    digest = hashlib.blake2s(payload.encode(), digest_size=8).hexdigest()
+    return f"sportiq:football:simmemo:{digest}"
+
+
+async def _run_bracket_sim(
+    groups: dict, ratings: dict, n_iter: int, seed: int | None, state: ResultsState | None
+) -> dict:
+    """Run the bracket Monte Carlo off the event loop, memoising seeded runs.
+
+    Unseeded runs are never memoised (each call is a fresh sample). Cache errors
+    fail open: the sim still runs and its result is returned.
+    """
+    key = _simmemo_key(groups, ratings, n_iter, seed, state) if seed is not None else None
+    if key is not None:
+        try:
+            hit = await get_cache().get(key)
+        except Exception as e:
+            _log.warning("football.simmemo.read_failed", error=type(e).__name__)
+            hit = None
+        if hit is not None:
+            return hit.value
+    sim = await asyncio.to_thread(
+        simulate_tournament, groups, ratings, n_iter=n_iter, seed=seed, results=state
+    )
+    if key is not None:
+        try:
+            await get_cache().set(key, sim, ttl_seconds=_SIMMEMO_TTL_S)
+        except Exception as e:
+            _log.warning("football.simmemo.write_failed", error=type(e).__name__)
+    return sim
+
+
+def _exact_if_completed(groups: dict, fixtures_result, state: ResultsState | None) -> dict | None:
+    """The locked tournament as exact 1.0/0.0 rounds when every result is in, else None."""
+    if state is None or _sim_mode(fixtures_result, state) != "completed":
+        return None
+    return tournament_from_results(groups, state)
 
 
 async def _maybe_nudge_single(
@@ -445,27 +529,24 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
         _seed_ratings(result.value), _entrants(result.value)
     )
     ratings = _conditioned_ratings(seed_ratings, state)
-    try:
-        sim = await asyncio.to_thread(
-            simulate_tournament,
-            groups,
-            ratings,
-            n_iter=_clamp_iterations(iterations),
-            seed=seed,
-            results=state,
-        )
-    except (ValueError, KeyError) as e:
-        return error_envelope(code="INVALID_INPUT", message=f"Invalid simulation input: {e}")
-    return {
-        "data": sim,
-        "meta": _sim_meta(
-            result,
-            fixtures_result,
-            state,
-            tiebreak_fallbacks=sim["tiebreak_fallbacks"],
-            default_rating_teams=defaulted,
-        ),
-    }
+    # Every result locked (the tournament is over): the answer is exact; skip the sim.
+    sim = _exact_if_completed(groups, fixtures_result, state)
+    if sim is None:
+        try:
+            sim = await _run_bracket_sim(
+                groups, ratings, _clamp_iterations(iterations), seed, state
+            )
+        except (ValueError, KeyError) as e:
+            return error_envelope(code="INVALID_INPUT", message=f"Invalid simulation input: {e}")
+    meta = _sim_meta(
+        result,
+        fixtures_result,
+        state,
+        tiebreak_fallbacks=sim["tiebreak_fallbacks"],
+        default_rating_teams=defaulted,
+    )
+    meta["iterations"] = sim["iterations"]
+    return {"data": sim, "meta": meta}
 
 
 async def football_knockout_path(
@@ -504,28 +585,158 @@ async def football_knockout_path(
 
     state, fixtures_result = await _fetch_live_state(result.value)
     ratings = _conditioned_ratings(base_ratings, state)
-    try:
-        sim = await asyncio.to_thread(
-            simulate_tournament,
-            groups,
-            ratings,
-            n_iter=_clamp_iterations(iterations),
-            seed=seed,
-            results=state,
+    sim = _exact_if_completed(groups, fixtures_result, state)
+    if sim is None:
+        try:
+            sim = await _run_bracket_sim(
+                groups, ratings, _clamp_iterations(iterations), seed, state
+            )
+        except (ValueError, KeyError) as e:
+            return error_envelope(code="INVALID_INPUT", message=f"Invalid simulation input: {e}")
+    row = sim["teams"].get(code, {})
+    meta = _sim_meta(
+        result,
+        fixtures_result,
+        state,
+        tiebreak_fallbacks=sim["tiebreak_fallbacks"],
+        default_rating_teams=defaulted,
+    )
+    meta["iterations"] = sim["iterations"]
+    return {"data": {"team": code, **row}, "meta": meta}
+
+
+def _parse_flip(value: str, teams_meta: dict) -> tuple[str, str] | None:
+    """Resolve "ESP-ARG" (any order; names allowed) to two draw codes, else None.
+
+    Tries every hyphen as the split point so hyphenated names still resolve.
+    """
+    for i, ch in enumerate(value):
+        if ch != "-":
+            continue
+        a = _resolve_team(value[:i], teams_meta) if value[:i].strip() else None
+        b = _resolve_team(value[i + 1 :], teams_meta) if value[i + 1 :].strip() else None
+        if a and b and a != b:
+            return a, b
+    return None
+
+
+_STAGE_LABELS = {
+    "group": "the group stage",
+    "r32": "the round of 32",
+    "r16": "the round of 16",
+    "qf": "the quarter-finals",
+    "sf": "the semi-finals",
+    "final": "the final",
+}
+
+
+async def football_what_if(
+    replay_from: Literal["group", "r32", "r16", "qf", "sf", "final"] = "group",
+    flip_winner_of: str | None = None,
+    iterations: int = 10000,
+    seed: int | None = None,
+) -> Envelope:
+    """Replay World Cup 2026 from a chosen stage, optionally flipping one real knockout result.
+
+    Keeps every real result played before ``replay_from`` and Monte-Carlos the
+    rest of the tournament from there. ``flip_winner_of`` makes one decided
+    knockout tie in the kept results go the other way first.
+
+    Args:
+        replay_from: Stage to re-simulate from: "group" (whole tournament, no
+            real results kept), "r32", "r16", "qf", "sf" or "final" (keeps every
+            result before the final and simulates only the final).
+        flip_winner_of: Optional tie to flip, as two FIFA codes or names joined
+            by a hyphen in any order (e.g. "ESP-FRA"). It must be a decided
+            knockout tie before ``replay_from``.
+        iterations: Number of tournament simulations (clamped to 100..20000).
+        seed: Optional RNG seed for reproducible output.
+
+    Returns:
+        data.teams: {code: {reach_r32, reach_r16, reach_qf, reach_sf, reach_final, win}}
+            sorted by win probability descending.
+        data.champion: most likely winner. data.iterations: iterations run.
+        meta.mode: "what_if". meta.replay_from: the stage. meta.flipped:
+            {tie: [code_a, code_b], winner: code} or null. meta.estimated: true.
+
+    Example:
+        football_what_if(replay_from="qf")
+        football_what_if(replay_from="final", flip_winner_of="ESP-FRA", seed=7)
+    """
+    if replay_from not in REPLAY_STAGES:
+        return error_envelope(
+            code="INVALID_INPUT",
+            message=f"replay_from must be one of {', '.join(REPLAY_STAGES)}.",
         )
+    if seed is not None and not 0 <= seed <= 2**64 - 1:
+        return error_envelope(code="INVALID_INPUT", message="seed must be in [0, 2**64 - 1].")
+    if flip_winner_of is not None and len(flip_winner_of) > 200:
+        return error_envelope(
+            code="INVALID_INPUT", message="flip_winner_of must not exceed 200 characters."
+        )
+
+    try:
+        result = await _groups_payload()
+    except (AllSourcesFailedError, NotFoundError) as e:
+        return error_envelope(code=e.code, message="Could not load draw.", sources_tried=e.attempts)
+
+    groups = result.value.get("groups", {})
+    teams_meta = result.value.get("teams", {})
+    state, fixtures_result = await _fetch_live_state(result.value)
+    if state is None and (replay_from != "group" or flip_winner_of):
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message=f"No real results are available to keep before {_STAGE_LABELS[replay_from]}.",
+            suggestion='Use replay_from="group" for a full pre-tournament replay.',
+        )
+    kept = truncate_results_state(state, replay_from) if state is not None else None
+
+    flipped: dict | None = None
+    if flip_winner_of:
+        codes = _parse_flip(flip_winner_of, teams_meta)
+        if codes is None:
+            return error_envelope(
+                code="INVALID_INPUT",
+                message=f"Could not read {flip_winner_of!r} as two World Cup teams, e.g. 'ESP-FRA'.",
+            )
+        try:
+            kept = flip_knockout_winner(kept, *codes)
+        except ValueError:
+            return error_envelope(
+                code="INVALID_INPUT",
+                message=(
+                    f"{codes[0]}-{codes[1]} is not a decided knockout tie before "
+                    f"{_STAGE_LABELS[replay_from]}."
+                ),
+                suggestion="Pick a later replay_from, or a tie that was actually played.",
+            )
+        winner = next(w for a, b, w in kept.knockout if {a, b} == set(codes))
+        flipped = {"tie": list(codes), "winner": winner}
+
+    base_ratings, defaulted = _with_default_ratings(
+        _seed_ratings(result.value), _entrants(result.value)
+    )
+    ratings = _conditioned_ratings(base_ratings, kept)
+    try:
+        sim = await _run_bracket_sim(groups, ratings, _clamp_iterations(iterations), seed, kept)
     except (ValueError, KeyError) as e:
         return error_envelope(code="INVALID_INPUT", message=f"Invalid simulation input: {e}")
-    row = sim["teams"].get(code, {})
-    return {
-        "data": {"team": code, **row},
-        "meta": _sim_meta(
-            result,
-            fixtures_result,
-            state,
-            tiebreak_fallbacks=sim["tiebreak_fallbacks"],
-            default_rating_teams=defaulted,
-        ),
-    }
+
+    meta = _sim_meta(result, fixtures_result, kept, tiebreak_fallbacks=sim["tiebreak_fallbacks"])
+    meta.pop("champion", None)
+    meta["mode"] = "what_if"
+    meta["replay_from"] = replay_from
+    meta["flipped"] = flipped
+    meta["iterations"] = sim["iterations"]
+    note = (
+        f"What-if replay: real results before {_STAGE_LABELS[replay_from]} are kept; "
+        "everything from there on is simulated."
+    )
+    if flipped:
+        note += f" {flipped['tie'][0]}-{flipped['tie'][1]} was flipped to {flipped['winner']}."
+    meta["note"] = f"{_NO_LIVE_NOTE} {note}" if state is None else note
+    _disclose_default_ratings(meta, defaulted)
+    return {"data": sim, "meta": meta}
 
 
 async def football_find_value_bets(team: str | None = None, min_edge: float = 0.05) -> Envelope:
@@ -759,6 +970,7 @@ def register_football_intel_tools(mcp) -> None:
     mcp.tool(annotations=READ_ONLY)(football_simulate_group)
     mcp.tool(annotations=READ_ONLY)(football_simulate_bracket)
     mcp.tool(annotations=READ_ONLY)(football_knockout_path)
+    mcp.tool(annotations=READ_ONLY)(football_what_if)
     mcp.tool(annotations=READ_ONLY)(football_find_value_bets)
     mcp.tool(annotations=READ_ONLY)(football_form_trends)
     mcp.tool(annotations=READ_ONLY)(football_build_accumulator)

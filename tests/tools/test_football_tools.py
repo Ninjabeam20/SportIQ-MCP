@@ -898,3 +898,147 @@ async def test_simulate_bracket_meta_mode_prior_when_static_seed():
     assert result["meta"]["mode"] == "pre_tournament_prior"
     assert "reconstructed pre-tournament simulation" in result["meta"]["note"]
     assert "champion" not in result["meta"]
+
+
+# -- football_what_if + completed-mode short-circuit (opus cook11 T11.2/T11.3) --
+
+
+async def _call_with_complete_results(tool, **kwargs):
+    fixtures = await _complete_wc2026_fixtures()
+    with (
+        patch("sportiq.football.intel_tools.football_groups_chain") as gmock,
+        patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock,
+    ):
+        gmock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        fmock.fetch = AsyncMock(return_value=_fr({"fixtures": fixtures}, source="openfootball"))
+        return await tool(**kwargs)
+
+
+async def test_what_if_replay_from_final_simulates_only_the_final():
+    from sportiq.football import intel_tools
+
+    result = await _call_with_complete_results(
+        intel_tools.football_what_if, replay_from="final", iterations=400, seed=3
+    )
+    teams = result["data"]["teams"]
+    assert teams["ESP"]["win"] > 0 and teams["ARG"]["win"] > 0
+    assert teams["ESP"]["win"] + teams["ARG"]["win"] == pytest.approx(1.0)
+    assert all(row["win"] == 0.0 for code, row in teams.items() if code not in ("ESP", "ARG"))
+    assert result["meta"]["mode"] == "what_if"
+    assert result["meta"]["replay_from"] == "final"
+    assert result["meta"]["flipped"] is None
+
+
+async def test_what_if_flip_semi_final_puts_france_in_final():
+    from sportiq.football import intel_tools
+
+    result = await _call_with_complete_results(
+        intel_tools.football_what_if,
+        replay_from="final",
+        flip_winner_of="ESP-FRA",
+        iterations=400,
+        seed=3,
+    )
+    teams = result["data"]["teams"]
+    assert teams["FRA"]["win"] + teams["ARG"]["win"] == pytest.approx(1.0)
+    assert teams["ESP"]["win"] == 0.0
+    assert teams["FRA"]["reach_final"] == 1.0
+    assert result["meta"]["flipped"] == {"tie": ["ESP", "FRA"], "winner": "FRA"}
+
+
+async def test_what_if_replay_from_group_is_full_prior():
+    from sportiq.football import intel_tools
+
+    seen = {}
+
+    def fake_sim(groups, ratings, n_iter, seed, results):
+        seen["results"] = results
+        teams = {code: {"win": 1 / 48} for codes in groups.values() for code in codes}
+        return {"teams": teams, "iterations": n_iter, "champion": "ESP", "tiebreak_fallbacks": 0}
+
+    with patch("sportiq.football.intel_tools.simulate_tournament", fake_sim):
+        result = await _call_with_complete_results(
+            intel_tools.football_what_if, replay_from="group", iterations=100
+        )
+    state = seen["results"]
+    assert state.knockout == [] and state.matched == 0
+    assert all(not g.completed for g in state.groups.values())
+    assert result["meta"]["flipped"] is None
+    assert result["meta"]["conditioned_matches"] == 0
+    assert all(row["win"] > 0 for row in result["data"]["teams"].values())
+
+
+async def test_what_if_rejects_flip_outside_kept_stages():
+    from sportiq.football import intel_tools
+
+    # The ESP-FRA semi-final is not kept when replaying from the semi-finals.
+    result = await _call_with_complete_results(
+        intel_tools.football_what_if, replay_from="sf", flip_winner_of="ESP-FRA"
+    )
+    assert result["error"]["code"] == "INVALID_INPUT"
+
+
+async def test_what_if_rejects_unreadable_flip():
+    from sportiq.football import intel_tools
+
+    result = await _call_with_complete_results(
+        intel_tools.football_what_if, replay_from="final", flip_winner_of="Spain"
+    )
+    assert result["error"]["code"] == "INVALID_INPUT"
+
+
+async def test_simulate_bracket_completed_mode_skips_monte_carlo():
+    from sportiq.football import intel_tools
+
+    def must_not_run(*args, **kwargs):
+        raise AssertionError("simulate_tournament must not run for a completed tournament")
+
+    with patch("sportiq.football.intel_tools.simulate_tournament", must_not_run):
+        result = await _call_with_complete_results(
+            intel_tools.football_simulate_bracket, iterations=10000
+        )
+    assert result["meta"]["mode"] == "completed"
+    assert result["meta"]["iterations"] == 0
+    assert result["data"]["teams"]["ESP"]["win"] == 1.0
+    assert result["data"]["champion"] == "ESP"
+    assert next(iter(result["data"]["teams"])) == "ESP"
+
+
+async def test_knockout_path_completed_mode_returns_exact_rounds():
+    from sportiq.football import intel_tools
+
+    def must_not_run(*args, **kwargs):
+        raise AssertionError("simulate_tournament must not run for a completed tournament")
+
+    with patch("sportiq.football.intel_tools.simulate_tournament", must_not_run):
+        result = await _call_with_complete_results(intel_tools.football_knockout_path, team="FRA")
+    data = result["data"]
+    # France lost the ESP semi-final.
+    assert (data["reach_r32"], data["reach_r16"], data["reach_qf"]) == (1.0, 1.0, 1.0)
+    assert (data["reach_sf"], data["reach_final"], data["win"]) == (1.0, 0.0, 0.0)
+    assert result["meta"]["iterations"] == 0
+
+
+async def test_seeded_bracket_result_is_memoised():
+    from sportiq.football import intel_tools
+
+    calls = []
+
+    def counting_sim(groups, ratings, n_iter, seed, results):
+        calls.append(seed)
+        teams = {code: {"win": 0.0} for codes in groups.values() for code in codes}
+        return {"teams": teams, "iterations": n_iter, "champion": "ESP", "tiebreak_fallbacks": 0}
+
+    with (
+        patch("sportiq.football.intel_tools.simulate_tournament", counting_sim),
+        patch("sportiq.football.intel_tools.football_groups_chain") as gmock,
+        patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock,
+    ):
+        gmock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        fmock.fetch = AsyncMock(return_value=_fr({"fixtures": []}))
+        first = await intel_tools.football_simulate_bracket(iterations=100, seed=9)
+        second = await intel_tools.football_simulate_bracket(iterations=100, seed=9)
+        await intel_tools.football_simulate_bracket(iterations=100)  # unseeded: never memoised
+        await intel_tools.football_simulate_bracket(iterations=100)
+    assert calls == [9, None, None]
+    assert first["data"] == second["data"]
