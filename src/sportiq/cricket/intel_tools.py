@@ -145,7 +145,7 @@ async def cricket_build_dream11_team(
     try:
         venue_result = await pitch_data_chain.fetch(venue=venue)
         candidates, squad_results = await _candidate_pool(team_a, team_b, venue_result.value)
-        squad_result = _solve_dream11(candidates, strategy=strategy)
+        squad_result = await asyncio.to_thread(_solve_dream11, candidates, strategy=strategy)
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
@@ -584,7 +584,7 @@ async def cricket_find_value_bets(
         events = [
             ev
             for ev in events
-            if needle in ev.get("home", "").lower() or needle in ev.get("away", "").lower()
+            if needle in (ev.get("home") or "").lower() or needle in (ev.get("away") or "").lower()
         ]
 
     # Cricket has no calibrated team-strength model wired yet (unlike football's

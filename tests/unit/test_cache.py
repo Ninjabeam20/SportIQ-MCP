@@ -1,6 +1,7 @@
 """Cache backend selects diskcache when REDIS_URL is unset."""
 
 import asyncio
+import time
 
 import pytest
 from redis.exceptions import ConnectionError as RedisConnectionError
@@ -63,6 +64,42 @@ async def test_counter_resets_legacy_wrapped_disk_value():
     assert value == 1
     assert await cache.get_counter("counter:legacy-disk") == 1
     assert cache.backend == "diskcache"
+
+
+@pytest.mark.asyncio
+async def test_cache_incr_counter_preserves_other_ttl_entries_on_disk():
+    cache = get_cache()
+    await cache.set("keep:short", {"v": 1}, ttl_seconds=1800)
+    await cache.set("keep:long", {"v": 2}, ttl_seconds=86400)
+
+    await cache.incr_counter("sportiq:http:global:1", 60)
+
+    assert await cache.get("keep:short") is not None
+    assert await cache.get("keep:long") is not None
+
+
+@pytest.mark.asyncio
+async def test_cache_incr_counter_sets_expiry_on_first_increment_on_disk():
+    cache = get_cache()
+    key = "sportiq:http:global:expiry"
+
+    await cache.incr_counter(key, 60)
+
+    expire_time = cache._disk.get(key, expire_time=True)[1]
+    assert expire_time is not None
+    assert abs(expire_time - (time.time() + 60)) <= 5
+
+
+@pytest.mark.asyncio
+async def test_cache_incr_counter_if_below_preserves_other_ttl_entries_on_disk():
+    cache = get_cache()
+    await cache.set("keep:short", {"v": 1}, ttl_seconds=1800)
+    await cache.set("keep:long", {"v": 2}, ttl_seconds=86400)
+
+    await cache.incr_counter_if_below("sportiq:http:global:2", limit=5, ttl_seconds=60)
+
+    assert await cache.get("keep:short") is not None
+    assert await cache.get("keep:long") is not None
 
 
 @pytest.mark.asyncio

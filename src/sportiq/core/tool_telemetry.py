@@ -28,11 +28,15 @@ from __future__ import annotations
 import asyncio
 import functools
 import time
+import traceback
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import Any
 
 from sportiq.config import settings
 from sportiq.core.logging import get_logger
+from sportiq.core.redact import scrub
+from sportiq.core.tool_response import error_envelope
 
 _log = get_logger("tool_telemetry")
 
@@ -70,20 +74,38 @@ def _instrument(
     @functools.wraps(fn)
     async def wrapper(**kwargs: Any) -> Any:
         start = time.perf_counter()
-        try:
+        deadline = settings.tool_deadline_seconds
+
+        async def _call() -> Any:
             if name in _EXPENSIVE_TOOLS:
                 async with expensive_semaphore:
-                    result = await fn(**kwargs)
-            else:
-                result = await fn(**kwargs)
+                    return await fn(**kwargs)
+            return await fn(**kwargs)
+
+        try:
+            # The deadline covers the semaphore wait too. Work offloaded with
+            # asyncio.to_thread keeps running after the deadline (threads can't be
+            # cancelled); only the caller stops waiting.
+            result = await asyncio.wait_for(_call(), timeout=deadline)
+        except TimeoutError:
+            result = error_envelope(
+                code="UPSTREAM_TIMEOUT",
+                message=f"{name} exceeded the {deadline:g}s tool deadline.",
+                retry_after_seconds=60,
+                suggestion="Retry shortly; upstream sources were slow or a simulation was queued.",
+            )
         except Exception as exc:
             # An uncaught exception is the worst "bad": no envelope was returned.
+            frames = traceback.extract_tb(exc.__traceback__)
+            f = frames[-1] if frames else None
             _log.error(
                 "tool_call",
                 tool=name,
                 success=False,
                 outcome="exception",
                 error=type(exc).__name__,
+                error_detail=scrub(str(exc))[:300],
+                error_frame=f"{Path(f.filename).name}:{f.lineno} {f.name}" if f else None,
                 latency_ms=round((time.perf_counter() - start) * 1000, 1),
             )
             raise

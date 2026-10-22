@@ -177,3 +177,53 @@ async def test_football_odds_missing_key_returns_all_sources_failed():
         response = await tools.football_get_odds()
 
     assert response["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+# -- value-bet paths tolerate a null team name (P1-13) --------------------------
+
+
+async def test_football_find_value_bets_skips_event_with_null_team_name():
+    from sportiq.football import intel_tools
+    from sportiq.football.adapters.static_seed import load_elo_seed, load_wc2026
+
+    wc = load_wc2026()
+    draw = {"groups": wc["groups"], "teams": wc["teams"], "ratings": load_elo_seed()}
+    book = [{"name": "TestBook", "home": 2.0, "draw": 3.4, "away": 3.8}]
+    events = {
+        "events": [
+            {"event_id": "bad", "home": None, "away": "Spain", "bookmakers": book},
+            {"event_id": "ok", "home": "Spain", "away": "Argentina", "bookmakers": book},
+        ]
+    }
+    with (
+        patch("sportiq.football.intel_tools.football_odds_chain") as mock_odds,
+        patch("sportiq.football.intel_tools.football_groups_chain") as mock_groups,
+    ):
+        mock_odds.fetch = AsyncMock(return_value=_ok(events))
+        mock_groups.fetch = AsyncMock(return_value=_ok(draw, source="static_seed"))
+        result = await intel_tools.football_find_value_bets(team="spain")
+
+    assert "data" in result and "meta" in result
+    assert result["data"]["events_analysed"] == 1
+
+
+async def test_cricket_find_value_bets_tolerates_null_team_name():
+    from sportiq.cricket import intel_tools
+
+    events = {
+        "events": [
+            {"event_id": "bad", "home": None, "away": "Mumbai Indians", "bookmakers": []},
+            {
+                "event_id": "ok",
+                "home": "Mumbai Indians",
+                "away": "Delhi Capitals",
+                "bookmakers": [],
+            },
+        ]
+    }
+    with patch("sportiq.cricket.intel_tools.odds_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(return_value=_ok(events))
+        result = await intel_tools.cricket_find_value_bets(team="mumbai")
+
+    assert "data" in result and "meta" in result
+    assert result["data"]["events_analysed"] == 1

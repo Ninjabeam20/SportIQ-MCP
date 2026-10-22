@@ -60,7 +60,7 @@ class StaticSeedVenueAdapter:
         for key, record in venues.items():
             candidates = {
                 key.lower(),
-                record.get("name", "").lower(),
+                (record.get("name") or "").lower(),
                 record.get("city", "").lower(),
             }
             if wanted in candidates:

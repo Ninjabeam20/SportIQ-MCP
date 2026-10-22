@@ -180,3 +180,21 @@ def test_solver_rejects_optimal_status_without_captain_selection(monkeypatch):
     monkeypatch.setattr(pulp.LpProblem, "solve", patched_solve)
     with pytest.raises(RuntimeError, match="captain"):
         solve(_synthetic_pool())
+
+
+def test_dream11_solver_passes_time_limit_to_cbc(monkeypatch):
+    import pulp
+
+    real_cmd = pulp.COIN_CMD
+    seen: list[dict] = []
+
+    def _recording_cmd(*args, **kwargs):
+        seen.append(kwargs)
+        return real_cmd(*args, **kwargs)
+
+    # solve() imports COIN_CMD from pulp at call time, so patch it there.
+    monkeypatch.setattr(pulp, "COIN_CMD", _recording_cmd)
+    result = solve(_synthetic_pool())
+
+    assert len(result["players"]) == 11
+    assert seen[0]["timeLimit"] == 10

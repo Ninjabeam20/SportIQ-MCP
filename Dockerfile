@@ -38,8 +38,9 @@ ENV SPORTIQ_TRANSPORT=http \
 EXPOSE 8080
 
 # MCP endpoint is served at /mcp
-# GET /mcp is 406 without MCP Accept headers; that still means the process is up.
+# GET /healthz is a liveness route that returns 200 "ok" without touching the cache,
+# chains or network (probing /mcp ran the FastMCP lifespan on every check).
 # Localhost liveness only — not a keep-warm ping. Do not add a scheduler for this.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD ["python", "-c", "import sys, urllib.error, urllib.request\nreq = urllib.request.Request('http://127.0.0.1:8080/mcp')\ntry:\n    urllib.request.urlopen(req, timeout=4)\n    sys.exit(0)\nexcept urllib.error.HTTPError as e:\n    sys.exit(0 if e.code in (400, 405, 406) else 1)\nexcept Exception:\n    sys.exit(1)"]
+  CMD ["python", "-c", "import sys, urllib.request\ntry:\n    with urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=4) as r:\n        sys.exit(0 if r.status == 200 else 1)\nexcept Exception:\n    sys.exit(1)"]
 CMD ["python", "-m", "sportiq.server"]

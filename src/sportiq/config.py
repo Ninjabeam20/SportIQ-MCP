@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     http_rate_limit_per_minute: int = Field(default=60, gt=0)
     http_global_rate_limit_per_minute: int = Field(default=300, gt=0)
     expensive_tool_concurrency: int = Field(default=2, gt=0)
+    # Wall-clock cap per tool call (semaphore wait included) -> UPSTREAM_TIMEOUT envelope.
+    tool_deadline_seconds: float = Field(default=30.0, gt=0)
 
     sportiq_log_level: str = "INFO"
     sportiq_log_format: Literal["pretty", "json"] = Field(default_factory=_default_log_format)

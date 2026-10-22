@@ -24,6 +24,10 @@ _STRATEGY_ROLE_BOUNDS: dict[str, dict[str, tuple[int, int]]] = {
 
 _WK_ROLE_NAMES = {"WK-BAT", "WK"}
 
+# Wall-clock cap on the CBC solve; a timed-out solve without an optimal XI takes the
+# existing non-Optimal path (InvalidInputError).
+_CBC_TIME_LIMIT_S = 10
+
 
 def _role_members(candidates: list[dict], role: str) -> list[int]:
     if role == "WK-BAT":
@@ -126,7 +130,7 @@ def solve(candidates: list[dict], strategy: str = "balanced") -> dict:
 
     # COIN_CMD picks the `cbc` binary off PATH (brew install cbc on macOS arm64).
     try:
-        status = prob.solve(COIN_CMD(msg=False))
+        status = prob.solve(COIN_CMD(msg=False, timeLimit=_CBC_TIME_LIMIT_S))
     except PulpSolverError as exc:
         raise InvalidInputError(
             f"Dream11 solver failed (ensure coinor-cbc is on PATH): {exc}"

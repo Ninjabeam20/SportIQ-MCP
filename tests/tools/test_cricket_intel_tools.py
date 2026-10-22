@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from unittest.mock import AsyncMock, patch
 
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
@@ -312,3 +313,38 @@ async def test_pitch_report_empty_venue_returns_invalid_input():
 
     r = await intel_tools.cricket_get_pitch_report(venue="")
     assert r["error"]["code"] == "INVALID_INPUT"
+
+
+async def test_dream11_solve_does_not_block_event_loop():
+    """The CBC solve runs in a worker thread, so the event loop keeps ticking."""
+    from sportiq.cricket import intel_tools
+
+    def _slow_solve(candidates, strategy="balanced"):
+        time.sleep(0.3)
+        return {"players": [], "captain": None, "vice_captain": None, "total_credits": 0}
+
+    ticks = 0
+
+    async def _ticker():
+        nonlocal ticks
+        while True:
+            await asyncio.sleep(0.01)
+            ticks += 1
+
+    squad_a, squad_b = _two_team_squads()
+    with (
+        patch("sportiq.cricket.intel_tools.pitch_data_chain") as mock_pitch,
+        patch("sportiq.cricket.intel_tools.squad_chain") as mock_squad,
+        patch("sportiq.cricket.intel_tools._solve_dream11", _slow_solve),
+    ):
+        mock_pitch.fetch = AsyncMock(return_value=_fr(_venue_record()))
+        mock_squad.fetch = AsyncMock(side_effect=[squad_a, squad_b])
+        ticker = asyncio.create_task(_ticker())
+        try:
+            response = await intel_tools.cricket_build_dream11_team(
+                team_a="Team A", team_b="Team B", venue="wankhede"
+            )
+        finally:
+            ticker.cancel()
+    assert "data" in response
+    assert ticks >= 10

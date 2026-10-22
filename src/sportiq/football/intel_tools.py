@@ -4,6 +4,7 @@ Five tools composing the static draw + Elo ratings with the Poisson/Monte-Carlo
 models. Flagship: football_simulate_bracket. All route through
 football_groups_chain (the source of the draw + ratings) and surface is_stale.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -131,22 +132,28 @@ async def football_xg_model(home_team: str, away_team: str, neutral: bool = True
             code="INVALID_INPUT", message="home_team and away_team must be non-empty."
         )
     if len(home) > 100:
-        return error_envelope(code="INVALID_INPUT", message="home_team must not exceed 100 characters.")
-    if len(away) > 100:
-        return error_envelope(code="INVALID_INPUT", message="away_team must not exceed 100 characters.")
-    if home == away:
         return error_envelope(
-            code="INVALID_INPUT", message="home_team and away_team must differ."
+            code="INVALID_INPUT", message="home_team must not exceed 100 characters."
         )
+    if len(away) > 100:
+        return error_envelope(
+            code="INVALID_INPUT", message="away_team must not exceed 100 characters."
+        )
+    if home == away:
+        return error_envelope(code="INVALID_INPUT", message="home_team and away_team must differ.")
 
     try:
         result = await _groups_payload()
     except (AllSourcesFailedError, NotFoundError) as e:
-        return error_envelope(code=e.code, message="Could not load ratings.", sources_tried=e.attempts)
+        return error_envelope(
+            code=e.code, message="Could not load ratings.", sources_tried=e.attempts
+        )
 
     ratings = result.value.get("ratings", {})
     if home not in ratings or away not in ratings:
-        return error_envelope(code="NOT_FOUND", message="Unknown team code; see football_get_groups.")
+        return error_envelope(
+            code="NOT_FOUND", message="Unknown team code; see football_get_groups."
+        )
     ratings, live_elo = await _maybe_nudge_single(result.value, ratings)
 
     home_adv = 0.0 if neutral else 60.0
@@ -167,7 +174,9 @@ async def football_xg_model(home_team: str, away_team: str, neutral: bool = True
     }
 
 
-async def football_match_predictor(home_team: str, away_team: str, neutral: bool = True) -> Envelope:
+async def football_match_predictor(
+    home_team: str, away_team: str, neutral: bool = True
+) -> Envelope:
     """Predict a single match: most likely scoreline + outcome probabilities.
 
     Args:
@@ -185,22 +194,28 @@ async def football_match_predictor(home_team: str, away_team: str, neutral: bool
             code="INVALID_INPUT", message="home_team and away_team must be non-empty."
         )
     if len(home) > 100:
-        return error_envelope(code="INVALID_INPUT", message="home_team must not exceed 100 characters.")
-    if len(away) > 100:
-        return error_envelope(code="INVALID_INPUT", message="away_team must not exceed 100 characters.")
-    if home == away:
         return error_envelope(
-            code="INVALID_INPUT", message="home_team and away_team must differ."
+            code="INVALID_INPUT", message="home_team must not exceed 100 characters."
         )
+    if len(away) > 100:
+        return error_envelope(
+            code="INVALID_INPUT", message="away_team must not exceed 100 characters."
+        )
+    if home == away:
+        return error_envelope(code="INVALID_INPUT", message="home_team and away_team must differ.")
 
     try:
         result = await _groups_payload()
     except (AllSourcesFailedError, NotFoundError) as e:
-        return error_envelope(code=e.code, message="Could not load ratings.", sources_tried=e.attempts)
+        return error_envelope(
+            code=e.code, message="Could not load ratings.", sources_tried=e.attempts
+        )
 
     ratings = result.value.get("ratings", {})
     if home not in ratings or away not in ratings:
-        return error_envelope(code="NOT_FOUND", message="Unknown team code; see football_get_groups.")
+        return error_envelope(
+            code="NOT_FOUND", message="Unknown team code; see football_get_groups."
+        )
     ratings, live_elo = await _maybe_nudge_single(result.value, ratings)
 
     home_adv = 0.0 if neutral else 60.0
@@ -243,9 +258,7 @@ async def football_simulate_group(group: str, iterations: int = 5000) -> Envelop
     """
     key = group.strip().upper()
     if len(key) != 1:
-        return error_envelope(
-            code="INVALID_INPUT", message="group must be one letter from A to L."
-        )
+        return error_envelope(code="INVALID_INPUT", message="group must be one letter from A to L.")
 
     try:
         result = await _groups_payload()
@@ -259,7 +272,8 @@ async def football_simulate_group(group: str, iterations: int = 5000) -> Envelop
     state, fixtures_result = await _fetch_live_state(result.value)
     ratings = _conditioned_ratings(result.value.get("ratings", {}), state)
     try:
-        sim = simulate_group_stage(
+        sim = await asyncio.to_thread(
+            simulate_group_stage,
             groups,
             ratings,
             n_iter=_clamp_iterations(iterations),
@@ -311,9 +325,7 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
         football_simulate_bracket(iterations=20000, seed=42)
     """
     if seed is not None and not 0 <= seed <= 2**64 - 1:
-        return error_envelope(
-            code="INVALID_INPUT", message="seed must be in [0, 2**64 - 1]."
-        )
+        return error_envelope(code="INVALID_INPUT", message="seed must be in [0, 2**64 - 1].")
 
     try:
         result = await _groups_payload()
@@ -324,8 +336,13 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
     state, fixtures_result = await _fetch_live_state(result.value)
     ratings = _conditioned_ratings(result.value.get("ratings", {}), state)
     try:
-        sim = simulate_tournament(
-            groups, ratings, n_iter=_clamp_iterations(iterations), seed=seed, results=state
+        sim = await asyncio.to_thread(
+            simulate_tournament,
+            groups,
+            ratings,
+            n_iter=_clamp_iterations(iterations),
+            seed=seed,
+            results=state,
         )
     except (ValueError, KeyError) as e:
         return error_envelope(code="INVALID_INPUT", message=f"Invalid simulation input: {e}")
@@ -340,7 +357,9 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
     }
 
 
-async def football_knockout_path(team: str, iterations: int = 10000, seed: int | None = None) -> Envelope:
+async def football_knockout_path(
+    team: str, iterations: int = 10000, seed: int | None = None
+) -> Envelope:
     """Round-by-round survival probabilities for one team in the full sim.
 
     Args:
@@ -358,9 +377,7 @@ async def football_knockout_path(team: str, iterations: int = 10000, seed: int |
     if len(code) > 100:
         return error_envelope(code="INVALID_INPUT", message="team must not exceed 100 characters.")
     if seed is not None and not 0 <= seed <= 2**64 - 1:
-        return error_envelope(
-            code="INVALID_INPUT", message="seed must be in [0, 2**64 - 1]."
-        )
+        return error_envelope(code="INVALID_INPUT", message="seed must be in [0, 2**64 - 1].")
 
     try:
         result = await _groups_payload()
@@ -370,13 +387,20 @@ async def football_knockout_path(team: str, iterations: int = 10000, seed: int |
     groups = result.value.get("groups", {})
     base_ratings = result.value.get("ratings", {})
     if code not in base_ratings:
-        return error_envelope(code="NOT_FOUND", message="Unknown team code; see football_get_groups.")
+        return error_envelope(
+            code="NOT_FOUND", message="Unknown team code; see football_get_groups."
+        )
 
     state, fixtures_result = await _fetch_live_state(result.value)
     ratings = _conditioned_ratings(base_ratings, state)
     try:
-        sim = simulate_tournament(
-            groups, ratings, n_iter=_clamp_iterations(iterations), seed=seed, results=state
+        sim = await asyncio.to_thread(
+            simulate_tournament,
+            groups,
+            ratings,
+            n_iter=_clamp_iterations(iterations),
+            seed=seed,
+            results=state,
         )
     except (ValueError, KeyError) as e:
         return error_envelope(code="INVALID_INPUT", message=f"Invalid simulation input: {e}")
@@ -431,7 +455,9 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
     if isinstance(odds_r, BaseException):
         raise odds_r
     if isinstance(groups_r, (AllSourcesFailedError, NotFoundError)):
-        return error_envelope(code=groups_r.code, message="Could not load ratings.", sources_tried=groups_r.attempts)
+        return error_envelope(
+            code=groups_r.code, message="Could not load ratings.", sources_tried=groups_r.attempts
+        )
     if isinstance(groups_r, BaseException):
         raise groups_r
     odds_result, groups_result = odds_r, groups_r
@@ -443,20 +469,24 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
     # Odds carry full team names; ratings are keyed by code. Map name -> code from
     # the same draw payload (reusing the seed, not re-deriving any ratings/xG).
     name_to_code = {
-        meta.get("name", "").lower(): code
+        (meta.get("name") or "").lower(): code
         for code, meta in groups_result.value.get("teams", {}).items()
     }
 
     events = odds_result.value.get("events", [])
     if team and team.strip():
         q = team.strip().lower()
-        events = [e for e in events if q in e.get("home", "").lower() or q in e.get("away", "").lower()]
+        events = [
+            e
+            for e in events
+            if q in (e.get("home") or "").lower() or q in (e.get("away") or "").lower()
+        ]
 
     value_bets: list[dict] = []
     analysed = 0
     for ev in events:
-        home_code = name_to_code.get(ev.get("home", "").lower())
-        away_code = name_to_code.get(ev.get("away", "").lower())
+        home_code = name_to_code.get((ev.get("home") or "").lower())
+        away_code = name_to_code.get((ev.get("away") or "").lower())
         if not home_code or not away_code or home_code not in ratings or away_code not in ratings:
             continue
         analysed += 1
@@ -545,7 +575,9 @@ async def football_build_accumulator(legs: int = 3, min_edge: float = 0.05) -> E
         meta.estimated: true.
     """
     if not (2 <= legs <= 8):
-        return error_envelope(code="INVALID_INPUT", message="legs must be between 2 and 8 inclusive.")
+        return error_envelope(
+            code="INVALID_INPUT", message="legs must be between 2 and 8 inclusive."
+        )
     if not (0.0 < min_edge < 1.0):
         return error_envelope(code="INVALID_INPUT", message="min_edge must be in (0, 1) exclusive.")
 
