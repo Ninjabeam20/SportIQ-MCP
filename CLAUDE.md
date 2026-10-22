@@ -28,7 +28,7 @@ Utkarsh — software engineer building an automated job application pipeline. Fa
 - **Cache:** `redis` primary, `diskcache` automatic fallback
 - **Solver:** `PuLP` (Dream11 ILP via CBC)
 - **Stats:** `scipy` (Poisson) + `numpy` (vectorized Monte Carlo)
-- **DataFrames:** `pandas` (F1 lap-time fits)
+- **DataFrames:** `pandas` — via the optional `f1` extra only (fastf1 uses it; no SportIQ module imports it). Not in the base install or the hosted image (ADR-0014).
 - **F1 (optional, lazy-imported):** `fastf1`
 - **Testing:** `pytest` + `pytest-asyncio` + `respx` (no live API hits in CI)
 - **Lint/format:** `ruff`
@@ -133,6 +133,10 @@ When you need to understand a domain question (scoring rules, API quirks, model 
 - **Shared singletons close at HTTP app shutdown, never in the FastMCP lifespan** — stateless
   mode runs that lifespan per request (see `server.build_http_app`). Closing the cache/client
   there broke every in-flight request (the 11 production AttributeErrors).
+- **HTTP runs one uvicorn worker in one container.** Per-process stampede locks
+  (`fallback.py` `_key_locks`), the expensive-tool semaphore, the sim memo and diskcache
+  counters rely on it. Never add `--workers`, replicas or a second container without moving
+  that state to Redis first.
 - **diskcache `expire()` is a purge, not a per-key TTL** — `expire(now=…)` deletes expired
   items, and a string `now` wiped every TTL'd entry. Use `touch(key, expire=…)`.
 - **Registration order ≠ import order** in `server.py`: imports stay alphabetical (ruff isort);
@@ -169,13 +173,15 @@ When you need to understand a domain question (scoring rules, API quirks, model 
   Keep-warm was a Cloud Run scale-to-zero hack — no cron, sidecar, or `/mcp`
   pinger on Compose. Home-server Compose sets `SPORTIQ_TRUST_CLOUDFLARE=1` so
   429s key on `CF-Connecting-IP`. Leave `K_SERVICE` unset on stdio too.
+- **External uptime checks may call `GET /healthz` at ≥ 5-minute intervals.** Never `/mcp`;
+  never a keep-warm or scheduler on the host. `/healthz` touches no cache, chain or network.
 - **Live public connector URL** is `https://sportiq.utkarshgupta.org/mcp`. Former
   Cloud Run hosts (`ey2eariulq`, `329580761892`) are gone — do **not** advertise
   `*.run.app`.
 - **Dockerfile pins `ghcr.io/astral-sh/uv:0.12.6` and installs with `uv export --frozen`
   then `uv pip install --system`.** Do not revert to `:latest` (`uv pip install --frozen`
-  is not a pip-interface flag) or unpinned `pip install ".[f1]"`. `mcp` is `>=1.27.2,<2`
-  — 2.0.0 removes `mcp.server.fastmcp`. Do not combine the home-server move with SDK v2.
+  is not a pip-interface flag) or unpinned `pip install ".[f1]"`. `mcp` is `>=1.30.0,<2`
+  — 2.0.0 removes `mcp.server.fastmcp` (ADR-0013, proposed). Do not combine the home-server move with SDK v2.
 
 ## When you finish a coding task
 

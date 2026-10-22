@@ -2394,7 +2394,7 @@ wheels = [
 
 [[package]]
 name = "sportiq-mcp"
-version = "0.3.2"
+version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -2402,7 +2402,6 @@ dependencies = [
     { name = "httpx" },
     { name = "mcp" },
     { name = "numpy" },
-    { name = "pandas" },
     { name = "pulp" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -2428,6 +2427,7 @@ dev = [
 ]
 f1 = [
     { name = "fastf1" },
+    { name = "pandas" },
 ]
 
 [package.metadata]
@@ -2441,7 +2441,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "mcp", specifier = ">=1.30.0,<2" },
     { name = "numpy", specifier = ">=1.26.0" },
-    { name = "pandas", specifier = ">=2.2.0" },
+    { name = "pandas", marker = "extra == 'f1'", specifier = ">=2.2.0" },
     { name = "pip-audit", marker = "extra == 'dev'", specifier = ">=2.7.0" },
     { name = "pulp", specifier = ">=2.9.0" },
     { name = "pydantic", specifier = ">=2.7.0" },

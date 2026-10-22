@@ -25,6 +25,7 @@ _SESSION_REGISTRY: dict[int, tuple[int, int]] = {
 
 class FastF1LapsAdapter:
     name = "fastf1"
+    optional_import = "fastf1"  # sportiq_health: missing extra is healthy
     budget = None
 
     async def fetch(self, session_key: int, driver_number: int, **kwargs) -> dict:
@@ -78,6 +79,7 @@ class FastF1LapsAdapter:
 
 class FastF1StandingsAdapter:
     name = "fastf1"
+    optional_import = "fastf1"  # sportiq_health: missing extra is healthy
     budget = None
 
     async def fetch(self, year: int, **kwargs) -> dict:

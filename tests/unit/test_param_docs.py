@@ -1,5 +1,6 @@
 """Every registered tool parameter must carry a schema description (injected
 from the docstring Args block by core/param_docs.py at server import)."""
+
 from __future__ import annotations
 
 from sportiq.core.param_docs import _args_descriptions
@@ -35,3 +36,15 @@ def test_args_parser_handles_continuation_lines():
 def test_args_parser_no_args_block():
     assert _args_descriptions("Just a summary.") == {}
     assert _args_descriptions(None) == {}
+
+
+def test_param_descriptions_applied_to_live_schema():
+    # Guard: apply_param_descriptions silently no-ops if FastMCP's private registry
+    # moves. Read the schema through the public list_tools() API instead.
+    import asyncio
+
+    from sportiq.server import mcp
+
+    tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
+    props = tools["football_simulate_group"].inputSchema["properties"]
+    assert props["group"].get("description")

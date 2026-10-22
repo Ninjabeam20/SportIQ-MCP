@@ -3,7 +3,8 @@
 > Deep knowledge-transfer document, written 2026-07-07 against v0.3.1 (commit `b7a1392`),
 > refreshed 2026-07-14 on `codex_changes`, and again **2026-08-30** after Task 8 flip
 > (package version 0.3.2; live connector is the Dell home server; Task 9 deleted
-> Cloud Run 2026-09-02). Read this first. For known weaknesses read `GAPS.md`. For operational
+> Cloud Run 2026-09-02), and **2026-10-22** for the opus remediation (package version 0.4.0, release
+> pending: 46 tools, 7 MCP resources). Read this first. For known weaknesses read `GAPS.md`. For operational
 > rules read `CLAUDE.md`.
 
 ---
@@ -52,12 +53,12 @@ tables, tool registration order — always that order.
 | Cache | Redis primary, `diskcache` automatic fallback | ADR-0003: local dev must never require a daemon; prod host actually runs diskcache too (zero-spend rule) |
 | ILP solver | PuLP + CBC binary | ADR-0002: OR-Tools deliberately excluded (heavy dependency); CBC is apt/brew-installable |
 | Stats | scipy (Poisson) + numpy (vectorized Monte Carlo) | Bracket sim runs thousands of iterations per call |
-| DataFrames | pandas | F1 lap-time regression fits |
+| DataFrames | pandas (optional `f1` extra only) | Pulled in for fastf1; no SportIQ module imports it, so it is not in the base install or the hosted image (ADR-0014) |
 | F1 telemetry | `fastf1` — **optional extra**, lazy-imported | Huge dependency; only needed for one local adapter |
 | Testing | pytest + pytest-asyncio (auto mode) + respx | ADR-0006: no live HTTP in tests, ever; cassettes in `tests/fixtures/` |
 | Lint | ruff (line 100, E/F/I/W/UP/B/SIM/RUF) | |
 | Logging | structlog — JSON on hosted HTTP (`SPORTIQ_LOG_FORMAT=json` in Compose; Cloud Run auto-detects via `K_SERVICE`), pretty locally | Cloud Logging / docker json-file rotation |
-| Deploy | Docker Compose on the Dell (`apps` network, no host ports) is production. `cloud.md` is the old Cloud Run runbook (deleted 2026-09-02) | Stub-package trick in Dockerfile keeps the heavy scipy/pandas layer cached across source edits |
+| Deploy | Docker Compose on the Dell (`apps` network, no host ports) is production. `cloud.md` is the old Cloud Run runbook (deleted 2026-09-02) | Stub-package trick in Dockerfile keeps the heavy scipy/numpy layer cached across source edits |
 | Publish | GitHub Actions OIDC Trusted Publishing to PyPI on `v*` tags | ADR-0010: no long-lived PyPI token in secrets |
 
 **Deliberately excluded** (do not add): OR-Tools, SQLAlchemy, FastAPI, OpenTelemetry, any
@@ -328,3 +329,7 @@ analytics), `done/launch/` marketing copy, wiki lint tooling.
     Not a security hole to "fix" by publishing host ports.
 14. **`docs/log.md` is a hard-rule journal** — every meaningful operation appends an entry.
     If you're wondering "what happened recently", read its tail before anything else.
+15. **HTTP runs one uvicorn worker in one container.** Per-process stampede locks
+    (`fallback.py` `_key_locks`), the expensive-tool semaphore, the sim memo and diskcache
+    counters rely on it. Never add `--workers`, replicas or a second container without moving
+    that state to Redis first.

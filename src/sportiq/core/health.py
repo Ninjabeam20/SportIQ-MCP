@@ -9,6 +9,8 @@ Sport modules append their adapters via `register_adapter_for_health()`.
 
 from __future__ import annotations
 
+import importlib.util
+
 from sportiq import __version__
 from sportiq.core.cache import get_cache
 from sportiq.core.ratelimit import remaining
@@ -44,11 +46,17 @@ async def get_health_report() -> dict:
 
     adapter_statuses: list[AdapterStatus] = []
     for adapter in _registered_adapters:
+        # An adapter backed by an optional extra that isn't installed (e.g. fastf1
+        # in the slim hosted image) is a healthy, expected state, not an outage.
+        optional = getattr(adapter, "optional_import", None)
+        if optional and importlib.util.find_spec(optional) is None:
+            adapter_statuses.append(
+                AdapterStatus(name=_health_name(adapter), ok=True, detail="not installed")
+            )
+            continue
         try:
             ok = await adapter.healthcheck()
-            adapter_statuses.append(
-                AdapterStatus(name=_health_name(adapter), ok=ok, detail=None)
-            )
+            adapter_statuses.append(AdapterStatus(name=_health_name(adapter), ok=ok, detail=None))
         except Exception as e:
             adapter_statuses.append(
                 AdapterStatus(name=_health_name(adapter), ok=False, detail=str(e))

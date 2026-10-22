@@ -190,3 +190,5 @@ The entry point Claude reads first. Every wiki page gets one line here, grouped 
 - [[0010-trusted-publishing]] — PyPI OIDC publish succeeded for v0.3.2 and GitHub has no repository secrets; the current private PyPI publisher binding needs an authenticated check.
 - [[0011-pro-entitlement-gate]] — **REVERSED 2026-07-01: paywall removed, SportIQ is fully free.** Historical record of the V1/V2a Pro gate (`core/entitlements.py`); all gate code deleted from `main`, paid edition preserved at tag `v0.2.3`.
 - [[0012-hosted-abuse-controls]] — Pure-ASGI 1 MiB/60-client/300-global request admission, bounded telemetry, atomic counters, and expensive-tool concurrency two; requires one hosted process.
+- [[0013-mcp-sdk-v2-migration]] — Proposed: stay on MCP SDK 1.x (`>=1.30.0,<2`) this release; v2 breaks `fastmcp` internals and adds OpenTelemetry.
+- [[0014-hosted-image-excludes-fastf1]] — The hosted image drops the `f1` extra and pandas moves into it; a missing fastf1 is reported healthy.

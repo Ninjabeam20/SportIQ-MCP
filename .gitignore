@@ -159,3 +159,9 @@ sportiq-analytics-dashboard*.png
 
 # Local-only remediation planning files.
 opus-*.md
+
+# Local git worktrees (scratch checkouts; never part of the repo).
+.worktrees/
+
+# Generated local dashboard output (built by scripts/dashboard_live.py).
+dashboard_live.html

@@ -217,3 +217,15 @@ async def test_cheap_tools_are_not_serialized_by_expensive_limit(rec: _Recorder)
     assert peak == 4
     release.set()
     await asyncio.gather(*tasks)
+
+
+def test_instrument_tools_wrapped_every_registered_tool():
+    # Guard: instrument_tools silently no-ops if FastMCP's private registry moves
+    # (SDK v2 renames it). The public list and the wrapped registry must agree.
+    import sportiq.server as server
+
+    registry = server.mcp._tool_manager._tools
+    listed = asyncio.run(server.mcp.list_tools())
+    assert len(registry) == len(listed) == 46
+    unwrapped = [name for name, tool in registry.items() if not hasattr(tool.fn, "__wrapped__")]
+    assert unwrapped == []

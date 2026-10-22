@@ -84,19 +84,37 @@ async def test_sportiq_health_includes_per_minute_quota():
     assert quotas["football_data_org:per_minute"] == 10
 
 
-
 async def test_health_names_separate_sports_and_dedupe_shared_provider():
     from sportiq.core.health import get_health_report
 
-    register_adapter_for_health(
-        _StubAdapter("static_seed", health_name="football_static_seed")
-    )
-    register_adapter_for_health(
-        _StubAdapter("static_seed", health_name="cricket_static_seed")
-    )
+    register_adapter_for_health(_StubAdapter("static_seed", health_name="football_static_seed"))
+    register_adapter_for_health(_StubAdapter("static_seed", health_name="cricket_static_seed"))
     register_adapter_for_health(_StubAdapter("theodds", health_name="theodds"))
     register_adapter_for_health(_StubAdapter("theodds", health_name="theodds"))
 
     envelope = await get_health_report()
     names = [status["name"] for status in envelope["data"]["adapters"]]
     assert names == ["football_static_seed", "cricket_static_seed", "theodds"]
+
+
+async def test_health_treats_missing_fastf1_as_healthy(monkeypatch):
+    from sportiq.core.health import get_health_report
+
+    adapter = _StubAdapter("fastf1")
+    adapter.optional_import = "fastf1"
+
+    async def _never_called() -> bool:
+        raise AssertionError("healthcheck must not run when the extra is missing")
+
+    adapter.healthcheck = _never_called
+    register_adapter_for_health(adapter)
+    real_find_spec = health_module.importlib.util.find_spec
+    monkeypatch.setattr(
+        health_module.importlib.util,
+        "find_spec",
+        lambda name, *a, **k: None if name == "fastf1" else real_find_spec(name, *a, **k),
+    )
+
+    envelope = await get_health_report()
+    (status,) = envelope["data"]["adapters"]
+    assert status == {"name": "fastf1", "ok": True, "detail": "not installed"}

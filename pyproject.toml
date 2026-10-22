@@ -1,6 +1,6 @@
 [project]
 name = "sportiq-mcp"
-version = "0.3.2"
+version = "0.4.0"
 description = "MCP server for FIFA World Cup 2026 football, Formula 1, and IPL cricket intelligence tools."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -29,12 +29,13 @@ dependencies = [
     "pulp>=2.9.0",  # Apple Silicon: brew install cbc
     "scipy>=1.13.0",
     "numpy>=1.26.0",
-    "pandas>=2.2.0",
     "beautifulsoup4>=4.12.0",
 ]
 
 [project.optional-dependencies]
-f1 = ["fastf1>=3.4.0"]
+# pandas is only used through fastf1 (no sportiq module imports it), so it
+# lives with the f1 extra rather than in the base install (ADR-0014).
+f1 = ["fastf1>=3.4.0", "pandas>=2.2.0"]
 dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",

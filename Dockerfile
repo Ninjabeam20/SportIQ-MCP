@@ -17,13 +17,15 @@ WORKDIR /app
 
 # --- Dependency layer (cached) ---------------------------------------------
 # Install all third-party deps against a STUB package so this heavy layer
-# (scipy/numpy/pandas/fastf1, all compiled) is keyed on pyproject.toml +
-# uv.lock + README. Source-only edits no longer invalidate it. --frozen pins
-# the image to the same versions CI tested; do not revert to unpinned pip.
+# (scipy/numpy, compiled) is keyed on pyproject.toml + uv.lock + README.
+# Source-only edits no longer invalidate it. --frozen pins the image to the
+# same versions CI tested; do not revert to unpinned pip. The hosted image
+# omits the f1 extra (fastf1/pandas/matplotlib/pillow): the FastF1 fallbacks
+# report "not installed" and the chains walk past them (ADR-0014).
 COPY pyproject.toml uv.lock README.md ./
 RUN mkdir -p src/sportiq \
     && : > src/sportiq/__init__.py \
-    && uv export --frozen --extra f1 --no-dev --no-emit-project -o /tmp/reqs.txt \
+    && uv export --frozen --no-dev --no-emit-project -o /tmp/reqs.txt \
     && uv pip install --system -r /tmp/reqs.txt
 
 # --- Source layer (fast) ----------------------------------------------------
