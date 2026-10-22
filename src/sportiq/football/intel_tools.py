@@ -42,6 +42,7 @@ from sportiq.football.models.results_state import (
     build_results_state,
     flip_knockout_winner,
     resolve_code,
+    results_complete_before,
     truncate_results_state,
 )
 from sportiq.football.models.value_bet import find_value
@@ -690,6 +691,17 @@ async def football_what_if(
             suggestion='Use replay_from="group" for a full pre-tournament replay.',
         )
     kept = truncate_results_state(state, replay_from) if state is not None else None
+    if kept is not None and not results_complete_before(kept, replay_from):
+        # e.g. the static fixture fallback: a draw without scores must not be
+        # reported as "real results kept".
+        return error_envelope(
+            code="ALL_SOURCES_FAILED",
+            message=(
+                f"The available fixture data does not hold every real result before "
+                f"{_STAGE_LABELS[replay_from]}, so they cannot be kept."
+            ),
+            suggestion='Retry later, or use replay_from="group" for a full pre-tournament replay.',
+        )
 
     flipped: dict | None = None
     if flip_winner_of:

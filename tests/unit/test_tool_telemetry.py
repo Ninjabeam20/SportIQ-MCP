@@ -229,3 +229,35 @@ def test_instrument_tools_wrapped_every_registered_tool():
     assert len(registry) == len(listed) == 46
     unwrapped = [name for name, tool in registry.items() if not hasattr(tool.fn, "__wrapped__")]
     assert unwrapped == []
+
+
+async def test_expensive_slot_held_until_offloaded_work_finishes(monkeypatch: pytest.MonkeyPatch):
+    # A timed-out to_thread sim keeps running; its slot must stay taken until it
+    # ends, so no more than `limit` sims ever run at once.
+    import threading
+
+    monkeypatch.setattr(tool_telemetry.settings, "tool_deadline_seconds", 0.05)
+    lock = threading.Lock()
+    active = {"now": 0, "max": 0}
+
+    def work():
+        with lock:
+            active["now"] += 1
+            active["max"] = max(active["max"], active["now"])
+        time.sleep(0.3)
+        with lock:
+            active["now"] -= 1
+
+    async def fn(**kw):
+        await asyncio.to_thread(work)
+        return {"data": {}, "meta": {}}
+
+    sem = asyncio.Semaphore(2)
+    wrapped = tool_telemetry._instrument("football_simulate_bracket", fn, sem)
+    first = await asyncio.gather(wrapped(), wrapped())
+    third = await wrapped()  # both slots still busy with the timed-out sims
+    await asyncio.sleep(0.4)  # let the offloaded threads finish
+
+    assert all(r["error"]["code"] == "UPSTREAM_TIMEOUT" for r in [*first, third])
+    assert active["max"] <= 2
+    assert sem._value == 2  # every slot released once the work ended

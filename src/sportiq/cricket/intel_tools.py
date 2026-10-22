@@ -579,15 +579,19 @@ async def cricket_head_to_head(team_a: str, team_b: str) -> Envelope:
     squad_b_players: list[dict] = squad_result_b.value.get("players", [])
 
     # --- fetch player stats concurrently (best-effort, up to 11 per side) ---
-    def _pids(players: list[dict]) -> list[str]:
+    def _pids(squad_value: dict) -> list[str]:
+        # Seed squads carry Cricsheet registry IDs; the stats providers (CricAPI,
+        # RapidAPI) use their own IDs, so forwarding them only burns quota.
+        if squad_value.get("source") == "static_seed":
+            return []
         pids = []
-        for p in players[:11]:
+        for p in squad_value.get("players", [])[:11]:
             pid = p.get("player_id") or p.get("id")
             if pid:
                 pids.append(str(pid))
         return pids
 
-    all_pids = _pids(squad_a_players) + _pids(squad_b_players)
+    all_pids = _pids(squad_result_a.value) + _pids(squad_result_b.value)
     if all_pids:
         fetch_results = await asyncio.gather(
             *[_fetch_player_stats_safe(pid) for pid in all_pids],

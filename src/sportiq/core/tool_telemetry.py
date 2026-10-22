@@ -78,17 +78,29 @@ def _instrument(
         start = time.perf_counter()
         deadline = settings.tool_deadline_seconds
 
-        async def _call() -> Any:
-            if name in _EXPENSIVE_TOOLS:
-                async with expensive_semaphore:
-                    return await fn(**kwargs)
-            return await fn(**kwargs)
-
-        try:
+        async def _call_expensive() -> Any:
             # The deadline covers the semaphore wait too. Work offloaded with
             # asyncio.to_thread keeps running after the deadline (threads can't be
-            # cancelled); only the caller stops waiting.
-            result = await asyncio.wait_for(_call(), timeout=deadline)
+            # cancelled), so the slot is held until the work really ends — releasing
+            # it at the deadline would let more sims run than the limit allows.
+            t0 = time.monotonic()
+            await asyncio.wait_for(expensive_semaphore.acquire(), timeout=deadline)
+            task = asyncio.ensure_future(fn(**kwargs))
+
+            def _release(t: asyncio.Future) -> None:
+                expensive_semaphore.release()
+                if not t.cancelled():
+                    t.exception()  # retrieve, so a late failure isn't logged as unhandled
+
+            task.add_done_callback(_release)
+            remaining = max(deadline - (time.monotonic() - t0), 0.0)
+            return await asyncio.wait_for(asyncio.shield(task), timeout=remaining)
+
+        try:
+            if name in _EXPENSIVE_TOOLS:
+                result = await _call_expensive()
+            else:
+                result = await asyncio.wait_for(fn(**kwargs), timeout=deadline)
         except TimeoutError:
             result = error_envelope(
                 code="UPSTREAM_TIMEOUT",

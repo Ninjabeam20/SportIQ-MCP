@@ -203,3 +203,20 @@ def test_pit_strategy_dry_sequence_uses_two_dry_compounds():
     assert len(result["stop_laps"]) == 1
     assert result["compound_sequence"][0] == "HARD"
     assert result["compound_sequence"][1] in {"SOFT", "MEDIUM"}
+
+
+def test_pit_strategy_no_forced_second_dry_after_inter_stint():
+    # Using INTER/WET in the race lifts the two-dry-compound rule, so a barely
+    # degrading HARD after an early INTER stint must not be forced into a stop.
+    result = predict(
+        laps=_aged_laps("HARD", slope=0.01),
+        stints=[
+            {"compound": "INTERMEDIATE", "lap_start": 1, "lap_end": 8, "tyre_age_at_start": 0},
+            {"compound": "HARD", "lap_start": 9, "lap_end": 40, "tyre_age_at_start": 0},
+        ],
+        weather=[],
+        current_lap=40,
+        total_laps=53,
+    )
+    assert result["stop_laps"] == []
+    assert result["compound_sequence"] == ["HARD"]

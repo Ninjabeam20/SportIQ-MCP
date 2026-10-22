@@ -1042,3 +1042,21 @@ async def test_seeded_bracket_result_is_memoised():
         await intel_tools.football_simulate_bracket(iterations=100)
     assert calls == [9, None, None]
     assert first["data"] == second["data"]
+
+
+async def test_what_if_rejects_replay_when_fixture_data_has_no_results():
+    # Static fixture fallback: a draw with no scores must not be replayed "from
+    # the final" while claiming earlier real results were kept.
+    from sportiq.football import intel_tools
+
+    with (
+        patch("sportiq.football.intel_tools.football_groups_chain") as gmock,
+        patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock,
+        patch("sportiq.football.intel_tools.simulate_tournament") as sim,
+    ):
+        gmock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        fmock.fetch = AsyncMock(return_value=_fr({"fixtures": []}, source="static_seed"))
+        result = await intel_tools.football_what_if(replay_from="final", iterations=100, seed=1)
+
+    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+    sim.assert_not_called()

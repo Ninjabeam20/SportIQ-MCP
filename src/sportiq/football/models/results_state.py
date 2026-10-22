@@ -348,6 +348,35 @@ def truncate_results_state(state: ResultsState, keep_before: str) -> ResultsStat
     )
 
 
+# Decided ties per knockout round in the 48-team format (12 groups → R32).
+KNOCKOUT_ROUND_SIZES: dict[str, int] = {"r32": 16, "r16": 8, "qf": 4, "sf": 2}
+
+
+def results_complete_before(state: ResultsState, keep_before: str) -> bool:
+    """True when ``state`` holds every real result played before ``keep_before``.
+
+    ``"group"`` needs nothing. Later stages need every group match completed and
+    every tie of each earlier knockout round decided with its round label — so a
+    fixture feed without scores (e.g. the static seed) never passes for "final".
+
+    Raises:
+        ValueError: ``keep_before`` is not a replay stage.
+    """
+    if keep_before not in REPLAY_STAGES:
+        raise ValueError(f"replay stage must be one of {', '.join(REPLAY_STAGES)}")
+    cut = REPLAY_STAGES.index(keep_before)
+    if cut == 0:
+        return True
+    if not state.groups or any(g.remaining for g in state.groups.values()):
+        return False
+    counts: dict[str, int] = {}
+    for a, b, _w in state.knockout:
+        rnd = state.knockout_rounds.get(frozenset((a, b)))
+        if rnd is not None:
+            counts[rnd] = counts.get(rnd, 0) + 1
+    return all(counts.get(r, 0) >= KNOCKOUT_ROUND_SIZES[r] for r in REPLAY_STAGES[1:cut])
+
+
 def flip_knockout_winner(state: ResultsState, code_a: str, code_b: str) -> ResultsState:
     """Return a new state where the decided knockout tie ``code_a``-``code_b`` went the other way.
 

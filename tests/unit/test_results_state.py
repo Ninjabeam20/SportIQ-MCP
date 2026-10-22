@@ -311,3 +311,16 @@ def test_flip_knockout_winner_rejects_tie_not_in_state():
     state = truncate_results_state(_staged_state(), "qf")
     with pytest.raises(ValueError):
         flip_knockout_winner(state, "ARG", "FRA")
+
+
+def test_results_complete_before_false_for_empty_state_and_true_for_group():
+    from sportiq.football.models.results_state import (
+        GroupResults,
+        ResultsState,
+        results_complete_before,
+    )
+
+    empty = ResultsState(groups={"A": GroupResults(completed=[], remaining=[("MEX", "RSA")])})
+    assert results_complete_before(empty, "group") is True
+    assert results_complete_before(empty, "r32") is False
+    assert results_complete_before(empty, "final") is False

@@ -162,13 +162,17 @@ def predict(
 
     # Legal next compounds. A dry race must use >= 2 dry compounds: when the
     # only dry compound used so far is the current one, it can't be the next.
-    used_dry = {
+    # The rule lapses once INTER or WET tyres have been used in the race.
+    used = {
         str(normalize_compound(s.get("compound")))
         for s in stints
         if (s.get("lap_start") or 0) <= current_lap
-        and str(normalize_compound(s.get("compound"))) in _DRY_COMPOUNDS
     }
-    needs_second_dry = current_compound in _DRY_COMPOUNDS and used_dry <= {current_compound}
+    used_dry = used & set(_DRY_COMPOUNDS)
+    used_wet = bool(used & {TyreCompound.INTER.value, TyreCompound.WET.value})
+    needs_second_dry = (
+        current_compound in _DRY_COMPOUNDS and used_dry <= {current_compound} and not used_wet
+    )
     candidates = [c for c in _DRY_COMPOUNDS if not (needs_second_dry and c == current_compound)]
 
     # Best single stop: stay j more laps on the old set (j = 0 is "pit at the
