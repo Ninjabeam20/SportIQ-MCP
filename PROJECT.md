@@ -272,7 +272,7 @@ toggle so a developer's `.env` can never cause live HTTP in tests). CI gates: ru
 model files (each has focused unit tests).
 
 **Safe to change casually:** `docs/wiki/` pages, `README.md`, `scripts/dashboard.py` (local-only
-analytics), `launch/` marketing copy, wiki lint tooling.
+analytics), `done/launch/` marketing copy, wiki lint tooling.
 
 ---
 
@@ -312,9 +312,11 @@ analytics), `launch/` marketing copy, wiki lint tooling.
     `apt-get install coinor-cbc` (CI/Docker do this explicitly).
 11. **Coverage gate lives in the CI command, not pyproject `addopts`** — deliberately, so partial
     local runs don't fail. Don't "fix" that.
-12. **The repo root is full of local-only business docs** (`launch/`, `sponsor-ledger.md`,
-    `monetization-*.md`, `v2*.md`, `free-rollback-plan.md`, …). They are variously gitignored or
-    committed-but-sdist-excluded. Never reference them from shipped code, never let a new one leak
+12. **The repo root holds local-only business docs** (`sponsor-ledger.md`, `BACKLOG.md`,
+    `API-KEYS-AND-SETTINGS.md`, …); finished or superseded plans (`launch/`, `monetization-*.md`,
+    `v2*.md`, `free-rollback-plan.md`, `grok_*`, `grokbot*`, `order.md`, …) are archived in the
+    gitignored `done/` folder, with a status ledger in `done/README.md`. They are variously
+    gitignored or committed-but-sdist-excluded. Never reference them from shipped code, never let a new one leak
     into dist (check `check_release_build.py`), and never commit `step*.md`.
 13. **DNS-rebinding protection is intentionally disabled** on the HTTP transport —
     `sportiq.utkarshgupta.org` (and historically Cloud Run) host headers trip the

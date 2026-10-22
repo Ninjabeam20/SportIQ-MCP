@@ -85,6 +85,9 @@ When you need to understand a domain question (scoring rules, API quirks, model 
   bugs are documented accepted trade-offs (its final INFO section lists them).
 - **`docs/wiki/findings/product-hosting-arc.md`** — GCP → paid → free on GCP → home server.
   Check it when hosting/product history is confusing. Task 9 GCP teardown is done (2026-09-02).
+- **`done/README.md`** (local-only, gitignored) — ledger of every archived plan file: status
+  (done / superseded / open), completion date, evidence, decisions, and the consolidated list of
+  work still not done. Finished plans live in `done/`; check the ledger before re-running one.
 - Both PROJECT/GAPS are local/internal: excluded from the PyPI sdist (`pyproject.toml`), like the other
   root-level planning docs.
 

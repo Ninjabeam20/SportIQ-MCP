@@ -8,6 +8,8 @@
 > Do not set `K_SERVICE` on the Dell. Do not copy `sportiq-keepwarm`. Do not
 > advertise `*.run.app`. The body below is the original apply plan (keep as
 > history). Rollback to Cloud Run is no longer possible.
+> The local-only `grok_changes*.md` / `grok_index.md` / `grok_agent.md` files named below were
+> archived to the gitignored `done/` folder on 2026-10-22 (ledger: `done/README.md`).
 
 > **Grok overlay (2026-08-13, model locked 2026-08-23):** `grok_changes8.md` (index + agent brief + Task 0 inventory) → `grok_changes9.md` (identity) → `grok_changes10.md` (Compose/HEALTHCHECK) → `grok_changes11.md` (vault + steel docs) → `grok_changes12.md` (gated Dell / flip / GCP). Stay on tree `mcp>=1.27.2,<2`; do not pin `mcp==1.27.1`. HEALTHCHECK uses exec-form `python -c` (Docker flattens the draft's `def _ok()`). **Two systems, one public URL** until Task 8 — see Operating model.
 >

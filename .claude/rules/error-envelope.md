@@ -45,7 +45,7 @@ The AI sees `is_stale: true` and adapts wording ("As of about 4 minutes ago…")
 | `INVALID_INPUT` | pydantic validation failed before any I/O. |
 | `UPSTREAM_TIMEOUT` | All upstreams exceeded timeout; subset of `ALL_SOURCES_FAILED`. |
 | `NOT_FOUND` | Source responded successfully but the requested entity does not exist. |
-| `SUBSCRIPTION_REQUIRED` | A paid (intel) tool was called without an active `SPORTIQ_PRO_KEY`. |
+| ~~`SUBSCRIPTION_REQUIRED`~~ | **Removed 2026-07-01** with the paywall (ADR-0011 reversed). Not in `core/errors.ErrorCode`; never emitted. Do not reintroduce. |
 
 `code` is mandatory. `message` is mandatory. The other fields are populated when applicable.
 
