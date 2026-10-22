@@ -3,7 +3,7 @@ title: f1_tyre_degradation
 type: tool
 tags: [f1, tyre, degradation, intel]
 sources: []
-last_updated: 2026-09-25
+last_updated: 2026-10-22
 related: [[f1-laps-chain]], [[f1-stints-chain]], [[tyre-degradation]]
 ---
 
@@ -19,7 +19,7 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
 
 ## Args
 - `session_key` — OpenF1 session key (obtain from `f1_get_sessions`).
-- `driver_number` — Driver number (e.g. 1 for Verstappen).
+- `driver_number` — Driver number (e.g. 1 = Norris in 2026; driver numbers change by season; use `f1_get_drivers`).
 - `compound` — Tyre compound: `SOFT`, `MEDIUM`, `HARD`, `INTER`, or `WET`.
 
 ## Success response

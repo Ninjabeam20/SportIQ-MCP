@@ -5,6 +5,8 @@ Thin wrappers: validate args → call chain.fetch() → return tool_response.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.tool_response import Envelope, error_envelope, paginate, tool_response
 from sportiq.f1.chains import (
@@ -17,12 +19,33 @@ from sportiq.f1.chains import (
 )
 
 
-async def f1_get_sessions(year: int, country: str | None = None) -> Envelope:
-    """Return F1 sessions for a given year, optionally filtered by country.
+def _session_end(session: dict) -> datetime | None:
+    raw = session.get("date_end")
+    if not raw:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+
+
+async def f1_get_sessions(
+    year: int,
+    country: str | None = None,
+    session_name: str | None = None,
+    latest_completed: bool = False,
+) -> Envelope:
+    """Return F1 sessions for a given year, optionally filtered by country or session name.
 
     Args:
-        year: Championship year (e.g. 2025).
-        country: Optional country name to filter (e.g. "Monaco").
+        year: Championship year (e.g. 2026).
+        country: Optional country name to filter (e.g. "Netherlands").
+        session_name: Optional session name to keep, case-insensitive (e.g. "Race",
+            "Qualifying", "Sprint").
+        latest_completed: When true, return only the single session that ended most
+            recently (greatest date_end before now, UTC) — e.g. with
+            session_name="Race", the latest finished Grand Prix.
 
     Returns:
         data.sessions: list of session objects with session_key, session_type, date.
@@ -38,6 +61,17 @@ async def f1_get_sessions(year: int, country: str | None = None) -> Envelope:
             message=f"Could not fetch F1 sessions for year {year}.",
             sources_tried=e.attempts,
         )
+    # Filter after the chain fetch so cache keys stay year/country only.
+    if session_name is not None or latest_completed:
+        sessions = result.value.get("sessions", [])
+        if session_name is not None:
+            wanted = session_name.strip().lower()
+            sessions = [s for s in sessions if str(s.get("session_name", "")).lower() == wanted]
+        if latest_completed:
+            now = datetime.now(UTC)
+            ended = [(end, s) for s in sessions if (end := _session_end(s)) and end < now]
+            sessions = [max(ended, key=lambda pair: pair[0])[1]] if ended else []
+        result.value = {**result.value, "sessions": sessions}
     return tool_response(result)
 
 
@@ -71,7 +105,7 @@ async def f1_get_lap_times(
 
     Args:
         session_key: OpenF1 session identifier.
-        driver_number: Driver's race number (e.g. 1 for Verstappen).
+        driver_number: Driver's race number (driver numbers change by season; use f1_get_drivers).
         limit: Max laps to return, 1..200 (default 100 — covers most full races).
         offset: Number of laps to skip for paging (default 0).
 
@@ -112,8 +146,12 @@ async def f1_get_standings(year: int) -> Envelope:
         year: Championship year (e.g. 2026).
 
     Returns:
-        data.driver_standings: driver championship positions and points.
-        data.constructor_standings: constructor championship positions and points.
+        data.season / data.round: season and the last round counted.
+        data.drivers: [{position, driver_number, code, name, team, points, wins}]
+            (points are season totals).
+        data.constructors: [{position, team, points, wins}].
+        Same shape from every source (Jolpica primary; the FastF1 fallback
+        sums per-race points and omits sprint points).
         meta.source: adapter that served the data.
     """
     if year < 2018 or year > 2030:

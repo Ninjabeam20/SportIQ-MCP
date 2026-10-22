@@ -1,4 +1,5 @@
 """F1 RAW tool envelope + error-envelope tests."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
@@ -27,6 +28,41 @@ async def test_f1_get_sessions_returns_data_envelope():
     assert "data" in result
     assert "meta" in result
     assert result["data"]["sessions"][0]["session_key"] == 9877
+
+
+def _sessions_payload() -> dict:
+    return {
+        "sessions": [
+            {"session_key": 11300, "session_name": "Race", "date_end": "2026-07-26T15:00:00+00:00"},
+            {"session_key": 11353, "session_name": "Race", "date_end": "2026-08-30T15:00:00+00:00"},
+            {
+                "session_key": 11351,
+                "session_name": "Qualifying",
+                "date_end": "2026-08-29T15:00:00+00:00",
+            },
+            {"session_key": 99999, "session_name": "Race", "date_end": "2099-12-06T15:00:00+00:00"},
+        ]
+    }
+
+
+async def test_get_sessions_latest_completed_race():
+    from sportiq.f1 import tools
+
+    with patch("sportiq.f1.tools.f1_sessions_chain") as mock:
+        mock.fetch = AsyncMock(return_value=_fr(_sessions_payload()))
+        result = await tools.f1_get_sessions(year=2026, session_name="Race", latest_completed=True)
+    # The future race is excluded; the most recent past race wins.
+    assert [s["session_key"] for s in result["data"]["sessions"]] == [11353]
+    mock.fetch.assert_awaited_once_with(year=2026, country=None)
+
+
+async def test_get_sessions_filters_session_name():
+    from sportiq.f1 import tools
+
+    with patch("sportiq.f1.tools.f1_sessions_chain") as mock:
+        mock.fetch = AsyncMock(return_value=_fr(_sessions_payload()))
+        result = await tools.f1_get_sessions(year=2026, session_name="qualifying")
+    assert [s["session_key"] for s in result["data"]["sessions"]] == [11351]
 
 
 async def test_f1_get_sessions_invalid_year():
@@ -91,7 +127,9 @@ async def test_f1_get_race_results_returns_envelope():
 
     with patch("sportiq.f1.tools.f1_results_chain") as mock:
         mock.fetch = AsyncMock(
-            return_value=_fr({"results": {"MRData": {"RaceTable": {"round": "1"}}}}, source="jolpica")
+            return_value=_fr(
+                {"results": {"MRData": {"RaceTable": {"round": "1"}}}}, source="jolpica"
+            )
         )
         result = await tools.f1_get_race_results(year=2025, round=1)
     assert "data" in result
@@ -114,7 +152,13 @@ async def test_f1_get_drivers_returns_envelope():
 
     with patch("sportiq.f1.tools.f1_drivers_chain") as mock:
         mock.fetch = AsyncMock(
-            return_value=_fr({"drivers": [{"driver_number": 1, "full_name": "Max Verstappen", "team": "Red Bull"}]})
+            return_value=_fr(
+                {
+                    "drivers": [
+                        {"driver_number": 1, "full_name": "Max Verstappen", "team": "Red Bull"}
+                    ]
+                }
+            )
         )
         result = await tools.f1_get_drivers(session_key=9877)
     assert "data" in result and "meta" in result
@@ -145,10 +189,28 @@ async def test_f1_get_standings_returns_envelope():
 
     with patch("sportiq.f1.tools.f1_standings_chain") as mock:
         mock.fetch = AsyncMock(
-            return_value=_fr({"driver_standings": [{"position": 1, "driver": "Max Verstappen", "points": 87.0}], "constructor_standings": []})
+            return_value=_fr(
+                {
+                    "season": 2025,
+                    "round": 5,
+                    "drivers": [
+                        {
+                            "position": 1,
+                            "driver_number": 1,
+                            "code": "NOR",
+                            "name": "Lando Norris",
+                            "team": "McLaren",
+                            "points": 87.0,
+                            "wins": 2,
+                        }
+                    ],
+                    "constructors": [],
+                }
+            )
         )
         result = await tools.f1_get_standings(year=2025)
-    assert result["data"]["driver_standings"][0]["position"] == 1
+    assert result["data"]["drivers"][0]["position"] == 1
+    assert result["data"]["season"] == 2025
 
 
 async def test_f1_get_standings_invalid_year():

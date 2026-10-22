@@ -1,4 +1,5 @@
 """The Odds API adapter tests (cricket + football) — all HTTP mocked with respx."""
+
 from __future__ import annotations
 
 import json
@@ -34,7 +35,12 @@ async def test_cricket_adapter_normalises_events():
     events = result["events"]
     assert events[0]["home"] == "Mumbai Indians"
     assert events[0]["away"] == "Chennai Super Kings"
-    assert events[0]["bookmakers"][0] == {"name": "Betfair", "home": 1.85, "away": 2.05}
+    assert events[0]["bookmakers"][0] == {
+        "name": "Betfair",
+        "home": 1.85,
+        "away": 2.05,
+        "last_update": "2026-04-12T13:30:00Z",
+    }
 
 
 @respx.mock
@@ -53,7 +59,26 @@ async def test_football_adapter_normalises_events_captures_draw():
         "home": 1.65,
         "draw": 3.80,
         "away": 5.20,
+        "last_update": "2026-06-11T18:30:00Z",
     }
+
+
+@respx.mock
+async def test_theodds_normaliser_keeps_bookmaker_last_update():
+    """Both sports carry each bookmaker's price timestamp through normalisation."""
+    from sportiq.cricket.adapters.theodds import TheOddsCricketAdapter
+    from sportiq.football.adapters.theodds import TheOddsFootballAdapter
+
+    respx.get(f"{_BASE}/sports/cricket_ipl/odds").mock(
+        return_value=Response(200, json=_load("cricket_ipl.json"))
+    )
+    respx.get(f"{_BASE}/sports/soccer_fifa_world_cup/odds").mock(
+        return_value=Response(200, json=_load("soccer_wc.json"))
+    )
+    cricket = await TheOddsCricketAdapter().fetch()
+    football = await TheOddsFootballAdapter().fetch()
+    assert cricket["events"][0]["bookmakers"][0]["last_update"] == "2026-04-12T13:30:00Z"
+    assert football["events"][0]["bookmakers"][0]["last_update"] == "2026-06-11T18:30:00Z"
 
 
 @respx.mock
@@ -66,9 +91,7 @@ async def test_cricket_adapter_skips_bookmaker_without_h2h():
             "home_team": "A",
             "away_team": "B",
             "commence_time": "2026-04-12T14:00:00Z",
-            "bookmakers": [
-                {"title": "NoMarkets", "markets": [{"key": "totals", "outcomes": []}]}
-            ],
+            "bookmakers": [{"title": "NoMarkets", "markets": [{"key": "totals", "outcomes": []}]}],
         }
     ]
     respx.get(f"{_BASE}/sports/cricket_ipl/odds").mock(return_value=Response(200, json=payload))

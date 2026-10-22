@@ -11,15 +11,17 @@ import asyncio
 
 from sportiq.config import settings
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
+from sportiq.core.fallback import FallbackResult
 from sportiq.core.parlay import build_accumulator
 from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta
+from sportiq.core.value_bet import has_commenced
 from sportiq.football.chains import (
     football_fixtures_chain,
     football_groups_chain,
     football_odds_chain,
 )
 from sportiq.football.models import poisson_xg
-from sportiq.football.models.bracket_sim import simulate_tournament
+from sportiq.football.models.bracket_sim import DEFAULT_RATING, simulate_tournament
 from sportiq.football.models.elo_live import nudge_ratings
 from sportiq.football.models.form_trends import compute_form_trends
 from sportiq.football.models.group_sim import simulate_group_stage
@@ -38,6 +40,14 @@ _NO_LIVE_NOTE = "Live results unavailable; simulated from the pre-tournament see
 _TIEBREAK_POLICY = (
     "FIFA 2026 available fields; model rating substitutes for missing conduct/FIFA ranking."
 )
+_PRIOR_NOTE = (
+    "No completed-result evidence was available; this is a reconstructed "
+    "pre-tournament simulation, not the current state."
+)
+_DEFAULT_RATING_NOTE = (
+    f"Some entrants have no seed rating and use the default {DEFAULT_RATING:g} "
+    "(see meta.default_rating_teams)."
+)
 
 
 async def _groups_payload() -> dict:
@@ -51,6 +61,48 @@ def _resolve_team(value: str, teams_meta: dict) -> str | None:
     if code in teams_meta:
         return code
     return resolve_code(value, build_code_index(teams_meta))
+
+
+def _seed_ratings(groups_value: dict) -> dict:
+    """The seed ratings, plus key aliases where the draw and the seed spell a code differently."""
+    ratings = dict(groups_value.get("ratings", {}))
+    # label alias only; seed values unchanged (frozen)
+    if "KSA" not in ratings and "SAU" in ratings:
+        ratings["KSA"] = ratings["SAU"]
+    return ratings
+
+
+def _entrants(groups_value: dict) -> set[str]:
+    """Team codes in the draw: the participation check (never the ratings dict)."""
+    teams = groups_value.get("teams") or {}
+    if teams:
+        return set(teams)
+    return {code for codes in groups_value.get("groups", {}).values() for code in codes}
+
+
+def _not_entrant(team: str) -> Envelope:
+    return error_envelope(
+        code="NOT_FOUND",
+        message=f"{team.strip()!r} is not a World Cup 2026 entrant; see football_get_groups.",
+    )
+
+
+def _with_default_ratings(ratings: dict, codes) -> tuple[dict, list[str]]:
+    """Fill DEFAULT_RATING for unrated ``codes``; return (ratings, sorted defaulted codes)."""
+    missing = sorted({code for code in codes if code not in ratings})
+    if not missing:
+        return ratings, []
+    return {**ratings, **dict.fromkeys(missing, DEFAULT_RATING)}, missing
+
+
+def _add_note(meta: dict, note: str) -> None:
+    meta["note"] = f"{meta['note']} {note}" if meta.get("note") else note
+
+
+def _disclose_default_ratings(meta: dict, defaulted: list[str]) -> None:
+    if defaulted:
+        meta["default_rating_teams"] = defaulted
+        _add_note(meta, _DEFAULT_RATING_NOTE)
 
 
 def _clamp_iterations(iterations: int) -> int:
@@ -87,18 +139,36 @@ def _conditioned_ratings(base_ratings: dict, state: ResultsState | None) -> dict
     return base_ratings
 
 
-async def _maybe_nudge_single(groups_value: dict, ratings: dict) -> tuple[dict, bool]:
+async def _maybe_nudge_single(
+    groups_value: dict, ratings: dict
+) -> tuple[dict, bool, FallbackResult | None]:
     """For single-match tools: nudge ratings from live results when enabled.
 
-    Returns ``(ratings, live_elo_applied)``. No conditioning structure is needed
-    here — these tools score one matchup, so only the rating shift matters.
+    Returns ``(ratings, live_elo_applied, fixtures_result)``. ``fixtures_result``
+    is None when live Elo is off (or no fixture source answered); otherwise the
+    caller MUST pass it to ``staleness_meta`` so its freshness is not swallowed.
+    No conditioning structure is needed here — these tools score one matchup,
+    so only the rating shift matters.
     """
     if not settings.football_live_elo:
-        return ratings, False
-    state, _ = await _fetch_live_state(groups_value)
+        return ratings, False, None
+    state, fixtures_result = await _fetch_live_state(groups_value)
     if state is None:
-        return ratings, False
-    return nudge_ratings(ratings, state.completed_chrono), True
+        return ratings, False, fixtures_result
+    return nudge_ratings(ratings, state.completed_chrono), True, fixtures_result
+
+
+def _sim_mode(fixtures_result, state: ResultsState | None) -> str:
+    """``completed`` | ``in_progress`` | ``pre_tournament_prior`` for a conditioned sim."""
+    if (
+        state is None
+        or state.matched == 0
+        or getattr(fixtures_result, "source", None) == "static_seed"
+    ):
+        return "pre_tournament_prior"
+    if state.champion is not None:
+        return "completed"
+    return "in_progress"
 
 
 def _sim_meta(
@@ -106,24 +176,32 @@ def _sim_meta(
     fixtures_result,
     state: ResultsState | None,
     tiebreak_fallbacks: int | None = None,
+    default_rating_teams: list[str] | None = None,
 ) -> dict:
     """Build the meta envelope for a conditioned simulation tool."""
     sources = [groups_result] + ([fixtures_result] if fixtures_result is not None else [])
+    mode = _sim_mode(fixtures_result, state)
     meta: dict = {
         "source": groups_result.source,
         "estimated": True,
+        "mode": mode,
         "conditioned_matches": state.matched if state else 0,
         **staleness_meta(*sources),
     }
+    if mode == "completed":
+        meta["champion"] = state.champion
     if state and state.dropped:
         meta["fixtures_dropped"] = state.dropped
     if settings.football_live_elo and state is not None:
         meta["live_elo"] = True
     if state is None:
         meta["note"] = _NO_LIVE_NOTE
+    if mode == "pre_tournament_prior":
+        _add_note(meta, _PRIOR_NOTE)
     if tiebreak_fallbacks is not None:
         meta["tiebreak_fallbacks"] = tiebreak_fallbacks
         meta["tiebreak_policy"] = _TIEBREAK_POLICY
+    _disclose_default_ratings(meta, default_rating_teams or [])
     return meta
 
 
@@ -167,19 +245,21 @@ async def football_xg_model(home_team: str, away_team: str, neutral: bool = True
     away = _resolve_team(away_team, teams_meta) or away
     if home == away:
         return error_envelope(code="INVALID_INPUT", message="home_team and away_team must differ.")
-    ratings = result.value.get("ratings", {})
-    if home not in ratings or away not in ratings:
-        return error_envelope(
-            code="NOT_FOUND", message="Unknown team code; see football_get_groups."
-        )
-    ratings, live_elo = await _maybe_nudge_single(result.value, ratings)
+    entrants = _entrants(result.value)
+    for team_code, raw in ((home, home_team), (away, away_team)):
+        if team_code not in entrants:
+            return _not_entrant(raw)
+    ratings, defaulted = _with_default_ratings(_seed_ratings(result.value), (home, away))
+    ratings, live_elo, fixtures_result = await _maybe_nudge_single(result.value, ratings)
 
     home_adv = 0.0 if neutral else 60.0
     lam_h, lam_a = poisson_xg.lambdas_from_elo(ratings[home], ratings[away], home_adv)
     outcome = poisson_xg.outcome_probabilities(lam_h, lam_a)
-    meta = {"source": result.source, "estimated": True, **staleness_meta(result)}
+    freshness = (result, fixtures_result) if fixtures_result is not None else (result,)
+    meta = {"source": result.source, "estimated": True, **staleness_meta(*freshness)}
     if live_elo:
         meta["live_elo"] = True
+    _disclose_default_ratings(meta, defaulted)
     return {
         "data": {
             "home_team": home,
@@ -234,12 +314,12 @@ async def football_match_predictor(
     away = _resolve_team(away_team, teams_meta) or away
     if home == away:
         return error_envelope(code="INVALID_INPUT", message="home_team and away_team must differ.")
-    ratings = result.value.get("ratings", {})
-    if home not in ratings or away not in ratings:
-        return error_envelope(
-            code="NOT_FOUND", message="Unknown team code; see football_get_groups."
-        )
-    ratings, live_elo = await _maybe_nudge_single(result.value, ratings)
+    entrants = _entrants(result.value)
+    for team_code, raw in ((home, home_team), (away, away_team)):
+        if team_code not in entrants:
+            return _not_entrant(raw)
+    ratings, defaulted = _with_default_ratings(_seed_ratings(result.value), (home, away))
+    ratings, live_elo, fixtures_result = await _maybe_nudge_single(result.value, ratings)
 
     home_adv = 0.0 if neutral else 60.0
     lam_h, lam_a = poisson_xg.lambdas_from_elo(ratings[home], ratings[away], home_adv)
@@ -251,9 +331,11 @@ async def football_match_predictor(
         winner = away
     else:
         winner = "DRAW"
-    meta = {"source": result.source, "estimated": True, **staleness_meta(result)}
+    freshness = (result, fixtures_result) if fixtures_result is not None else (result,)
+    meta = {"source": result.source, "estimated": True, **staleness_meta(*freshness)}
     if live_elo:
         meta["live_elo"] = True
+    _disclose_default_ratings(meta, defaulted)
     return {
         "data": {
             "home_team": home,
@@ -293,7 +375,8 @@ async def football_simulate_group(group: str, iterations: int = 5000) -> Envelop
         return error_envelope(code="NOT_FOUND", message=f"Unknown group {group!r}; groups are A-L.")
 
     state, fixtures_result = await _fetch_live_state(result.value)
-    ratings = _conditioned_ratings(result.value.get("ratings", {}), state)
+    seed, defaulted = _with_default_ratings(_seed_ratings(result.value), _entrants(result.value))
+    ratings = _conditioned_ratings(seed, state)
     try:
         sim = await asyncio.to_thread(
             simulate_group_stage,
@@ -310,6 +393,7 @@ async def football_simulate_group(group: str, iterations: int = 5000) -> Envelop
         fixtures_result,
         state,
         tiebreak_fallbacks=sim["tiebreak_fallbacks"],
+        default_rating_teams=defaulted,
     )
     if state:  # group-tool count should reflect only this group's locked matches
         known = state.groups.get(key)
@@ -357,7 +441,10 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
 
     groups = result.value.get("groups", {})
     state, fixtures_result = await _fetch_live_state(result.value)
-    ratings = _conditioned_ratings(result.value.get("ratings", {}), state)
+    seed_ratings, defaulted = _with_default_ratings(
+        _seed_ratings(result.value), _entrants(result.value)
+    )
+    ratings = _conditioned_ratings(seed_ratings, state)
     try:
         sim = await asyncio.to_thread(
             simulate_tournament,
@@ -376,6 +463,7 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
             fixtures_result,
             state,
             tiebreak_fallbacks=sim["tiebreak_fallbacks"],
+            default_rating_teams=defaulted,
         ),
     }
 
@@ -408,12 +496,11 @@ async def football_knockout_path(
         return error_envelope(code=e.code, message="Could not load draw.", sources_tried=e.attempts)
 
     groups = result.value.get("groups", {})
-    base_ratings = result.value.get("ratings", {})
     code = _resolve_team(team, result.value.get("teams", {})) or code
-    if code not in base_ratings:
-        return error_envelope(
-            code="NOT_FOUND", message="Unknown team code; see football_get_groups."
-        )
+    entrants = _entrants(result.value)
+    if code not in entrants:
+        return _not_entrant(team)
+    base_ratings, defaulted = _with_default_ratings(_seed_ratings(result.value), entrants)
 
     state, fixtures_result = await _fetch_live_state(result.value)
     ratings = _conditioned_ratings(base_ratings, state)
@@ -436,6 +523,7 @@ async def football_knockout_path(
             fixtures_result,
             state,
             tiebreak_fallbacks=sim["tiebreak_fallbacks"],
+            default_rating_teams=defaulted,
         ),
     }
 
@@ -446,9 +534,10 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
     De-vigs each market's 1X2 decimal odds (removes the margin so implied
     probabilities sum to 1) and compares them to this server's own match-outcome
     probabilities — the same Elo/Poisson path ``football_match_predictor`` uses.
-    Where the model probability exceeds the de-vigged market probability by at
-    least ``min_edge``, the outcome is flagged with its edge and the
-    model's fair odds.
+    Flags outcomes where the model beats the de-vigged market by ``min_edge``
+    **and** the offered price has positive expected value, with the edge, the
+    expected value and the model's fair odds. Events that have already started
+    are skipped.
 
     Args:
         team: Optional FIFA code or team name to filter events (matched against
@@ -459,8 +548,9 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
 
     Returns:
         data.value_bets: list of {event_id, home, away, outcome, model_prob,
-            fair_odds, market_odds, edge, bookmaker}, sorted by edge descending.
-        data.events_analysed: events with both teams rated (model-comparable).
+            fair_odds, market_odds, edge, ev_pct, bookmaker, price_updated_at},
+            sorted by edge descending.
+        data.events_analysed: not-yet-started events with both teams in the draw.
         meta.estimated: true. meta.is_stale reflects the odds freshness.
     """
     if not 0.0 <= min_edge <= 1.0:
@@ -487,10 +577,11 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
         raise groups_r
     odds_result, groups_result = odds_r, groups_r
 
-    ratings = groups_result.value.get("ratings", {})
+    entrants = _entrants(groups_result.value)
+    ratings, unrated = _with_default_ratings(_seed_ratings(groups_result.value), entrants)
     # Opt-in: nudge the seed forward from live results so value bets compare the
     # market against the same in-tournament form as football_match_predictor.
-    ratings, live_elo = await _maybe_nudge_single(groups_result.value, ratings)
+    ratings, live_elo, fixtures_result = await _maybe_nudge_single(groups_result.value, ratings)
     # Odds carry full team names; ratings are keyed by code. Resolve names (and
     # aliases like "Korea Republic") -> code from the same draw payload (reusing
     # the seed, not re-deriving any ratings/xG).
@@ -520,12 +611,17 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
 
     value_bets: list[dict] = []
     analysed = 0
+    defaulted: set[str] = set()
     for ev in events:
+        # Started / in-play events are not priced against a pre-match model.
+        if has_commenced(ev):
+            continue
         home_code = resolve_code(ev.get("home") or "", index)
         away_code = resolve_code(ev.get("away") or "", index)
-        if not home_code or not away_code or home_code not in ratings or away_code not in ratings:
+        if home_code not in entrants or away_code not in entrants:
             continue
         analysed += 1
+        defaulted.update(c for c in (home_code, away_code) if c in unrated)
         # Neutral venue — World Cup default, matching football_match_predictor.
         lam_h, lam_a = poisson_xg.lambdas_from_elo(ratings[home_code], ratings[away_code], 0.0)
         model_probs = poisson_xg.outcome_probabilities(lam_h, lam_a)
@@ -544,10 +640,15 @@ async def football_find_value_bets(team: str | None = None, min_edge: float = 0.
     meta = {
         "source": odds_result.source,
         "estimated": True,
-        **staleness_meta(odds_result, groups_result),
+        **staleness_meta(
+            odds_result,
+            groups_result,
+            *([fixtures_result] if fixtures_result is not None else []),
+        ),
     }
     if live_elo:
         meta["live_elo"] = True
+    _disclose_default_ratings(meta, sorted(defaulted))
     return {
         "data": {
             "value_bets": value_bets,

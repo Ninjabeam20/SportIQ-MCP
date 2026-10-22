@@ -14,6 +14,7 @@ The normaliser is intentionally duplicated in the football adapter rather than
 shared — two short self-contained files (one per sport-specific endpoint) over a
 cross-package helper. The shared piece is the HTTP client (core.http).
 """
+
 from __future__ import annotations
 
 from sportiq.config import settings
@@ -45,7 +46,8 @@ def _key() -> str:
 def _normalise_events(events: list[dict]) -> list[dict]:
     """Flatten The Odds API events into {event_id, home, away, commence_time, bookmakers}.
 
-    Each bookmaker is reduced to its h2h home/away decimal price.
+    Each bookmaker is reduced to its h2h home/away decimal price plus its
+    ``last_update`` timestamp.
     """
     out = []
     for ev in events:
@@ -57,7 +59,12 @@ def _normalise_events(events: list[dict]) -> list[dict]:
                 continue
             prices = {o.get("name"): o.get("price") for o in h2h.get("outcomes", [])}
             bookmakers.append(
-                {"name": bk.get("title"), "home": prices.get(home), "away": prices.get(away)}
+                {
+                    "name": bk.get("title"),
+                    "home": prices.get(home),
+                    "away": prices.get(away),
+                    "last_update": bk.get("last_update"),
+                }
             )
         out.append(
             {

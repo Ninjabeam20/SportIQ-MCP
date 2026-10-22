@@ -8,6 +8,7 @@ chain terminator: it always returns a (possibly empty) table rather than raising
 
 Output matches the live adapters' standings shape (see football_data_org.py).
 """
+
 from __future__ import annotations
 
 from sportiq.football.adapters.static_seed import load_wc2026
@@ -25,9 +26,13 @@ class DerivedStandingsAdapter:
 
         result = await football_fixtures_chain.fetch()
         wc = load_wc2026()
-        return derived_standings(
+        table = derived_standings(
             result.value.get("fixtures", []), wc.get("groups", {}), wc.get("teams", {})
         )
+        # The standings chain caches this as fresh; carry the fixtures' staleness
+        # so football_get_standings can still surface it in meta.
+        table["upstream_is_stale"] = result.is_stale
+        return table
 
     async def healthcheck(self) -> bool:
         return True

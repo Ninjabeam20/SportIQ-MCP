@@ -1,4 +1,5 @@
 """Tool-layer tests for football_build_accumulator — value_bets stubbed, envelope asserted."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
@@ -6,7 +7,9 @@ from unittest.mock import AsyncMock, patch
 from sportiq.football.intel_tools import football_build_accumulator
 
 
-def _value_bet(event_id: str, outcome: str, edge: float, model_prob: float, market_odds: float) -> dict:
+def _value_bet(
+    event_id: str, outcome: str, edge: float, model_prob: float, market_odds: float
+) -> dict:
     return {
         "event_id": event_id,
         "home": "TeamA",
@@ -23,7 +26,14 @@ def _value_bet(event_id: str, outcome: str, edge: float, model_prob: float, mark
 def _value_bets_response(bets: list[dict]) -> dict:
     return {
         "data": {"value_bets": bets, "min_edge": 0.05, "events_analysed": len(bets)},
-        "meta": {"source": "theodds", "estimated": True, "is_stale": False, "data_age_seconds": 0, "fallback_used": False, "duration_ms": 5},
+        "meta": {
+            "source": "theodds",
+            "estimated": True,
+            "is_stale": False,
+            "data_age_seconds": 0,
+            "fallback_used": False,
+            "duration_ms": 5,
+        },
     }
 
 
@@ -97,4 +107,5 @@ async def test_no_value_bets_clean_response():
     assert "error" not in result
     assert "data" in result
     assert result["data"]["legs_used"] == 0
+    assert result["data"]["combined_odds"] is None  # passed through, never round(None)
     assert result["meta"]["estimated"] is True

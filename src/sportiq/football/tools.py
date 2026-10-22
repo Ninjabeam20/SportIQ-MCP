@@ -100,6 +100,9 @@ async def football_get_standings(limit: int = 50, offset: int = 0) -> Envelope:
             message="Could not fetch World Cup 2026 standings.",
             sources_tried=e.attempts,
         )
+    # derived_standings flags a table built from stale fixtures; never swallow it.
+    if result.value.pop("upstream_is_stale", False):
+        result.is_stale = True
     result.value = paginate(result.value, "standings", limit, offset)
     return tool_response(result)
 
@@ -176,10 +179,11 @@ async def football_get_top_scorers() -> Envelope:
 
 
 async def football_get_odds(team: str | None = None) -> Envelope:
-    """Return live market head-to-head odds for upcoming World Cup 2026 matches.
+    """Return market head-to-head odds for any World Cup 2026 events the odds feed still lists.
 
     Sourced from The Odds API (requires THEODDS_KEY). Without a key the call
-    returns a clean ALL_SOURCES_FAILED envelope rather than crashing.
+    returns a clean ALL_SOURCES_FAILED envelope rather than crashing. The
+    tournament ended with the 2026-07-19 final, so the feed is normally empty.
 
     Args:
         team: Optional team name to filter events (case-insensitive substring,
@@ -187,7 +191,7 @@ async def football_get_odds(team: str | None = None) -> Envelope:
 
     Returns:
         data.events: list of {event_id, home, away, commence_time, bookmakers:
-            [{name, home, draw, away}]} with decimal 1X2 prices per bookmaker.
+            [{name, home, draw, away, last_update}]} with decimal 1X2 prices per bookmaker.
         meta.source: adapter that served the data (theodds / cache:stale).
     """
     try:

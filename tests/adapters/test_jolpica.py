@@ -29,12 +29,72 @@ async def test_jolpica_standings_adapter_returns_driver_and_constructor_blocks()
         return_value=Response(200, json=_load("constructor_standings_2025.json"))
     )
     result = await JolpicaStandingsAdapter().fetch(year=2025)
-    assert "driver_standings" in result
-    assert "constructor_standings" in result
-    driver_list = result["driver_standings"]["MRData"]["StandingsTable"]["StandingsLists"][0]["DriverStandings"]
-    assert driver_list[0]["Driver"]["driverId"] == "verstappen"
-    constructor_list = result["constructor_standings"]["MRData"]["StandingsTable"]["StandingsLists"][0]["ConstructorStandings"]
-    assert constructor_list[0]["Constructor"]["constructorId"] == "red_bull"
+    assert result["season"] == 2025
+    assert isinstance(result["round"], int)
+    driver = result["drivers"][0]
+    assert set(driver) == {"position", "driver_number", "code", "name", "team", "points", "wins"}
+    assert driver["position"] == 1
+    assert driver["name"] == "Max Verstappen"
+    assert driver["code"] == "VER"
+    assert driver["points"] == 136.0
+    assert isinstance(driver["points"], float)
+    assert isinstance(driver["wins"], int)
+    assert driver["driver_number"] is None or isinstance(driver["driver_number"], int)
+    assert isinstance(driver["team"], str)
+    team = result["constructors"][0]
+    assert set(team) == {"position", "team", "points", "wins"}
+    assert team == {"position": 1, "team": "Red Bull", "points": 210.0, "wins": 0}
+
+
+@respx.mock
+async def test_jolpica_standings_adapter_maps_full_ergast_row():
+    from sportiq.f1.adapters.jolpica import JolpicaStandingsAdapter
+
+    # Field names as Jolpica serves them (the committed fixture is trimmed).
+    payload = {
+        "MRData": {
+            "StandingsTable": {
+                "StandingsLists": [
+                    {
+                        "season": "2026",
+                        "round": "17",
+                        "DriverStandings": [
+                            {
+                                "position": "1",
+                                "points": "325",
+                                "wins": "7",
+                                "Driver": {
+                                    "permanentNumber": "12",
+                                    "code": "ANT",
+                                    "givenName": "Andrea Kimi",
+                                    "familyName": "Antonelli",
+                                },
+                                "Constructors": [{"name": "Mercedes"}],
+                            }
+                        ],
+                    }
+                ]
+            }
+        }
+    }
+    respx.get("https://api.jolpi.ca/ergast/f1/2026/driverStandings.json").mock(
+        return_value=Response(200, json=payload)
+    )
+    respx.get("https://api.jolpi.ca/ergast/f1/2026/constructorStandings.json").mock(
+        return_value=Response(500, json={})
+    )
+    result = await JolpicaStandingsAdapter().fetch(year=2026)
+    assert result["round"] == 17
+    assert result["drivers"][0] == {
+        "position": 1,
+        "driver_number": 12,
+        "code": "ANT",
+        "name": "Andrea Kimi Antonelli",
+        "team": "Mercedes",
+        "points": 325.0,
+        "wins": 7,
+    }
+    assert result["constructors"] == []
 
 
 @respx.mock
@@ -88,10 +148,8 @@ async def test_jolpica_standings_adapter_partial_driver_only():
         return_value=Response(500, json={})
     )
     result = await JolpicaStandingsAdapter().fetch(year=2025)
-    assert "driver_standings" in result
-    assert result["constructor_standings"] == {}
-    driver_list = result["driver_standings"]["MRData"]["StandingsTable"]["StandingsLists"][0]["DriverStandings"]
-    assert driver_list[0]["Driver"]["driverId"] == "verstappen"
+    assert result["drivers"][0]["name"] == "Max Verstappen"
+    assert result["constructors"] == []
 
 
 @respx.mock
@@ -105,7 +163,5 @@ async def test_jolpica_standings_adapter_partial_constructor_only():
         return_value=Response(200, json=_load("constructor_standings_2025.json"))
     )
     result = await JolpicaStandingsAdapter().fetch(year=2025)
-    assert result["driver_standings"] == {}
-    assert "constructor_standings" in result
-    constructor_list = result["constructor_standings"]["MRData"]["StandingsTable"]["StandingsLists"][0]["ConstructorStandings"]
-    assert constructor_list[0]["Constructor"]["constructorId"] == "red_bull"
+    assert result["drivers"] == []
+    assert result["constructors"][0]["team"] == "Red Bull"

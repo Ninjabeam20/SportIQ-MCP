@@ -10,9 +10,14 @@ Usage::
     from sportiq.core.parlay import build_accumulator
     acca = build_accumulator(picks, legs=3, min_edge=0.05)
 """
+
 from __future__ import annotations
 
 import math
+
+# Each leg keeps its own best price (and ``bookmaker``); no single bookmaker
+# necessarily offers this combination as one acca.
+_ODDS_BASIS = "best price per leg across bookmakers (not a single-bookmaker acca)"
 
 
 def normalise_pick(raw: dict, sport: str) -> dict:
@@ -52,7 +57,8 @@ def build_accumulator(
 
     Returns:
         dict with keys: ``legs`` (selected picks), ``legs_used``,
-        ``combined_odds``, ``combined_model_prob``, ``combined_edge``,
+        ``combined_odds``, ``combined_model_prob``, ``combined_edge`` (all
+        ``None`` with a ``note`` when no leg qualifies), ``combined_odds_basis``,
         ``risk_flag``, ``independence_warning``.
     """
     # 1. Filter by min_edge
@@ -73,12 +79,15 @@ def build_accumulator(
     legs_used = len(selected)
 
     if legs_used == 0:
+        # None, not 1.0: an empty product would read as a certain, even-money acca.
         return {
             "legs": [],
             "legs_used": 0,
-            "combined_odds": 1.0,
-            "combined_model_prob": 1.0,
-            "combined_edge": 0.0,
+            "combined_odds": None,
+            "combined_model_prob": None,
+            "combined_edge": None,
+            "combined_odds_basis": _ODDS_BASIS,
+            "note": "No legs met the edge threshold.",
             "risk_flag": False,
             "independence_warning": (
                 "Probabilities multiplied under independence assumption. "
@@ -103,6 +112,7 @@ def build_accumulator(
         "combined_odds": round(combined_odds, 4),
         "combined_model_prob": round(combined_model_prob, 4),
         "combined_edge": round(combined_edge, 4),
+        "combined_odds_basis": _ODDS_BASIS,
         "risk_flag": risk_flag,
         "independence_warning": (
             "Probabilities multiplied under independence assumption. "

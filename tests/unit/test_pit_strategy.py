@@ -118,3 +118,88 @@ def test_pit_strategy_treats_intermediate_stint_as_inter():
         total_laps=57,
     )
     assert result["compound_sequence"][0] == "INTER"
+
+
+def _aged_laps(compound: str, slope: float, n: int = 20, base: float = 90.0) -> list[dict]:
+    # One lap per tyre age 0..n-1: lap_time = base + slope * age.
+    return [
+        {"lap_duration": base + slope * age, "compound": compound, "tyre_life": age}
+        for age in range(n)
+    ]
+
+
+def _audit_inputs(slope: float) -> dict:
+    # 10-10 audit `pit_loss_dimension`: lap 30 of 50, MEDIUM aged 19, a prior HARD
+    # stint already satisfies the dry rule, and every dry compound degrades alike
+    # ("fresh replacement identical") so only tyre age separates the options.
+    laps = _aged_laps("MEDIUM", slope) + _aged_laps("HARD", slope) + _aged_laps("SOFT", slope)
+    stints = [
+        {"compound": "HARD", "lap_start": 1, "lap_end": 10, "tyre_age_at_start": 0},
+        {"compound": "MEDIUM", "lap_start": 11, "lap_end": 30, "tyre_age_at_start": 0},
+    ]
+    return {
+        "laps": laps,
+        "stints": stints,
+        "weather": [],
+        "current_lap": 30,
+        "total_laps": 50,
+        "pit_loss_s": 22.0,
+    }
+
+
+def test_pit_strategy_recommends_stop_when_cumulative_saving_exceeds_pit_loss():
+    # Old ages 20..39 vs fresh 0..19 at 0.15 s/age-lap: 60 s gross - 22 s pit = 38 s.
+    result = predict(**_audit_inputs(slope=0.15))
+    assert result["current_tyre_age"] == 19
+    assert result["stop_laps"] == [31]
+    assert abs(result["net_saving_s"] - 38.0) <= 0.5
+
+
+def test_pit_strategy_no_stop_when_saving_below_pit_loss():
+    # 0.05 s/age-lap: 20 s gross saving < 22 s pit loss -> stay out.
+    result = predict(**_audit_inputs(slope=0.05))
+    assert result["stop_laps"] == []
+    assert result["compound_sequence"] == ["MEDIUM"]
+    assert result["net_saving_s"] < 0
+
+
+def _weather(n: int, wet_indices: set[int]) -> list[dict]:
+    return [{"rainfall": 1.0 if i in wet_indices else 0.0} for i in range(n)]
+
+
+def test_pit_strategy_single_wet_sample_does_not_force_inters():
+    result = predict(
+        laps=_make_laps(10, compound="MEDIUM"),
+        stints=_make_stints("MEDIUM"),
+        weather=_weather(30, {29}),
+        current_lap=20,
+        total_laps=57,
+    )
+    assert "INTER" not in result["compound_sequence"]
+
+
+def test_pit_strategy_wet_when_majority_recent_samples_rain():
+    result = predict(
+        laps=_make_laps(10, compound="MEDIUM"),
+        stints=_make_stints("MEDIUM"),
+        weather=_weather(30, {20, 22, 24, 26, 28}),
+        current_lap=20,
+        total_laps=57,
+    )
+    assert result["compound_sequence"] == ["MEDIUM", "INTER"]
+    assert result["stop_laps"] == [21]
+
+
+def test_pit_strategy_dry_sequence_uses_two_dry_compounds():
+    # Audit `dry_rule_violation`: only HARD used, barely degrading -> staying out
+    # is cheaper, but a dry race must still use a second dry compound.
+    result = predict(
+        laps=_aged_laps("HARD", slope=0.01),
+        stints=[{"compound": "HARD", "lap_start": 1, "lap_end": 40, "tyre_age_at_start": 0}],
+        weather=[],
+        current_lap=40,
+        total_laps=53,
+    )
+    assert len(result["stop_laps"]) == 1
+    assert result["compound_sequence"][0] == "HARD"
+    assert result["compound_sequence"][1] in {"SOFT", "MEDIUM"}

@@ -114,6 +114,20 @@ async def test_get_standings_surfaces_is_stale():
     assert result["meta"]["is_stale"] is True
 
 
+async def test_get_standings_meta_is_stale_when_derived_from_stale_fixtures():
+    from sportiq.football import tools
+
+    with patch("sportiq.football.tools.football_standings_chain") as mock:
+        mock.fetch = AsyncMock(
+            return_value=_fr(
+                {"standings": [], "upstream_is_stale": True}, source="derived_standings"
+            )
+        )
+        result = await tools.football_get_standings()
+    assert result["meta"]["is_stale"] is True
+    assert "upstream_is_stale" not in result["data"]
+
+
 # -- INTEL tools ---------------------------------------------------------------
 
 
@@ -477,6 +491,23 @@ async def test_find_value_bets_applies_live_elo_when_enabled(monkeypatch):
     assert result["data"]["events_analysed"] == 1
 
 
+async def test_xg_model_meta_is_stale_when_live_elo_fixtures_stale(monkeypatch):
+    from sportiq.football import intel_tools
+
+    # Live Elo reads the fixtures chain; its staleness must reach meta.
+    monkeypatch.setattr(intel_tools.settings, "football_live_elo", True)
+    with (
+        patch("sportiq.football.intel_tools.football_groups_chain") as mock_groups,
+        patch("sportiq.football.intel_tools.football_fixtures_chain") as mock_fx,
+    ):
+        mock_groups.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        mock_fx.fetch = AsyncMock(
+            return_value=_fr({"fixtures": _GROUP_A_ARG_OUT}, source="cache:stale", is_stale=True)
+        )
+        result = await intel_tools.football_xg_model(home_team="ARG", away_team="BRA")
+    assert result["meta"]["is_stale"] is True
+
+
 async def test_find_value_bets_no_live_elo_key_when_disabled():
     from sportiq.football import intel_tools
 
@@ -700,15 +731,16 @@ async def test_simulate_bracket_malformed_draw_returns_invalid_input():
 async def test_knockout_path_malformed_draw_returns_invalid_input():
     from sportiq.football import intel_tools
 
+    # "X" is in the (malformed) draw, so it passes the draw-based participation
+    # check (opus cook6 T6.4) and reaches the simulator, which rejects the draw.
     payload = _malformed_draw_payload()
-    payload["ratings"]["ARG"] = 1900.0
     with (
         patch("sportiq.football.intel_tools.football_groups_chain") as gmock,
         patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock,
     ):
         gmock.fetch = AsyncMock(return_value=_fr(payload))
         fmock.fetch = AsyncMock(return_value=_fr({"fixtures": []}))
-        result = await intel_tools.football_knockout_path(team="ARG", iterations=100, seed=1)
+        result = await intel_tools.football_knockout_path(team="X", iterations=100, seed=1)
     assert result["error"]["code"] == "INVALID_INPUT"
 
 
@@ -756,3 +788,110 @@ async def test_simulate_bracket_does_not_block_event_loop():
             ticker.cancel()
     assert "data" in result
     assert ticks >= 10
+
+
+# -- cook6: participation, default ratings, simulation mode --------------------
+
+
+async def _complete_wc2026_fixtures() -> list[dict]:
+    """The downloaded 2026-10-22 openfootball snapshot, parsed by the real adapter."""
+    import json
+    from pathlib import Path
+
+    import respx
+    from httpx import Response
+
+    from sportiq.football.adapters.openfootball import (
+        _OPENFOOTBALL_URL,
+        OpenFootballFixturesAdapter,
+    )
+
+    path = (
+        Path(__file__).parent.parent / "fixtures" / "openfootball" / "worldcup-2026-complete.json"
+    )
+    with respx.mock:
+        respx.get(_OPENFOOTBALL_URL).mock(
+            return_value=Response(200, json=json.loads(path.read_text()))
+        )
+        result = await OpenFootballFixturesAdapter().fetch()
+    return result["fixtures"]
+
+
+async def test_knockout_path_rejects_non_entrant_ita():
+    from sportiq.football import intel_tools
+
+    with patch("sportiq.football.intel_tools.football_groups_chain") as gmock:
+        gmock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        result = await intel_tools.football_knockout_path(team="ITA", iterations=100, seed=1)
+    assert result["error"]["code"] == "NOT_FOUND"
+    assert "not a World Cup 2026 entrant" in result["error"]["message"]
+
+
+async def test_xg_model_accepts_ksa():
+    from sportiq.football import intel_tools
+
+    with patch("sportiq.football.intel_tools.football_groups_chain") as mock:
+        mock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        result = await intel_tools.football_xg_model(home_team="KSA", away_team="ESP")
+    assert "error" not in result
+    assert result["data"]["home_team"] == "KSA"
+    assert "default_rating_teams" not in result["meta"]  # SAU seed value via the alias
+
+
+async def test_xg_model_uses_default_rating_and_discloses_it():
+    from sportiq.football import intel_tools
+
+    with patch("sportiq.football.intel_tools.football_groups_chain") as mock:
+        mock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        result = await intel_tools.football_xg_model(home_team="SWE", away_team="ESP")
+    assert "error" not in result
+    assert result["meta"]["default_rating_teams"] == ["SWE"]
+    assert "default" in result["meta"]["note"]
+
+
+async def test_simulate_bracket_meta_lists_default_rating_teams():
+    from sportiq.football import intel_tools
+
+    with (
+        patch("sportiq.football.intel_tools.football_groups_chain") as gmock,
+        patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock,
+    ):
+        gmock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        fmock.fetch = AsyncMock(return_value=_fr({"fixtures": []}))
+        result = await intel_tools.football_simulate_bracket(iterations=100, seed=1)
+    assert result["meta"]["default_rating_teams"] == [
+        "BIH", "COD", "CPV", "CUW", "CZE", "HAI", "IRQ", "JOR", "RSA", "SWE", "TUR",
+    ]  # fmt: skip
+
+
+async def test_simulate_bracket_meta_mode_completed_names_champion():
+    from sportiq.football import intel_tools
+
+    fixtures = await _complete_wc2026_fixtures()
+    with (
+        patch("sportiq.football.intel_tools.football_groups_chain") as gmock,
+        patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock,
+    ):
+        gmock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        fmock.fetch = AsyncMock(return_value=_fr({"fixtures": fixtures}, source="openfootball"))
+        result = await intel_tools.football_simulate_bracket(iterations=200, seed=42)
+    assert result["meta"]["mode"] == "completed"
+    assert result["meta"]["champion"] == "ESP"
+    assert result["data"]["teams"]["ESP"]["win"] == 1.0
+
+
+async def test_simulate_bracket_meta_mode_prior_when_static_seed():
+    from sportiq.football import intel_tools
+    from sportiq.football.adapters.static_seed import StaticSeedFixturesAdapter
+
+    seed_fixtures = await StaticSeedFixturesAdapter().fetch()
+    with (
+        patch("sportiq.football.intel_tools.football_groups_chain") as gmock,
+        patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock,
+    ):
+        gmock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        fmock.fetch = AsyncMock(return_value=_fr(seed_fixtures, source="static_seed"))
+        result = await intel_tools.football_simulate_bracket(iterations=100, seed=1)
+    assert result["meta"]["mode"] == "pre_tournament_prior"
+    assert "reconstructed pre-tournament simulation" in result["meta"]["note"]
+    assert "champion" not in result["meta"]

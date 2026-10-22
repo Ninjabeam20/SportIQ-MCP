@@ -58,6 +58,14 @@ def annotate_laps_with_stints(laps: list[dict], stints: list[dict]) -> list[dict
     return annotated
 
 
+def slow_outlier_mask(durations: np.ndarray) -> np.ndarray:
+    """Keep-mask dropping slow outliers (SC laps, in/out laps): > mean + 2*std."""
+    mean, std = durations.mean(), durations.std()
+    if std > 0:
+        return durations <= mean + 2 * std
+    return np.ones(len(durations), dtype=bool)
+
+
 def fit_degradation(laps: list[dict], compound: str) -> dict:
     """Fit a linear tyre degradation model for one compound.
 
@@ -92,12 +100,9 @@ def fit_degradation(laps: list[dict], compound: str) -> dict:
 
     durations = np.array([float(lap["lap_duration"]) for lap in valid])
 
-    # Remove outliers (SC laps, in/out laps): drop anything > mean + 2*std
-    mean, std = durations.mean(), durations.std()
-    if std > 0:
-        mask = durations <= mean + 2 * std
-        valid = [lap for lap, keep in zip(valid, mask, strict=True) if keep]
-        durations = durations[mask]
+    mask = slow_outlier_mask(durations)
+    valid = [lap for lap, keep in zip(valid, mask, strict=True) if keep]
+    durations = durations[mask]
 
     if len(valid) < 2:
         return {

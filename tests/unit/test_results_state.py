@@ -1,4 +1,5 @@
 """Unit tests for results_state — pure name-join + result partitioning, no I/O."""
+
 from __future__ import annotations
 
 from sportiq.football.models.results_state import (
@@ -49,10 +50,24 @@ def test_resolve_code_matches_name_accent_and_alias():
     """Names, accents, fifa codes and aliases all resolve to the right code."""
     index = build_code_index(_TEAMS)
     assert resolve_code("Argentina", index) == "ARG"
-    assert resolve_code("CÔTE D'IVOIRE", index) == "CIV"   # accents + case
-    assert resolve_code("Ivory Coast", index) == "CIV"     # alias
-    assert resolve_code("ARG", index) == "ARG"             # raw code
-    assert resolve_code("South Korea", index) == "KOR"     # alias (not in draw)
+    assert resolve_code("CÔTE D'IVOIRE", index) == "CIV"  # accents + case
+    assert resolve_code("Ivory Coast", index) == "CIV"  # alias
+    assert resolve_code("ARG", index) == "ARG"  # raw code
+    assert resolve_code("South Korea", index) == "KOR"  # alias (not in draw)
+
+
+def test_results_state_resolves_cape_verde_and_dr_congo_aliases():
+    """openfootball's "Cape Verde" / "DR Congo" resolve against the real WC 2026 draw."""
+    import json
+    from pathlib import Path
+
+    import sportiq.football as football_pkg
+
+    draw = json.loads((Path(football_pkg.__file__).parent / "data" / "wc2026.json").read_text())
+    index = build_code_index(draw["teams"])
+    assert resolve_code("Cape Verde", index) == "CPV"
+    assert resolve_code("DR Congo", index) == "COD"
+    assert resolve_code("DR. Congo", index) == "COD"
 
 
 def test_unmatched_name_returns_none():
@@ -218,7 +233,7 @@ def test_completed_chrono_sorted_by_date():
 def test_derived_standings_points_and_order():
     """Standings reflect 3/1/0 points and order by points within a group."""
     fixtures = [
-        _fx("Argentina", "Colombia", 2, 0),   # ARG +3
+        _fx("Argentina", "Colombia", 2, 0),  # ARG +3
         _fx("Ecuador", "Côte d'Ivoire", 1, 1),  # ECU/CIV +1 each
     ]
     out = derived_standings(fixtures, _GROUPS, _TEAMS)

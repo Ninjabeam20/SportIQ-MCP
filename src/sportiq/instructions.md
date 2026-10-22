@@ -34,22 +34,25 @@ extra informational calls unless the user explicitly asks for them.
 ### "Compare model vs market for today's cricket"
 1. `cricket_find_value_bets()` — 1 call. Returns matches with edge > 0.
 
-### "Who will win the World Cup 2026?"
-1. `football_simulate_bracket()` — 1 call. Returns per-team title probabilities.
-   Default 10,000 iterations gives ±2% stable results.
+### "Who won the World Cup 2026?" / "How did the model do?"
+1. `football_simulate_bracket()` — 1 call. The tournament ended with the
+   2026-07-19 final. Read `meta.mode`: `completed` means real results were
+   replayed and `meta.champion` is the actual winner; `pre_tournament_prior`
+   means no result data was available, so the output is only the model's
+   pre-tournament view, not a forecast.
 
 ### "Predict Argentina vs France"
 1. `football_match_predictor(home_team="ARG", away_team="FRA")` — 1 call.
    Returns most likely scoreline + outcome probabilities.
 
-### "What's the best F1 pit strategy for Verstappen at Monaco?"
-1. `f1_get_sessions(year=2025, country="Monaco")` → pick the `session_key` for the race
+### "What was the best pit strategy for Norris in the latest Grand Prix?"
+1. `f1_get_sessions(year=2026, session_name="Race", latest_completed=True)` → its `session_key` (e.g. `11353`, the 2026 Dutch GP)
 2. `f1_predict_pit_strategy(session_key=<key>, driver_number=1)`
    — 2 calls.
 
-### "Which F1 drivers are faster at Monaco?"
-1. `f1_get_sessions(year=2025, country="Monaco")` → pick `session_key`
-2. `f1_head_to_head_pace(session_key=<key>, driver_a=1, driver_b=16)`
+### "Which F1 drivers were faster at the Dutch GP?"
+1. `f1_get_sessions(year=2026, country="Netherlands", session_name="Race")` → pick `session_key`
+2. `f1_head_to_head_pace(session_key=<key>, driver_a=1, driver_b=3)`
    — 2 calls.
 
 ### "Build me a multi-match model"
@@ -138,8 +141,8 @@ Tools that use only static seeds or OpenF1 (which is public/free) work without a
 ## Team and player codes
 
 - **IPL teams:** MI, CSK, RCB, KKR, SRH, DC, PBKS, RR, GT, LSG
-- **F1 drivers:** use race number (1=Verstappen, 16=Leclerc, 44=Hamilton, 63=Russell, 4=Norris, 81=Piastri, 14=Alonso, 55=Sainz, 11=Perez, 10=Gasly)
-- **WC 2026 teams:** 3-letter FIFA codes (ARG, BRA, FRA, ENG, ESP, GER, POR, NED, BEL, ITA, etc.)
+- **F1 drivers:** use race number. 2026 examples: 1=Norris, 3=Verstappen, 12=Antonelli, 16=Leclerc, 44=Hamilton, 63=Russell, 81=Piastri. Driver numbers change by season; use `f1_get_drivers(session_key)` for the session's list.
+- **WC 2026 teams:** 3-letter FIFA codes of the 48 entrants (ARG, BRA, FRA, ENG, ESP, GER, POR, NED, BEL, MAR, USA, etc.); `football_get_groups()` lists them all.
 - Codes are case-insensitive in all tools.
 
 ---

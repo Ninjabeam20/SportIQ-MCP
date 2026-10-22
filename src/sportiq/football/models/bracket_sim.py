@@ -7,6 +7,7 @@ R16->Final match tree, all from ``wc2026_bracket.json``), and play it to a
 champion. Aggregating over many iterations yields each team's probability of
 reaching every round and of winning the tournament.
 """
+
 from __future__ import annotations
 
 import json
@@ -18,6 +19,10 @@ from sportiq.football.models.elo import expected_score
 from sportiq.football.models.group_sim import draw_qualifiers_once
 from sportiq.football.models.poisson_xg import lambdas_from_elo
 from sportiq.football.models.results_state import ResultsState
+
+# Rating used for an entrant with no seed rating (same value the group sim and
+# the live-Elo walk use). Tools disclose such teams in meta.default_rating_teams.
+DEFAULT_RATING = 1500.0
 
 _STAGES = ["R32", "R16", "QF", "SF", "Final", "Winner"]
 # Round labels for the 5 knockout reductions starting from 32 qualifiers.
@@ -40,9 +45,7 @@ def _draw_qualifiers(
     maps only the 8 best third-placed groups (by points -> gd -> gf -> random) to their team.
     When ``results`` is supplied, each group's played matches are locked in.
     """
-    winners, runners, best_thirds, _, _ = draw_qualifiers_once(
-        rng, groups, ratings, results
-    )
+    winners, runners, best_thirds, _, _ = draw_qualifiers_once(rng, groups, ratings, results)
     return winners, runners, best_thirds
 
 
@@ -86,7 +89,7 @@ def _knockout_winner(
     ratings: dict[str, float],
 ) -> str:
     """Decide one knockout tie. Draws after normal time go to a weighted shootout."""
-    ra, rb = ratings.get(team_a, 1500.0), ratings.get(team_b, 1500.0)
+    ra, rb = ratings.get(team_a, DEFAULT_RATING), ratings.get(team_b, DEFAULT_RATING)
     lam_a, lam_b = lambdas_from_elo(ra, rb, 0.0)
     goals_a = int(rng.poisson(lam_a))
     goals_b = int(rng.poisson(lam_b))
@@ -153,14 +156,10 @@ def simulate_tournament(
     all_teams = [t for teams in groups.values() for t in teams]
     counts = {t: [0] * len(_STAGES) for t in all_teams}
     fallback_rows = 0
-    locked_ko = (
-        {frozenset((a, b)): w for (a, b, w) in results.knockout} if results else {}
-    )
+    locked_ko = {frozenset((a, b)): w for (a, b, w) in results.knockout} if results else {}
 
     for _ in range(n_iter):
-        reached, iteration_fallbacks = _simulate_once(
-            rng, groups, ratings, results, locked_ko
-        )
+        reached, iteration_fallbacks = _simulate_once(rng, groups, ratings, results, locked_ko)
         fallback_rows += iteration_fallbacks
         for team, furthest in reached.items():
             for idx in range(furthest + 1):  # cumulative: reaching SF implies reaching R32..SF
@@ -168,8 +167,7 @@ def simulate_tournament(
 
     keys = ["reach_r32", "reach_r16", "reach_qf", "reach_sf", "reach_final", "win"]
     teams_out = {
-        t: {key: round(counts[t][i] / n_iter, 4) for i, key in enumerate(keys)}
-        for t in all_teams
+        t: {key: round(counts[t][i] / n_iter, 4) for i, key in enumerate(keys)} for t in all_teams
     }
     ranked = dict(sorted(teams_out.items(), key=lambda kv: kv[1]["win"], reverse=True))
     champion = next(iter(ranked))

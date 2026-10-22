@@ -16,6 +16,7 @@ import asyncio
 
 from sportiq.core.errors import AllSourcesFailedError, InvalidInputError, NotFoundError
 from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta, tool_response
+from sportiq.core.value_bet import has_commenced
 from sportiq.cricket.adapters.static_seed import seed_team_codes
 from sportiq.cricket.chains import (
     odds_chain,
@@ -586,7 +587,9 @@ async def cricket_find_value_bets(
     every market underdog, which would be misleading. It
     still reports how many events were screened so callers know odds were
     available. For raw de-vigged prices use ``cricket_get_live_odds``. Real edge
-    detection lands when a cricket win model is wired (see cricket_head_to_head).
+    detection lands when a cricket win model is wired (see cricket_head_to_head);
+    it will flag outcomes where the model beats the de-vigged market by
+    ``min_edge`` **and** the offered price has positive expected value.
 
     Args:
         team: Optional team name to filter events (case-insensitive substring).
@@ -596,7 +599,7 @@ async def cricket_find_value_bets(
 
     Returns:
         data.value_bets: always ``[]`` until a cricket model is wired.
-        data.events_analysed: count of events screened (both teams present).
+        data.events_analysed: count of not-yet-started events screened (both teams present).
         data.model: ``"neutral_baseline"``. data.note: why no bets are emitted.
         meta.estimated: true.
     """
@@ -632,7 +635,10 @@ async def cricket_find_value_bets(
     # every market underdog as +EV — false confidence in a betting tool. So we
     # screen the events for de-vig readiness but emit NO value bets until a real
     # model lands (the eventual signal source is cricket_head_to_head's win_prob).
-    analysed = sum(1 for ev in events if ev.get("home") and ev.get("away"))
+    # Started / in-play events are not priced against a pre-match model.
+    analysed = sum(
+        1 for ev in events if ev.get("home") and ev.get("away") and not has_commenced(ev)
+    )
 
     return {
         "data": {

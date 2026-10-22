@@ -14,6 +14,7 @@ Robustness contract: a fixture whose team names cannot be resolved to codes is
 whether a match is a group or knockout fixture; same-group membership is only a
 fallback for legacy payloads without a stage.
 """
+
 from __future__ import annotations
 
 import unicodedata
@@ -35,6 +36,12 @@ _NAME_ALIASES: dict[str, str] = {
     "cote divoire": "CIV",
     "czechia": "CZE",
     "czech republic": "CZE",
+    # openfootball spells these differently from the draw ("Cape Verde Islands",
+    # "Congo DR"). Keys are _normalize() output, so "DR. Congo" also hits "dr congo".
+    "cape verde": "CPV",
+    "cabo verde": "CPV",
+    "dr congo": "COD",
+    "congo dr": "COD",
 }
 
 
@@ -74,11 +81,7 @@ def resolve_code(name: str, index: dict[str, str]) -> str | None:
 
 
 def _round_robin_pairs(teams: list[str]) -> list[tuple[str, str]]:
-    return [
-        (teams[i], teams[j])
-        for i in range(len(teams))
-        for j in range(i + 1, len(teams))
-    ]
+    return [(teams[i], teams[j]) for i in range(len(teams)) for j in range(i + 1, len(teams))]
 
 
 @dataclass(frozen=True)
@@ -102,7 +105,8 @@ class ResultsState:
     lists decided knockout ties as ``(code_a, code_b, winner_code)``.
     ``completed_chrono`` is every completed match ``(code_a, code_b, goals_a,
     goals_b)`` in date order (for the Elo walk). ``matched`` / ``dropped`` count
-    how many finished fixtures were resolved vs. skipped.
+    how many finished fixtures were resolved vs. skipped. ``champion`` is the
+    winner of a finished fixture whose stage is the final, else None.
     """
 
     groups: dict[str, GroupResults] = field(default_factory=dict)
@@ -110,6 +114,7 @@ class ResultsState:
     completed_chrono: list[tuple[str, str, int, int]] = field(default_factory=list)
     matched: int = 0
     dropped: int = 0
+    champion: str | None = None
 
 
 # Finished-match status markers across the fixture sources. football-data.org and
@@ -167,10 +172,8 @@ def build_results_state(
 
     # Per provider match ID keep one report; legacy payloads without an ID are
     # deduplicated by stage class + pairing. The latest report by date wins.
-    # Values hold (code_a, code_b, goals_a, goals_b, date, stage_class, winner).
-    record: dict[
-        tuple[str, object], tuple[str, str, int, int, str, str, str | None]
-    ] = {}
+    # Values hold (code_a, code_b, goals_a, goals_b, date, stage_class, winner, is_final).
+    record: dict[tuple[str, object], tuple[str, str, int, int, str, str, str | None, bool]] = {}
     dropped = 0
 
     for fx in fixtures:
@@ -201,25 +204,27 @@ def build_results_state(
                 continue
         match_id = fx.get("match_id")
         key: tuple[str, object] = (
-            ("id", match_id)
-            if match_id is not None and match_id != ""
-            else (stage_class, pair)
+            ("id", match_id) if match_id is not None and match_id != "" else (stage_class, pair)
         )
         if key in record and date < record[key][4]:
             continue  # older report of a pairing we already have
-        record[key] = (a, b, ga, gb, date, stage_class, winner)
+        is_final = stage_class == "knockout" and _normalize(str(fx.get("stage") or "")) == "final"
+        record[key] = (a, b, ga, gb, date, stage_class, winner, is_final)
 
     completed_by_group: dict[str, dict[frozenset[str], tuple[str, str, int, int]]] = {
         letter: {} for letter in groups
     }
     knockout: list[tuple[str, str, str]] = []
     chrono: list[tuple[str, str, int, int, str]] = []
-    for a, b, ga, gb, date, stage_class, winner in record.values():
+    champion: str | None = None
+    for a, b, ga, gb, date, stage_class, winner, is_final in record.values():
         chrono.append((a, b, ga, gb, date))
         if stage_class == "group":
             completed_by_group[code_to_group[a]][frozenset((a, b))] = (a, b, ga, gb)
         else:
             knockout.append((a, b, winner))
+            if is_final:
+                champion = winner
 
     group_states: dict[str, GroupResults] = {}
     for letter, codes in groups.items():
@@ -239,6 +244,7 @@ def build_results_state(
         completed_chrono=completed_chrono,
         matched=len(record),
         dropped=dropped,
+        champion=champion,
     )
 
 
@@ -276,9 +282,7 @@ def derived_standings(
             else:
                 pts[a] += 1
                 pts[b] += 1
-        ranked = sorted(
-            codes, key=lambda c: (pts[c], gf[c] - ga[c], gf[c]), reverse=True
-        )
+        ranked = sorted(codes, key=lambda c: (pts[c], gf[c] - ga[c], gf[c]), reverse=True)
         for rank, code in enumerate(ranked, start=1):
             standings.append(
                 {

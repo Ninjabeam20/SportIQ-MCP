@@ -9,6 +9,7 @@ two team names and per-bookmaker h2h prices. The tool layer applies any
 team-name filter (the cache key stays sport-wide). Mirrors the cricket adapter;
 the normaliser is duplicated by design rather than shared cross-package.
 """
+
 from __future__ import annotations
 
 from sportiq.config import settings
@@ -38,7 +39,8 @@ def _key() -> str:
 def _normalise_events(events: list[dict]) -> list[dict]:
     """Flatten The Odds API events into {event_id, home, away, commence_time, bookmakers}.
 
-    Soccer h2h is 1X2, so each bookmaker keeps the home/draw/away decimal prices.
+    Soccer h2h is 1X2, so each bookmaker keeps the home/draw/away decimal prices
+    plus its ``last_update`` timestamp.
     """
     out = []
     for ev in events:
@@ -55,6 +57,7 @@ def _normalise_events(events: list[dict]) -> list[dict]:
                     "home": prices.get(home),
                     "draw": prices.get("Draw"),
                     "away": prices.get(away),
+                    "last_update": bk.get("last_update"),
                 }
             )
         out.append(

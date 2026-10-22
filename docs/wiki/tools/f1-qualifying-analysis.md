@@ -3,7 +3,7 @@ title: f1_qualifying_analysis
 type: tool
 tags: [f1, qualifying, grid]
 sources: []
-last_updated: 2026-09-25
+last_updated: 2026-10-22
 related: [[quali-analysis]], [[f1-tyre-degradation]], [[f1-head-to-head-pace]]
 ---
 
@@ -26,8 +26,8 @@ Analyse a qualifying session: best lap per driver, gap to pole, and projected gr
       {
         "position": 1,
         "driver_number": 1,
-        "full_name": "Max Verstappen",
-        "team_name": "Red Bull Racing",
+        "full_name": "Lando Norris",
+        "team_name": "McLaren",
         "best_lap_gap_s": 0.0
       }
     ],

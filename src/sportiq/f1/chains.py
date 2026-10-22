@@ -9,10 +9,12 @@ Resolution order:
   standings : jolpica → fastf1
   drivers   : openf1 (only source)
 """
+
 from __future__ import annotations
 
 import hashlib
 
+from sportiq import __version__
 from sportiq.core.fallback import FallbackChain
 from sportiq.core.health import register_adapter_for_health
 from sportiq.f1.adapters.fastf1_local import FastF1LapsAdapter, FastF1StandingsAdapter
@@ -55,7 +57,11 @@ f1_sessions_chain: FallbackChain[dict] = FallbackChain(
     adapters=[_openf1_sessions],
     cache_key_fn=lambda year, country=None, **_: (
         f"sportiq:f1:sessions:{year}:"
-        + (hashlib.blake2s(country.lower().encode(), digest_size=8).hexdigest() if country else "all")
+        + (
+            hashlib.blake2s(country.lower().encode(), digest_size=8).hexdigest()
+            if country
+            else "all"
+        )
     ),
     fresh_ttl=21600,
     stale_ttl=86400,
@@ -83,17 +89,23 @@ f1_results_chain: FallbackChain[dict] = FallbackChain(
 f1_laps_chain: FallbackChain[dict] = FallbackChain(
     name="f1:laps",
     adapters=[_openf1_laps, _fastf1_laps],
-    cache_key_fn=lambda session_key, driver_number, **_: f"sportiq:f1:laps:{session_key}:{driver_number}",
-    fresh_ttl=10,   # live telemetry — per caching-policy.md
-    stale_ttl=60,
+    cache_key_fn=lambda session_key, driver_number, **_: (
+        f"sportiq:f1:laps:{session_key}:{driver_number}"
+    ),
+    # keyless OpenF1 serves completed sessions only (no live auth wired) — immutable; see caching-policy.md
+    fresh_ttl=86400,
+    stale_ttl=604800,
 )
 
 f1_stints_chain: FallbackChain[dict] = FallbackChain(
     name="f1:stints",
     adapters=[_openf1_stints],
-    cache_key_fn=lambda session_key, driver_number, **_: f"sportiq:f1:stints:{session_key}:{driver_number}",
-    fresh_ttl=10,   # live telemetry — per caching-policy.md
-    stale_ttl=60,
+    cache_key_fn=lambda session_key, driver_number, **_: (
+        f"sportiq:f1:stints:{session_key}:{driver_number}"
+    ),
+    # keyless OpenF1 serves completed sessions only (no live auth wired) — immutable; see caching-policy.md
+    fresh_ttl=86400,
+    stale_ttl=604800,
 )
 
 f1_weather_chain: FallbackChain[dict] = FallbackChain(
@@ -107,7 +119,9 @@ f1_weather_chain: FallbackChain[dict] = FallbackChain(
 f1_standings_chain: FallbackChain[dict] = FallbackChain(
     name="f1:standings",
     adapters=[_jolpica_standings, _fastf1_standings],
-    cache_key_fn=lambda year, **_: f"sportiq:f1:standings:{year}",
+    # Versioned: the normalised standings shape (opus cook7 T7.6) must not be
+    # served from a pre-upgrade entry during the 7-day stale window.
+    cache_key_fn=lambda year, **_: f"sportiq:f1:standings:{__version__}:{year}",
     fresh_ttl=86400,
     stale_ttl=604800,
 )

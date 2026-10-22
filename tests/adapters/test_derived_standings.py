@@ -1,4 +1,5 @@
 """derived_standings adapter tests — keyless, openfootball HTTP mocked with respx."""
+
 from __future__ import annotations
 
 import respx
@@ -72,11 +73,12 @@ async def test_derived_standings_routes_via_fixtures_chain():
         fallback_used=False,
         duration_ms=1,
     )
-    with patch(
-        "sportiq.football.chains.football_fixtures_chain"
-    ) as mock_chain, patch(
-        "sportiq.football.adapters.openfootball.OpenFootballFixturesAdapter.fetch"
-    ) as mock_direct:
+    with (
+        patch("sportiq.football.chains.football_fixtures_chain") as mock_chain,
+        patch(
+            "sportiq.football.adapters.openfootball.OpenFootballFixturesAdapter.fetch"
+        ) as mock_direct,
+    ):
         mock_chain.fetch = AsyncMock(return_value=fr)
         mock_direct.side_effect = AssertionError("must route via chain, not direct adapter")
         out = await DerivedStandingsAdapter().fetch()
@@ -84,3 +86,15 @@ async def test_derived_standings_routes_via_fixtures_chain():
     group_a = [r for r in out["standings"] if r["group"] == "A"]
     assert group_a[0]["team"] == winner
     assert group_a[0]["points"] == 3
+
+
+async def test_derived_standings_flags_upstream_stale():
+    from unittest.mock import AsyncMock, patch
+
+    from sportiq.core.fallback import FallbackResult
+
+    fr = FallbackResult(value={"fixtures": []}, source="cache:stale", is_stale=True)
+    with patch("sportiq.football.chains.football_fixtures_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(return_value=fr)
+        out = await DerivedStandingsAdapter().fetch()
+    assert out["upstream_is_stale"] is True
