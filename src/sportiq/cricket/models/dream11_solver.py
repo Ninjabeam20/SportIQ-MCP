@@ -24,6 +24,8 @@ _STRATEGY_ROLE_BOUNDS: dict[str, dict[str, tuple[int, int]]] = {
 
 _WK_ROLE_NAMES = {"WK-BAT", "WK"}
 
+_MAX_PER_TEAM = 7
+
 # Wall-clock cap on the CBC solve; a timed-out solve without an optimal XI takes the
 # existing non-Optimal path (InvalidInputError).
 _CBC_TIME_LIMIT_S = 10
@@ -33,6 +35,25 @@ def _role_members(candidates: list[dict], role: str) -> list[int]:
     if role == "WK-BAT":
         return [i for i, c in enumerate(candidates) if c.get("role") in _WK_ROLE_NAMES]
     return [i for i, c in enumerate(candidates) if c.get("role") == role]
+
+
+def _check_pool_feasible(candidates: list[dict], role_bounds: dict[str, tuple[int, int]]) -> None:
+    """Raise with the first role/team shortfall, so an infeasible pool says why."""
+    for role, (lo, _hi) in role_bounds.items():
+        have = len(_role_members(candidates, role))
+        if have < lo:
+            raise InvalidInputError(
+                f"No feasible Dream11 XI: role {role} need {lo}, have {have} in the pool."
+            )
+    per_team: dict[str, int] = {}
+    for c in candidates:
+        per_team[c.get("team", "")] = per_team.get(c.get("team", ""), 0) + 1
+    usable = sum(min(n, _MAX_PER_TEAM) for n in per_team.values())
+    if usable < 11:
+        raise InvalidInputError(
+            f"No feasible Dream11 XI: max {_MAX_PER_TEAM} per team leaves {usable} "
+            "selectable players, need 11."
+        )
 
 
 def solve(candidates: list[dict], strategy: str = "balanced") -> dict:
@@ -54,9 +75,9 @@ def solve(candidates: list[dict], strategy: str = "balanced") -> dict:
         }
 
     Raises:
-        InvalidInputError: < 11 candidates, unknown strategy, or no feasible
-            XI under the constraints (e.g. credits over-budget,
-            team-cap violation, missing keeper).
+        InvalidInputError: < 11 candidates, unknown strategy, a role/team
+            shortfall in the pool (message names the role, "need N", "have M"),
+            or no feasible XI under the constraints (e.g. credits over-budget).
         RuntimeError: CBC reports an optimal solution with invalid captain or
             vice-captain selections.
     """
@@ -66,6 +87,7 @@ def solve(candidates: list[dict], strategy: str = "balanced") -> dict:
         )
     if len(candidates) < 11:
         raise InvalidInputError(f"Need >=11 candidates; got {len(candidates)}")
+    _check_pool_feasible(candidates, _STRATEGY_ROLE_BOUNDS[strategy])
 
     # pulp pulls in CBC bindings at import; deferred to the solver body so it
     # stays off the Cloud Run cold-start path (only this one tool needs it).
@@ -103,7 +125,7 @@ def solve(candidates: list[dict], strategy: str = "balanced") -> dict:
     teams = {c.get("team", "") for c in candidates}
     for team in teams:
         members = [i for i in range(n) if candidates[i].get("team") == team]
-        prob += lpSum(x[i] for i in members) <= 7, f"team_cap_{team}"
+        prob += lpSum(x[i] for i in members) <= _MAX_PER_TEAM, f"team_cap_{team}"
 
     # Role mix.
     for role, (lo, hi) in role_bounds.items():

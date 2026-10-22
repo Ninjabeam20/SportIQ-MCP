@@ -8,7 +8,7 @@ from __future__ import annotations
 from urllib.parse import quote
 
 from sportiq.config import settings
-from sportiq.core.errors import MissingCredentialsError
+from sportiq.core.errors import MissingCredentialsError, NotFoundError
 from sportiq.core.http import get_json
 from sportiq.core.logging import get_logger
 
@@ -76,6 +76,15 @@ class RapidAPICricbuzzScheduleAdapter:
             for series in type_obj.get("seriesMatches", []):
                 for m in series.get("seriesAdWrapper", {}).get("matches", []):
                     matches.append(m.get("matchInfo", {}))
+        if series_id:
+            # /matches/v1/upcoming is not series-scoped. Filter on matchInfo.seriesId;
+            # without that field (or with no hit) raise so the chain never caches
+            # unfiltered data under a series key.
+            if not any("seriesId" in m for m in matches):
+                raise NotFoundError("RapidAPI schedule payload has no seriesId to filter on")
+            matches = [m for m in matches if str(m.get("seriesId")) == str(series_id)]
+            if not matches:
+                raise NotFoundError(f"No RapidAPI fixtures for series_id={series_id!r}")
         return {"matches": matches}
 
     async def healthcheck(self) -> bool:
@@ -103,9 +112,7 @@ class RapidAPICricbuzzPlayerStatsAdapter:
 
     async def fetch(self, player_id: str, **kwargs) -> dict:
         h = _headers()
-        return await get_json(
-            f"{_BASE}/stats/v1/player/{_path_id(player_id)}/career", headers=h
-        )
+        return await get_json(f"{_BASE}/stats/v1/player/{_path_id(player_id)}/career", headers=h)
 
     async def healthcheck(self) -> bool:
         return bool(settings.rapidapi_key)

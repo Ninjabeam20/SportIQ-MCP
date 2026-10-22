@@ -198,3 +198,15 @@ def test_dream11_solver_passes_time_limit_to_cbc(monkeypatch):
 
     assert len(result["players"]) == 11
     assert seen[0]["timeLimit"] == 10
+
+
+def test_dream11_solver_reports_role_shortfall():
+    # opus cook8 T8.5: two BATs in the pool, the balanced XI needs three.
+    pool = [c for c in _synthetic_pool() if not (c["role"] == "BAT" and c["name"][-1] in "1234")]
+    pool += [_candidate("A_Bat1", "BAT", 10.5, 90, "A"), _candidate("B_Bat1", "BAT", 10.0, 85, "B")]
+    with pytest.raises(InvalidInputError) as exc_info:
+        solve(pool)
+    msg = str(exc_info.value)
+    assert "BAT" in msg
+    assert "need 3" in msg
+    assert "have 2" in msg

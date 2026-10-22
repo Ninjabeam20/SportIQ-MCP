@@ -9,10 +9,11 @@ import pytest
 import respx
 from httpx import Response
 
-from sportiq.core.errors import MissingCredentialsError
+from sportiq.core.errors import MissingCredentialsError, NotFoundError
 from sportiq.cricket.adapters.rapidapi_cricbuzz import (
     RapidAPICricbuzzLiveAdapter,
     RapidAPICricbuzzPlayerStatsAdapter,
+    RapidAPICricbuzzScheduleAdapter,
     RapidAPICricbuzzScorecardAdapter,
 )
 
@@ -95,9 +96,9 @@ async def test_scorecard_raises_when_key_missing(monkeypatch):
 async def test_player_stats_adapter_fetches_career(monkeypatch):
     monkeypatch.setattr("sportiq.config.settings.rapidapi_key", "test_rapidapi_key")
     fixture = _load("player_career.json")
-    respx.get(
-        "https://cricbuzz-cricket.p.rapidapi.com/stats/v1/player/1413/career"
-    ).mock(return_value=Response(200, json=fixture))
+    respx.get("https://cricbuzz-cricket.p.rapidapi.com/stats/v1/player/1413/career").mock(
+        return_value=Response(200, json=fixture)
+    )
     adapter = RapidAPICricbuzzPlayerStatsAdapter()
     result = await adapter.fetch(player_id="1413")
     assert "values" in result
@@ -110,3 +111,38 @@ async def test_player_stats_raises_when_key_missing(monkeypatch):
     adapter = RapidAPICricbuzzPlayerStatsAdapter()
     with pytest.raises(MissingCredentialsError):
         await adapter.fetch(player_id="1413")
+
+
+def _upcoming(*match_infos: dict) -> dict:
+    return {
+        "typeMatches": [
+            {
+                "seriesMatches": [
+                    {"seriesAdWrapper": {"matches": [{"matchInfo": mi} for mi in match_infos]}}
+                ]
+            }
+        ]
+    }
+
+
+@respx.mock
+async def test_rapidapi_schedule_filters_by_series_id(monkeypatch):
+    monkeypatch.setattr("sportiq.config.settings.rapidapi_key", "test_rapidapi_key")
+    respx.get("https://cricbuzz-cricket.p.rapidapi.com/matches/v1/upcoming").mock(
+        return_value=Response(
+            200, json=_upcoming({"matchId": 1, "seriesId": 9237}, {"matchId": 2, "seriesId": 5})
+        )
+    )
+    result = await RapidAPICricbuzzScheduleAdapter().fetch(series_id="9237")
+    assert [m["matchId"] for m in result["matches"]] == [1]
+
+
+@respx.mock
+async def test_rapidapi_schedule_raises_when_payload_has_no_series_field(monkeypatch):
+    # The recorded matchInfo shape (live_matches.json) has seriesName only.
+    monkeypatch.setattr("sportiq.config.settings.rapidapi_key", "test_rapidapi_key")
+    respx.get("https://cricbuzz-cricket.p.rapidapi.com/matches/v1/upcoming").mock(
+        return_value=Response(200, json=_load("live_matches.json"))
+    )
+    with pytest.raises(NotFoundError):
+        await RapidAPICricbuzzScheduleAdapter().fetch(series_id="9237")

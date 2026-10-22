@@ -34,6 +34,7 @@ Run:
 
 Cricsheet credit lives in the README "Data sources & credits".
 """
+
 from __future__ import annotations
 
 import json
@@ -71,7 +72,33 @@ VENUE_ALIAS: dict[str, list[str]] = {
     "visakhapatnam": ["ACA-VDCA", "Rajasekhara Reddy"],
     "guwahati": ["Barsapara"],
     "indore": ["Holkar"],
+    # Cricsheet spells it "..., Mullanpur" and "..., New Chandigarh"; the prefix
+    # avoids "Punjab Cricket Association IS Bindra Stadium, Mohali, Chandigarh".
+    "mullanpur": ["Maharaja Yadavindra Singh"],
+    "raipur": ["Shaheed Veer Narayan Singh"],
 }
+
+# Grounds Cricsheet records that the hand-set venues.json never seeded (added
+# 2026-10-22, opus cook9 T9.3). Cricsheet has no pitch label or boundary size, so
+# for THESE keys every field is rule-derived on each run, never hand-judged:
+#   * avg_first_innings / avg_chasing: measured when the ground has >= MIN_SAMPLE
+#     in-window matches, else the league in-window means (the neutral prior,
+#     rather than a noisy small-sample mean);
+#   * pitch_type: "batting" / "bowling" when the first-innings average sits more
+#     than PITCH_BAND runs above / below the league par, else "balanced";
+#   * boundary_size_m: the median of the hand-set grounds — an unmeasured
+#     placeholder (no model reads it; the schema requires a positive value).
+NEW_VENUES: dict[str, dict[str, str]] = {
+    "mullanpur": {
+        "name": "Maharaja Yadavindra Singh International Cricket Stadium",
+        "city": "Mullanpur",
+    },
+    "raipur": {
+        "name": "Shaheed Veer Narayan Singh International Stadium",
+        "city": "Raipur",
+    },
+}
+PITCH_BAND = 8
 
 
 def _canon(venue: str) -> str | None:
@@ -90,10 +117,11 @@ def _innings_total(innings: dict) -> int:
 _SEASON_PEEK = re.compile(r'"season"\s*:\s*"?([^",}\s]+)')
 
 
-def build_venue_stats() -> tuple[dict[str, dict[str, int]], list[int]]:
+def build_venue_stats() -> tuple[dict[str, dict[str, int]], list[int], list[int]]:
     first: dict[str, list[int]] = defaultdict(list)
     second: dict[str, list[int]] = defaultdict(list)
     league_first: list[int] = []
+    league_second: list[int] = []
     for f in IPL.glob("*.json"):
         text = f.read_text()
         peek = _SEASON_PEEK.search(text[:4096])
@@ -108,6 +136,8 @@ def build_venue_stats() -> tuple[dict[str, dict[str, int]], list[int]]:
         if not innings:
             continue
         league_first.append(_innings_total(innings[0]))  # league par: ALL venues
+        if len(innings) >= 2:
+            league_second.append(_innings_total(innings[1]))
         if not key:
             continue
         first[key].append(_innings_total(innings[0]))
@@ -124,15 +154,46 @@ def build_venue_stats() -> tuple[dict[str, dict[str, int]], list[int]]:
             "avg_chasing": round(statistics.mean(second[key])) if second[key] else None,
             "sample_size": n,
         }
-    return stats, league_first
+    return stats, league_first, league_second
+
+
+def _new_venue_record(
+    key: str, stats: dict, league_par: int, league_chase: int, boundary: int
+) -> dict:
+    m = stats.get(key)
+    measured = bool(m and m["avg_chasing"] is not None)
+    first = m["avg_first_innings"] if measured else league_par
+    chase = m["avg_chasing"] if measured else league_chase
+    if first > league_par + PITCH_BAND:
+        pitch = "batting"
+    elif first < league_par - PITCH_BAND:
+        pitch = "bowling"
+    else:
+        pitch = "balanced"
+    return {
+        **NEW_VENUES[key],
+        "pitch_type": pitch,
+        "avg_first_innings": first,
+        "avg_chasing": chase,
+        "boundary_size_m": boundary,
+    }
 
 
 def main() -> None:
     venues = json.loads(VENUES.read_text())
-    stats, league_first = build_venue_stats()
+    stats, league_first, league_second = build_venue_stats()
+    league_par = round(statistics.mean(league_first))
+    league_chase = round(statistics.mean(league_second))
+    boundary = round(
+        statistics.median(r["boundary_size_m"] for k, r in venues.items() if k not in NEW_VENUES)
+    )
+    for key in NEW_VENUES:
+        venues[key] = _new_venue_record(key, stats, league_par, league_chase, boundary)
 
     updated, kept = [], []
     for key, record in venues.items():
+        if key in NEW_VENUES:
+            continue
         m = stats.get(key)
         if not m or m["avg_chasing"] is None:
             kept.append(key)
@@ -140,17 +201,24 @@ def main() -> None:
         old1, old2 = record["avg_first_innings"], record["avg_chasing"]
         record["avg_first_innings"] = m["avg_first_innings"]
         record["avg_chasing"] = m["avg_chasing"]
-        updated.append((key, old1, m["avg_first_innings"], old2, m["avg_chasing"], m["sample_size"]))
+        updated.append(
+            (key, old1, m["avg_first_innings"], old2, m["avg_chasing"], m["sample_size"])
+        )
 
     VENUES.write_text(json.dumps(venues, indent=2) + "\n")
 
-    league_par = round(statistics.mean(league_first))
-    print(f"League T20 par (in-window 1st-innings mean, all venues): {league_par} "
-          f"(n={len(league_first)}) — pitch_report._LEAGUE_PAR_T20 must match")
+    print(
+        f"League T20 par (in-window 1st-innings mean, all venues): {league_par} "
+        f"(n={len(league_first)}) — pitch_report._LEAGUE_PAR_T20 must match"
+    )
     print(f"Regenerated {len(updated)} venues from Cricsheet ({len(kept)} kept hand-set: {kept})")
     print(f"{'venue':16s} {'1st: was->now':>16s}  {'chase: was->now':>16s}  n")
     for key, o1, n1, o2, n2, n in sorted(updated, key=lambda r: -r[2]):
         print(f"{key:16s} {o1:>6d} -> {n1:<6d}   {o2:>6d} -> {n2:<6d}   {n}")
+    for key in NEW_VENUES:
+        n = stats.get(key, {}).get("sample_size", 0)
+        basis = f"measured (n={n})" if n else "league means (below MIN_SAMPLE)"
+        print(f"rule-derived {key}: {venues[key]} — {basis}")
 
 
 if __name__ == "__main__":

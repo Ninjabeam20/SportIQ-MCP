@@ -1,4 +1,5 @@
-"""Football static-seed squad terminator — marquee rosters + empty-but-valid fallback."""
+"""Football static-seed squad terminator — no bundled rosters, empty-but-valid fallback."""
+
 from __future__ import annotations
 
 from sportiq.football.adapters.static_seed import StaticSeedFixturesAdapter, StaticSeedSquadAdapter
@@ -15,14 +16,22 @@ async def test_fixture_terminator_uses_deterministic_group_pair_ids():
     assert first_fixture["winner"] is None
 
 
-async def test_squad_terminator_returns_marquee_roster():
-    """A seeded marquee team (ARG) returns real players from football_squads.json."""
+async def test_squad_terminator_ships_no_rosters_with_note():
+    """No bundled rosters (opus D6): a real entrant is empty-but-valid with a note."""
+    from sportiq.football.adapters.static_seed import SQUAD_NOTE
+
     result = await StaticSeedSquadAdapter().fetch(team="ARG")
     assert result["source"] == "static_seed"
     assert result["team"] == "ARG"
-    assert len(result["squad"]) > 0
-    assert any(p["name"] == "Lionel Messi" for p in result["squad"])
-    assert all("position" in p for p in result["squad"])
+    assert result["squad"] == []
+    assert result["note"] == SQUAD_NOTE
+    assert "APIFOOTBALL_KEY" in result["note"]
+
+
+def test_football_squads_seed_file_is_removed():
+    from sportiq.football.adapters import static_seed
+
+    assert not (static_seed._DATA_DIR / "football_squads.json").exists()
 
 
 async def test_squad_terminator_unknown_team_empty_but_valid():

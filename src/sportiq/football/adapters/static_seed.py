@@ -4,6 +4,7 @@ Always enabled, no credentials. Terminators for the groups, fixtures and squad
 chains so there is always a last-resort response. Reads ``wc2026.json`` and
 ``elo_seed.json`` shipped in ``football/data/``.
 """
+
 from __future__ import annotations
 
 import json
@@ -28,10 +29,6 @@ def load_wc2026() -> dict:
 
 def load_elo_seed() -> dict:
     return _load("elo_seed.json")
-
-
-def load_football_squads() -> dict:
-    return _load("football_squads.json")
 
 
 class StaticSeedGroupsAdapter:
@@ -94,10 +91,15 @@ class StaticSeedFixturesAdapter:
         return (_DATA_DIR / "wc2026.json").exists()
 
 
+# No bundled rosters (opus D6: the hand-written seed was removed — no
+# hand-curated player data). The terminator stays empty-but-valid.
+SQUAD_NOTE = "No bundled squads; set APIFOOTBALL_KEY for live squads."
+
+
 class StaticSeedSquadAdapter:
-    """Squad terminator. Bundles marquee WC rosters in ``football_squads.json``;
-    teams without a seeded roster return an empty-but-valid squad with team
-    metadata rather than failing (preserves the NOT_FOUND terminator invariant)."""
+    """Squad terminator. Ships no rosters: every team returns an empty-but-valid
+    squad with team metadata and a ``note`` rather than failing (preserves the
+    NOT_FOUND terminator invariant)."""
 
     name = "static_seed"
     health_name = "football_static_seed"
@@ -107,12 +109,12 @@ class StaticSeedSquadAdapter:
         wc = load_wc2026()
         code = team.upper()
         meta = wc.get("teams", {}).get(code, {})
-        squads = load_football_squads()
         return {
-            "squad": squads.get(code, []),
+            "squad": [],
             "team": code,
             "team_name": meta.get("name", team),
             "source": "static_seed",
+            "note": SQUAD_NOTE,
         }
 
     async def healthcheck(self) -> bool:

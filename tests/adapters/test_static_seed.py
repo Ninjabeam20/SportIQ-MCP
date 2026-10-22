@@ -42,6 +42,30 @@ async def test_static_seed_squad_resolves_full_team_name():
     assert by_name["team"] == "MI"
 
 
+async def test_static_seed_players_carry_player_id_key():
+    # opus cook8 T8.1: the key is always present; None until the seed carries IDs
+    # (cook9 regenerates it with them).
+    result = await StaticSeedSquadAdapter().fetch(team="MI")
+    for p in result["players"]:
+        assert "player_id" in p
+        assert p["player_id"] is None or isinstance(p["player_id"], str)
+
+
+async def test_static_seed_squads_have_meta_and_ids():
+    # opus cook9 T9.1: the generated seed carries provenance in `_meta`, which is
+    # never served as a team, and every player has a Cricsheet registry ID.
+    from sportiq.cricket.adapters import static_seed
+
+    raw = static_seed._load("squads.json")
+    assert raw["_meta"]["script"] == "scripts/build_cricket_squads.py"
+    assert "2027 retentions not reflected" in raw["_meta"]["note"]
+    assert "_meta" not in static_seed.seed_team_codes()
+    assert "_meta" not in (await StaticSeedSquadAdapter().fetch())["squads"]
+    result = await StaticSeedSquadAdapter().fetch(team="CSK")
+    assert result["players"]
+    assert all(p["player_id"] for p in result["players"])
+
+
 async def test_healthcheck_true_when_json_exists():
     adapter = StaticSeedSquadAdapter()
     assert await adapter.healthcheck() is True

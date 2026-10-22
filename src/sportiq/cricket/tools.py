@@ -10,6 +10,8 @@ from ``server.py``; we avoid importing ``mcp`` at module load.
 
 from __future__ import annotations
 
+from datetime import UTC, date, datetime
+
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.tool_response import Envelope, error_envelope, paginate, tool_response
 from sportiq.cricket.chains import (
@@ -127,6 +129,38 @@ async def cricket_get_points_table(series_id: str) -> Envelope:
     return tool_response(result)
 
 
+def _match_date(m: dict) -> date | None:
+    """Match date from CricAPI ``date``/``dateTimeGMT`` or RapidAPI ``startDate`` (epoch ms)."""
+    raw = m.get("date") or m.get("dateTimeGMT")
+    if isinstance(raw, str) and len(raw) >= 10:
+        try:
+            return date.fromisoformat(raw[:10])
+        except ValueError:
+            return None
+    start = m.get("startDate")
+    if start not in (None, "") and str(start).isdigit():
+        return datetime.fromtimestamp(int(start) / 1000, tz=UTC).date()
+    return None
+
+
+def _upcoming(matches: list[dict], series_id: str | None) -> list[dict]:
+    """Keep matches dated today (UTC) or later, and in ``series_id`` when given.
+
+    A match with no parsable date, or no series field, is kept: unknown is not past.
+    """
+    today = datetime.now(UTC).date()
+    kept = []
+    for m in matches:
+        d = _match_date(m)
+        if d is not None and d < today:
+            continue
+        sid = m.get("series_id") or m.get("seriesId")
+        if series_id and sid not in (None, "") and str(sid) != str(series_id):
+            continue
+        kept.append(m)
+    return kept
+
+
 async def cricket_get_schedule(
     series_id: str | None = None, limit: int = 50, offset: int = 0
 ) -> Envelope:
@@ -139,7 +173,8 @@ async def cricket_get_schedule(
         offset: Number of matches to skip for paging (default 0).
 
     Returns:
-        data.matches: page of upcoming matches with teams, date, venue.
+        data.matches: page of matches dated today (UTC) or later, with teams,
+            date, venue; filtered to ``series_id`` when the source labels series.
         data.pagination: {total, count, offset, limit, has_more, next_offset}.
         meta.source: adapter that served the data.
     """
@@ -160,7 +195,9 @@ async def cricket_get_schedule(
             message="No schedule source is available right now.",
             sources_tried=e.attempts,
         )
-    result.value = paginate(result.value, "matches", limit, offset)
+    value = dict(result.value)
+    value["matches"] = _upcoming(value.get("matches") or [], series_id)
+    result.value = paginate(value, "matches", limit, offset)
     return tool_response(result)
 
 

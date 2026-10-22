@@ -33,15 +33,30 @@ def set_cricapi_key(monkeypatch):
 
 @respx.mock
 async def test_live_matches_adapter_parses_matches():
+    # Both recorded fixture matches have matchStarted=True, matchEnded=True: they
+    # parse, but are not live, so the live list is empty (opus cook8 T8.8).
     fixture = _load("current_matches.json")
     respx.get("https://api.cricapi.com/v1/currentMatches").mock(
         return_value=Response(200, json=fixture)
     )
     adapter = CricAPILiveMatchesAdapter()
     result = await adapter.fetch()
-    assert "matches" in result
-    assert len(result["matches"]) == 2
-    assert result["matches"][0]["id"] == "abc123"
+    assert result == {"matches": []}
+
+
+@respx.mock
+async def test_cricapi_live_matches_excludes_ended_and_unstarted():
+    data = [
+        {"id": "live", "matchStarted": True, "matchEnded": False},
+        {"id": "ended", "matchStarted": True, "matchEnded": True},
+        {"id": "upcoming", "matchStarted": False, "matchEnded": False},
+        {"id": "no_flags"},
+    ]
+    respx.get("https://api.cricapi.com/v1/currentMatches").mock(
+        return_value=Response(200, json={"status": "success", "data": data})
+    )
+    result = await CricAPILiveMatchesAdapter().fetch()
+    assert [m["id"] for m in result["matches"]] == ["live"]
 
 
 @respx.mock
@@ -118,6 +133,20 @@ async def test_squad_adapter_parses_squad():
     assert result["players"][0]["name"] == "Rohit Sharma"
     assert result["players"][0]["role"] == "BAT"
     assert result["players"][0]["team"] == "Mumbai Indians"
+
+
+@respx.mock
+async def test_squad_adapter_keeps_player_ids_and_null_credits():
+    # opus cook8 T8.1 / T8.6: provider IDs survive normalisation; CricAPI squads
+    # carry no credits, so credits stay None (never a fake 0.0).
+    fixture = _load("squad_live.json")
+    respx.get("https://api.cricapi.com/v1/series_squad").mock(
+        return_value=Response(200, json=fixture)
+    )
+    result = await CricAPISquadAdapter().fetch(series_id="series001")
+    assert result["players"][0]["player_id"] == "p001"
+    assert all(p["player_id"] for p in result["players"])
+    assert all(p["credits"] is None for p in result["players"])
 
 
 @respx.mock

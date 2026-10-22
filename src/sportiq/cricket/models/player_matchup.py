@@ -54,10 +54,26 @@ def extract_player_stats(payload: dict | None) -> dict:
         or payload.get("playingRole")
     )
 
-    batting_avg = data.get("batting_avg") if data.get("batting_avg") is not None else payload.get("batting_avg")
-    strike_rate = data.get("strike_rate") if data.get("strike_rate") is not None else payload.get("strike_rate")
-    bowling_avg = data.get("bowling_avg") if data.get("bowling_avg") is not None else payload.get("bowling_avg")
-    economy_rate = data.get("economy_rate") if data.get("economy_rate") is not None else payload.get("economy_rate")
+    batting_avg = (
+        data.get("batting_avg")
+        if data.get("batting_avg") is not None
+        else payload.get("batting_avg")
+    )
+    strike_rate = (
+        data.get("strike_rate")
+        if data.get("strike_rate") is not None
+        else payload.get("strike_rate")
+    )
+    bowling_avg = (
+        data.get("bowling_avg")
+        if data.get("bowling_avg") is not None
+        else payload.get("bowling_avg")
+    )
+    economy_rate = (
+        data.get("economy_rate")
+        if data.get("economy_rate") is not None
+        else payload.get("economy_rate")
+    )
     wickets = data.get("wickets") if data.get("wickets") is not None else payload.get("wickets")
 
     if batting_avg is not None:
@@ -90,13 +106,16 @@ def extract_player_stats(payload: dict | None) -> dict:
     cric_rows = data.get("stats") or payload.get("stats")
     if isinstance(cric_rows, list) and cric_rows:
         target_rows = [
-            r for r in cric_rows
+            r
+            for r in cric_rows
             if isinstance(r, dict) and str(r.get("matchtype", "")).lower().strip() == "t20i"
         ]
         if not target_rows:
             target_rows = [
-                r for r in cric_rows
-                if isinstance(r, dict) and str(r.get("matchtype", "")).lower().strip() in ("t20", "ipl")
+                r
+                for r in cric_rows
+                if isinstance(r, dict)
+                and str(r.get("matchtype", "")).lower().strip() in ("t20", "ipl")
             ]
 
         for row in target_rows:
@@ -136,12 +155,14 @@ def extract_player_stats(payload: dict | None) -> dict:
     rapid_rows = data.get("values") or payload.get("values")
     if isinstance(rapid_rows, list) and rapid_rows:
         target_rows = [
-            r for r in rapid_rows
+            r
+            for r in rapid_rows
             if isinstance(r, dict) and str(r.get("name", "")).upper().strip() == "T20I"
         ]
         if not target_rows:
             target_rows = [
-                r for r in rapid_rows
+                r
+                for r in rapid_rows
                 if isinstance(r, dict) and str(r.get("name", "")).upper().strip() in ("T20", "IPL")
             ]
 
@@ -211,7 +232,9 @@ def compute_matchup(stats_a: dict, stats_b: dict) -> dict:
         matchup_type = "batter_vs_batter"
     elif kind_a == "bowler" and kind_b == "bowler":
         matchup_type = "bowler_vs_bowler"
-    elif (kind_a in batter_kinds and kind_b == "bowler") or (kind_b in batter_kinds and kind_a == "bowler"):
+    elif (kind_a in batter_kinds and kind_b == "bowler") or (
+        kind_b in batter_kinds and kind_a == "bowler"
+    ):
         matchup_type = "batter_vs_bowler"
     else:
         matchup_type = "other"
@@ -248,23 +271,25 @@ def compute_matchup(stats_a: dict, stats_b: dict) -> dict:
             bowler_avg = bowling_avg_a
             batter_is_a = False
 
-        if batter_avg is not None and bowler_avg is not None:
-            if bowler_avg < batter_avg * 0.85:
-                # Bowler condition is checked first (stricter).
-                edge_holder = "player_b" if batter_is_a else "player_a"
-                edge_reason = (
-                    f"Bowler avg {bowler_avg:.1f} is <85% of batter avg {batter_avg:.1f} "
-                    f"— bowler has the edge."
-                )[:120]
-            elif batter_avg > bowler_avg * 1.15:
+        if batter_avg is not None and bowler_avg is not None and bowler_avg > 0:
+            # One ratio, two thresholds: monotonic in both averages (a better
+            # batting average can never flip the edge to the bowler).
+            r = batter_avg / bowler_avg
+            if r >= 1.15:
                 edge_holder = "player_a" if batter_is_a else "player_b"
                 edge_reason = (
-                    f"Batter avg {batter_avg:.1f} exceeds bowler avg {bowler_avg:.1f} "
-                    f"by >15% — batter has the edge."
+                    f"Batter avg {batter_avg:.1f} / bowler avg {bowler_avg:.1f} "
+                    f"= {r:.2f} (>=1.15) — batter has the edge."
+                )[:120]
+            elif r <= 0.85:
+                edge_holder = "player_b" if batter_is_a else "player_a"
+                edge_reason = (
+                    f"Batter avg {batter_avg:.1f} / bowler avg {bowler_avg:.1f} "
+                    f"= {r:.2f} (<=0.85) — bowler has the edge."
                 )[:120]
             else:
                 edge_holder = "neutral"
-                edge_reason = "Stats too close to call a clear edge."
+                edge_reason = (f"Batter/bowler avg ratio {r:.2f} is within 0.85-1.15 — even.")[:120]
 
     elif matchup_type == "batter_vs_batter":
         if sr_a is not None and sr_b is not None and max(sr_a, sr_b) > 0:
@@ -274,10 +299,14 @@ def compute_matchup(stats_a: dict, stats_b: dict) -> dict:
                 edge_reason = "Strike rates within 5% — no clear edge."
             elif sr_a > sr_b:
                 edge_holder = "player_a"
-                edge_reason = f"player_a strike rate {sr_a:.1f} vs {sr_b:.1f} — higher SR wins."[:120]
+                edge_reason = f"player_a strike rate {sr_a:.1f} vs {sr_b:.1f} — higher SR wins."[
+                    :120
+                ]
             else:
                 edge_holder = "player_b"
-                edge_reason = f"player_b strike rate {sr_b:.1f} vs {sr_a:.1f} — higher SR wins."[:120]
+                edge_reason = f"player_b strike rate {sr_b:.1f} vs {sr_a:.1f} — higher SR wins."[
+                    :120
+                ]
         else:
             edge_holder = "neutral"
             edge_reason = "Strike rate data unavailable — neutral."

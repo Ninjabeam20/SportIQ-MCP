@@ -26,9 +26,14 @@ def _load(filename: str) -> dict | list:
         return json.load(f)
 
 
+def _load_squads() -> dict:
+    """The bundled squad seed without its ``_meta`` provenance block."""
+    return {k: v for k, v in (_load("squads.json") or {}).items() if not k.startswith("_")}
+
+
 def seed_team_codes() -> list[str]:
-    """Team codes present in the bundled squad seed (e.g. ``MI``, ``IND``)."""
-    return list(_load("squads.json") or {})
+    """Team codes present in the bundled squad seed (e.g. ``MI``, ``CSK``)."""
+    return list(_load_squads())
 
 
 class StaticSeedSquadAdapter:
@@ -40,7 +45,7 @@ class StaticSeedSquadAdapter:
         from sportiq.cricket.adapters._normalize import normalise_squad_payload
         from sportiq.cricket.teams import resolve_team_code
 
-        squads = _load("squads.json")
+        squads = _load_squads()
         if team:
             # Accept a code ("MI") or an official name ("Mumbai Indians").
             team_upper = resolve_team_code(team, squads.keys()) or team.upper()

@@ -1,285 +1,1249 @@
 {
   "CSK": [
-    {"name": "MS Dhoni", "role": "WK-BAT", "credits": 9.5},
-    {"name": "Ruturaj Gaikwad", "role": "BAT", "credits": 9.0},
-    {"name": "Ravindra Jadeja", "role": "ALL", "credits": 9.0},
-    {"name": "Deepak Chahar", "role": "BOWL", "credits": 8.0},
-    {"name": "Devon Conway", "role": "BAT", "credits": 8.5},
-    {"name": "Moeen Ali", "role": "ALL", "credits": 8.0},
-    {"name": "Mitchell Santner", "role": "ALL", "credits": 7.5},
-    {"name": "Shardul Thakur", "role": "ALL", "credits": 8.0},
-    {"name": "Matheesha Pathirana", "role": "BOWL", "credits": 8.5},
-    {"name": "Tushar Deshpande", "role": "BOWL", "credits": 7.5},
-    {"name": "Simarjeet Singh", "role": "BOWL", "credits": 7.0}
-  ],
-  "MI": [
-    {"name": "Rohit Sharma", "role": "BAT", "credits": 10.0},
-    {"name": "Suryakumar Yadav", "role": "BAT", "credits": 10.0},
-    {"name": "Hardik Pandya", "role": "ALL", "credits": 10.0},
-    {"name": "Ishan Kishan", "role": "WK-BAT", "credits": 9.0},
-    {"name": "Jasprit Bumrah", "role": "BOWL", "credits": 10.5},
-    {"name": "Tim David", "role": "BAT", "credits": 8.5},
-    {"name": "Cameron Green", "role": "ALL", "credits": 8.5},
-    {"name": "Piyush Chawla", "role": "BOWL", "credits": 7.5},
-    {"name": "Mohammad Nabi", "role": "ALL", "credits": 8.0},
-    {"name": "Jason Behrendorff", "role": "BOWL", "credits": 7.5},
-    {"name": "Tristan Stubbs", "role": "BAT", "credits": 7.5}
-  ],
-  "RCB": [
-    {"name": "Virat Kohli", "role": "BAT", "credits": 11.0},
-    {"name": "Faf du Plessis", "role": "BAT", "credits": 9.0},
-    {"name": "Glenn Maxwell", "role": "ALL", "credits": 9.5},
-    {"name": "Dinesh Karthik", "role": "WK-BAT", "credits": 8.5},
-    {"name": "Mohammed Siraj", "role": "BOWL", "credits": 9.0},
-    {"name": "Harshal Patel", "role": "BOWL", "credits": 8.5},
-    {"name": "Wanindu Hasaranga", "role": "ALL", "credits": 9.0},
-    {"name": "Reece Topley", "role": "BOWL", "credits": 7.5},
-    {"name": "Suyash Prabhudessai", "role": "BAT", "credits": 7.0},
-    {"name": "Karn Sharma", "role": "BOWL", "credits": 7.5},
-    {"name": "Anuj Rawat", "role": "WK-BAT", "credits": 7.0}
-  ],
-  "KKR": [
-    {"name": "Shreyas Iyer", "role": "BAT", "credits": 9.5},
-    {"name": "Andre Russell", "role": "ALL", "credits": 10.0},
-    {"name": "Sunil Narine", "role": "ALL", "credits": 9.5},
-    {"name": "Pat Cummins", "role": "ALL", "credits": 9.5},
-    {"name": "Nitish Rana", "role": "BAT", "credits": 8.5},
-    {"name": "Rinku Singh", "role": "BAT", "credits": 8.5},
-    {"name": "Venkatesh Iyer", "role": "ALL", "credits": 8.5},
-    {"name": "Rahmanullah Gurbaz", "role": "WK-BAT", "credits": 8.5},
-    {"name": "Harshit Rana", "role": "BOWL", "credits": 7.5},
-    {"name": "Varun Chakravarthy", "role": "BOWL", "credits": 8.0},
-    {"name": "Starc Mitchell", "role": "BOWL", "credits": 9.0}
-  ],
-  "RR": [
-    {"name": "Sanju Samson", "role": "WK-BAT", "credits": 9.5},
-    {"name": "Jos Buttler", "role": "WK-BAT", "credits": 10.0},
-    {"name": "Yashasvi Jaiswal", "role": "BAT", "credits": 9.5},
-    {"name": "Shimron Hetmyer", "role": "BAT", "credits": 8.5},
-    {"name": "Ravichandran Ashwin", "role": "ALL", "credits": 9.0},
-    {"name": "Trent Boult", "role": "BOWL", "credits": 9.0},
-    {"name": "Yuzvendra Chahal", "role": "BOWL", "credits": 9.0},
-    {"name": "Riyan Parag", "role": "BAT", "credits": 8.0},
-    {"name": "Joe Root", "role": "ALL", "credits": 8.5},
-    {"name": "Sandeep Sharma", "role": "BOWL", "credits": 7.5},
-    {"name": "Tom Kohler-Cadmore", "role": "BAT", "credits": 7.5}
+    {
+      "credits": 9.5,
+      "name": "A Kamboj",
+      "player_id": "fcc21ace",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "A Mhatre",
+      "player_id": "b2b4f545",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "AJ Hosein",
+      "player_id": "4d7f517e",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "D Brevis",
+      "player_id": "844e79d1",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "Gurjapneet Singh",
+      "player_id": "cc61ee8f",
+      "role": "BOWL"
+    },
+    {
+      "credits": 9.0,
+      "name": "J Overton",
+      "player_id": "59559bc2",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "KK Ahmed",
+      "player_id": "a2f46292",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.5,
+      "name": "Kartik Sharma",
+      "player_id": "7b679de5",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "MJ Henry",
+      "player_id": "e84ac20c",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "MW Short",
+      "player_id": "a90e53ec",
+      "role": "ALL"
+    },
+    {
+      "credits": 8.0,
+      "name": "Mukesh Choudhary",
+      "player_id": "765a4731",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.5,
+      "name": "Noor Ahmad",
+      "player_id": "efc04be7",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "PR Veer",
+      "player_id": "e148e6bd",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "RD Chahar",
+      "player_id": "2ed569a0",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.5,
+      "name": "RD Gaikwad",
+      "player_id": "45a43fe2",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "RS Ghosh",
+      "player_id": "dee07622",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.5,
+      "name": "S Dube",
+      "player_id": "a4e37e47",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "SH Johnson",
+      "player_id": "83c3e8e3",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "SN Khan",
+      "player_id": "f088b960",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.5,
+      "name": "SV Samson",
+      "player_id": "a4cc73aa",
+      "role": "WK-BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "Urvil Patel",
+      "player_id": "cf59b3f0",
+      "role": "BAT"
+    }
   ],
   "DC": [
-    {"name": "David Warner", "role": "BAT", "credits": 10.0},
-    {"name": "Rishabh Pant", "role": "WK-BAT", "credits": 10.0},
-    {"name": "Axar Patel", "role": "ALL", "credits": 9.0},
-    {"name": "Mitchell Marsh", "role": "ALL", "credits": 9.0},
-    {"name": "Anrich Nortje", "role": "BOWL", "credits": 8.5},
-    {"name": "Kuldeep Yadav", "role": "BOWL", "credits": 8.5},
-    {"name": "Phil Salt", "role": "BAT", "credits": 8.5},
-    {"name": "Jake Fraser-McGurk", "role": "BAT", "credits": 8.0},
-    {"name": "Tristan Stubbs", "role": "BAT", "credits": 7.5},
-    {"name": "Ishant Sharma", "role": "BOWL", "credits": 7.5},
-    {"name": "Lalit Yadav", "role": "ALL", "credits": 7.5}
-  ],
-  "PBKS": [
-    {"name": "Shikhar Dhawan", "role": "BAT", "credits": 9.0},
-    {"name": "Liam Livingstone", "role": "ALL", "credits": 9.0},
-    {"name": "Sam Curran", "role": "ALL", "credits": 9.0},
-    {"name": "Jonny Bairstow", "role": "WK-BAT", "credits": 9.0},
-    {"name": "Arshdeep Singh", "role": "BOWL", "credits": 8.5},
-    {"name": "Kagiso Rabada", "role": "BOWL", "credits": 9.0},
-    {"name": "Matthew Short", "role": "ALL", "credits": 8.0},
-    {"name": "Rilee Rossouw", "role": "BAT", "credits": 8.0},
-    {"name": "Harpreet Brar", "role": "ALL", "credits": 7.5},
-    {"name": "Rahul Chahar", "role": "BOWL", "credits": 7.5},
-    {"name": "Prabhsimran Singh", "role": "WK-BAT", "credits": 7.5}
-  ],
-  "SRH": [
-    {"name": "Pat Cummins", "role": "ALL", "credits": 9.5},
-    {"name": "Heinrich Klaasen", "role": "WK-BAT", "credits": 9.5},
-    {"name": "Travis Head", "role": "BAT", "credits": 9.5},
-    {"name": "Abhishek Sharma", "role": "BAT", "credits": 9.0},
-    {"name": "Aiden Markram", "role": "ALL", "credits": 9.0},
-    {"name": "Bhuvneshwar Kumar", "role": "BOWL", "credits": 8.5},
-    {"name": "Mayank Agarwal", "role": "BAT", "credits": 8.0},
-    {"name": "T Natarajan", "role": "BOWL", "credits": 8.0},
-    {"name": "Shahbaz Ahmed", "role": "ALL", "credits": 7.5},
-    {"name": "Jaydev Unadkat", "role": "BOWL", "credits": 7.5},
-    {"name": "Marco Jansen", "role": "ALL", "credits": 8.5}
-  ],
-  "LSG": [
-    {"name": "KL Rahul", "role": "WK-BAT", "credits": 10.0},
-    {"name": "Marcus Stoinis", "role": "ALL", "credits": 9.0},
-    {"name": "Deepak Hooda", "role": "ALL", "credits": 8.5},
-    {"name": "Kyle Mayers", "role": "ALL", "credits": 8.5},
-    {"name": "Ravi Bishnoi", "role": "BOWL", "credits": 8.5},
-    {"name": "Krunal Pandya", "role": "ALL", "credits": 8.5},
-    {"name": "Mark Wood", "role": "BOWL", "credits": 9.0},
-    {"name": "Avesh Khan", "role": "BOWL", "credits": 8.0},
-    {"name": "Prerak Mankad", "role": "ALL", "credits": 7.5},
-    {"name": "Quinton de Kock", "role": "WK-BAT", "credits": 9.0},
-    {"name": "Mohsin Khan", "role": "BOWL", "credits": 7.5}
+    {
+      "credits": 9.0,
+      "name": "AR Patel",
+      "player_id": "2e171977",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "Abishek Porel",
+      "player_id": "ad3b6e95",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "Ashutosh Sharma",
+      "player_id": "84d9c311",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "Auqib Nabi",
+      "player_id": "7c3c0337",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "DA Miller",
+      "player_id": "d67d5f00",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "KA Jamieson",
+      "player_id": "68c56d09",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "KK Nair",
+      "player_id": "944533a5",
+      "role": "BAT"
+    },
+    {
+      "credits": 10.0,
+      "name": "KL Rahul",
+      "player_id": "b17e2f24",
+      "role": "WK-BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "Kuldeep Yadav",
+      "player_id": "8d2c70ad",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.5,
+      "name": "L Ngidi",
+      "player_id": "f834dcfc",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "M Tiwari",
+      "player_id": "fb5f69e4",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "MA Starc",
+      "player_id": "3fb19989",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "Mukesh Kumar",
+      "player_id": "2cffab74",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "N Rana",
+      "player_id": "fb2d1dda",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "P Nissanka",
+      "player_id": "8ee36b18",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "PVD Chameera",
+      "player_id": "327b58d3",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "SU Parakh",
+      "player_id": "926c7443",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "Sameer Rizvi",
+      "player_id": "f89d3b11",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "T Natarajan",
+      "player_id": "ce794613",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.5,
+      "name": "T Stubbs",
+      "player_id": "85b3fab2",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "T Vijay",
+      "player_id": "51ec3919",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "V Nigam",
+      "player_id": "5ffc0565",
+      "role": "BAT"
+    }
   ],
   "GT": [
-    {"name": "Hardik Pandya", "role": "ALL", "credits": 10.0},
-    {"name": "Shubman Gill", "role": "BAT", "credits": 10.0},
-    {"name": "David Miller", "role": "BAT", "credits": 9.0},
-    {"name": "Rashid Khan", "role": "ALL", "credits": 10.5},
-    {"name": "Mohammed Shami", "role": "BOWL", "credits": 10.0},
-    {"name": "Wriddhiman Saha", "role": "WK-BAT", "credits": 8.5},
-    {"name": "Alzarri Joseph", "role": "BOWL", "credits": 8.5},
-    {"name": "Noor Ahmad", "role": "BOWL", "credits": 8.0},
-    {"name": "Vijay Shankar", "role": "ALL", "credits": 7.5},
-    {"name": "Sai Sudharsan", "role": "BAT", "credits": 8.0},
-    {"name": "Joshua Little", "role": "BOWL", "credits": 8.0}
+    {
+      "credits": 7.5,
+      "name": "Arshad Khan",
+      "player_id": "12314277",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "Ashok Sharma",
+      "player_id": "50c09020",
+      "role": "BOWL"
+    },
+    {
+      "credits": 10.5,
+      "name": "B Sai Sudharsan",
+      "player_id": "d5130a30",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "GD Phillips",
+      "player_id": "9a46c4e5",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.5,
+      "name": "JC Buttler",
+      "player_id": "99b75528",
+      "role": "WK-BAT"
+    },
+    {
+      "credits": 9.0,
+      "name": "JO Holder",
+      "player_id": "0f721006",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "K Khejroliya",
+      "player_id": "fa2f1dde",
+      "role": "BOWL"
+    },
+    {
+      "credits": 10.0,
+      "name": "K Rabada",
+      "player_id": "e62dd25d",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "Kumar Kushagra",
+      "player_id": "57ca01b3",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "M Prasidh Krishna",
+      "player_id": "85e0cf10",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "M Shahrukh Khan",
+      "player_id": "7dcb9bc9",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "MJ Suthar",
+      "player_id": "025c4400",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.0,
+      "name": "Mohammed Siraj",
+      "player_id": "2f49c897",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "N Sindhu",
+      "player_id": "3cea23da",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "R Sai Kishore",
+      "player_id": "c7a995d3",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "R Tewatia",
+      "player_id": "39a2dfa8",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.5,
+      "name": "Rashid Khan",
+      "player_id": "5f547c8b",
+      "role": "BOWL"
+    },
+    {
+      "credits": 11.0,
+      "name": "Shubman Gill",
+      "player_id": "b4b99816",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.0,
+      "name": "Washington Sundar",
+      "player_id": "f19ccfad",
+      "role": "BAT"
+    }
   ],
-  "IND": [
-    {"name": "Rohit Sharma", "role": "BAT", "credits": 10.5},
-    {"name": "Virat Kohli", "role": "BAT", "credits": 11.0},
-    {"name": "Suryakumar Yadav", "role": "BAT", "credits": 10.0},
-    {"name": "Shubman Gill", "role": "BAT", "credits": 9.5},
-    {"name": "Hardik Pandya", "role": "ALL", "credits": 10.0},
-    {"name": "Ravindra Jadeja", "role": "ALL", "credits": 9.5},
-    {"name": "Axar Patel", "role": "ALL", "credits": 9.0},
-    {"name": "Rishabh Pant", "role": "WK-BAT", "credits": 10.0},
-    {"name": "Sanju Samson", "role": "WK-BAT", "credits": 8.5},
-    {"name": "Jasprit Bumrah", "role": "BOWL", "credits": 11.0},
-    {"name": "Mohammed Siraj", "role": "BOWL", "credits": 9.0},
-    {"name": "Kuldeep Yadav", "role": "BOWL", "credits": 9.0},
-    {"name": "Arshdeep Singh", "role": "BOWL", "credits": 8.5},
-    {"name": "Yashasvi Jaiswal", "role": "BAT", "credits": 9.5},
-    {"name": "Shivam Dube", "role": "ALL", "credits": 8.0}
+  "KKR": [
+    {
+      "credits": 9.0,
+      "name": "A Raghuvanshi",
+      "player_id": "d7017798",
+      "role": "WK-BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "AM Rahane",
+      "player_id": "29e95537",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "AS Roy",
+      "player_id": "e4cdf230",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "B Muzarabani",
+      "player_id": "449f4e3c",
+      "role": "BOWL"
+    },
+    {
+      "credits": 9.5,
+      "name": "C Green",
+      "player_id": "eaa76d3c",
+      "role": "ALL"
+    },
+    {
+      "credits": 8.0,
+      "name": "CV Varun",
+      "player_id": "5b7ab5a9",
+      "role": "BOWL"
+    },
+    {
+      "credits": 9.0,
+      "name": "FH Allen",
+      "player_id": "bf74b130",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.0,
+      "name": "Kartik Tyagi",
+      "player_id": "5d2eea49",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "M Pathirana",
+      "player_id": "64839cb3",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "MK Pandey",
+      "player_id": "93b4fc78",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "Navdeep Saini",
+      "player_id": "21d4e29b",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "R Powell",
+      "player_id": "650d5e49",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "RK Singh",
+      "player_id": "0a509d6b",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "Ramandeep Singh",
+      "player_id": "be24ead0",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.0,
+      "name": "SP Narine",
+      "player_id": "9d430b40",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "SR Dubey",
+      "player_id": "11061889",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "T Dahiya",
+      "player_id": "f12fe2a1",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "TL Seifert",
+      "player_id": "4663bd23",
+      "role": "WK-BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "VG Arora",
+      "player_id": "7c3b3b78",
+      "role": "BOWL"
+    }
   ],
-  "AUS": [
-    {"name": "David Warner", "role": "BAT", "credits": 10.0},
-    {"name": "Travis Head", "role": "BAT", "credits": 9.5},
-    {"name": "Steve Smith", "role": "BAT", "credits": 9.5},
-    {"name": "Mitchell Marsh", "role": "ALL", "credits": 9.5},
-    {"name": "Glenn Maxwell", "role": "ALL", "credits": 9.5},
-    {"name": "Marcus Stoinis", "role": "ALL", "credits": 9.0},
-    {"name": "Cameron Green", "role": "ALL", "credits": 9.0},
-    {"name": "Tim David", "role": "BAT", "credits": 8.5},
-    {"name": "Matthew Wade", "role": "WK-BAT", "credits": 8.5},
-    {"name": "Josh Inglis", "role": "WK-BAT", "credits": 8.5},
-    {"name": "Pat Cummins", "role": "BOWL", "credits": 9.5},
-    {"name": "Mitchell Starc", "role": "BOWL", "credits": 9.5},
-    {"name": "Josh Hazlewood", "role": "BOWL", "credits": 9.0},
-    {"name": "Adam Zampa", "role": "BOWL", "credits": 9.0},
-    {"name": "Nathan Ellis", "role": "BOWL", "credits": 8.0}
+  "LSG": [
+    {
+      "credits": 8.0,
+      "name": "A Badoni",
+      "player_id": "872b03f7",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "A Nortje",
+      "player_id": "acdc62f5",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "AA Kulkarni",
+      "player_id": "2d140b79",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "AK Markram",
+      "player_id": "6a26221c",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "Abdul Samad",
+      "player_id": "8e514b4c",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "Akash Singh",
+      "player_id": "b483905d",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "Akshat Raghuwanshi",
+      "player_id": "d8d67045",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "Arjun Tendulkar",
+      "player_id": "44aac2f0",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "Avesh Khan",
+      "player_id": "eef2536f",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "DS Rathi",
+      "player_id": "13fc5c6d",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "GF Linde",
+      "player_id": "e5437608",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "Himmat Singh",
+      "player_id": "ebcfef83",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "JP Inglis",
+      "player_id": "989889ff",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "M Siddharth",
+      "player_id": "cf0ccafa",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "MD Choudhary",
+      "player_id": "1c84109e",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "MP Yadav",
+      "player_id": "b1ad996b",
+      "role": "BOWL"
+    },
+    {
+      "credits": 10.0,
+      "name": "MR Marsh",
+      "player_id": "3d8feaf8",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "Mohammed Shami",
+      "player_id": "8cf9814c",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "Mohsin Khan",
+      "player_id": "c33d8116",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "N Pooran",
+      "player_id": "3241e3fd",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "Prince Yadav",
+      "player_id": "80b2fb19",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.5,
+      "name": "RR Pant",
+      "player_id": "919a3be2",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "Shahbaz Ahmed",
+      "player_id": "f9e6e7ef",
+      "role": "BOWL"
+    }
   ],
-  "ENG": [
-    {"name": "Jos Buttler", "role": "WK-BAT", "credits": 10.5},
-    {"name": "Jonny Bairstow", "role": "WK-BAT", "credits": 9.0},
-    {"name": "Phil Salt", "role": "BAT", "credits": 9.0},
-    {"name": "Joe Root", "role": "BAT", "credits": 9.0},
-    {"name": "Harry Brook", "role": "BAT", "credits": 9.5},
-    {"name": "Liam Livingstone", "role": "ALL", "credits": 9.0},
-    {"name": "Moeen Ali", "role": "ALL", "credits": 8.5},
-    {"name": "Sam Curran", "role": "ALL", "credits": 9.0},
-    {"name": "Chris Jordan", "role": "BOWL", "credits": 8.5},
-    {"name": "Jofra Archer", "role": "BOWL", "credits": 9.5},
-    {"name": "Mark Wood", "role": "BOWL", "credits": 9.0},
-    {"name": "Adil Rashid", "role": "BOWL", "credits": 9.0},
-    {"name": "Reece Topley", "role": "BOWL", "credits": 8.0},
-    {"name": "Ben Duckett", "role": "BAT", "credits": 8.0},
-    {"name": "Ben Stokes", "role": "ALL", "credits": 10.0}
+  "MI": [
+    {
+      "credits": 8.5,
+      "name": "AM Ghazanfar",
+      "player_id": "9ca68676",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "Ashwani Kumar",
+      "player_id": "d45c29b1",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.5,
+      "name": "C Bosch",
+      "player_id": "172dff15",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "DL Chahar",
+      "player_id": "23eeb873",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "DV Malewar",
+      "player_id": "9e6032fa",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "HH Pandya",
+      "player_id": "dbe50b21",
+      "role": "ALL"
+    },
+    {
+      "credits": 7.5,
+      "name": "JJ Bumrah",
+      "player_id": "462411b3",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "Krish Bhagat",
+      "player_id": "e48a4814",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "M Markande",
+      "player_id": "a9fd84fb",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "MJ Santner",
+      "player_id": "e4a0deae",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "Mayank Rawat",
+      "player_id": "2b801189",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "Naman Dhir",
+      "player_id": "fffa744b",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "Q de Kock",
+      "player_id": "372455c4",
+      "role": "WK-BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "R Minz",
+      "player_id": "bafd0398",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "RA Bawa",
+      "player_id": "ba6b2f91",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.5,
+      "name": "RD Rickelton",
+      "player_id": "e66732f8",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "RG Sharma",
+      "player_id": "740742ef",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "Raghu Sharma",
+      "player_id": "5b615e7c",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.5,
+      "name": "SA Yadav",
+      "player_id": "271f83cd",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "SE Rutherford",
+      "player_id": "d014d5ac",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "SN Thakur",
+      "player_id": "1abb78f8",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "TA Boult",
+      "player_id": "a818c1be",
+      "role": "BOWL"
+    },
+    {
+      "credits": 9.0,
+      "name": "Tilak Varma",
+      "player_id": "b0482a1d",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "WG Jacks",
+      "player_id": "9caf69a1",
+      "role": "ALL"
+    }
   ],
-  "NZ": [
-    {"name": "Kane Williamson", "role": "BAT", "credits": 10.0},
-    {"name": "Devon Conway", "role": "BAT", "credits": 9.5},
-    {"name": "Finn Allen", "role": "BAT", "credits": 9.0},
-    {"name": "Daryl Mitchell", "role": "ALL", "credits": 9.0},
-    {"name": "Glenn Phillips", "role": "ALL", "credits": 9.0},
-    {"name": "Rachin Ravindra", "role": "ALL", "credits": 8.5},
-    {"name": "Mark Chapman", "role": "BAT", "credits": 8.0},
-    {"name": "Tom Latham", "role": "WK-BAT", "credits": 9.0},
-    {"name": "Tim Seifert", "role": "WK-BAT", "credits": 8.0},
-    {"name": "Trent Boult", "role": "BOWL", "credits": 9.5},
-    {"name": "Tim Southee", "role": "BOWL", "credits": 9.0},
-    {"name": "Lockie Ferguson", "role": "BOWL", "credits": 9.0},
-    {"name": "Mitchell Santner", "role": "ALL", "credits": 8.5},
-    {"name": "Ish Sodhi", "role": "BOWL", "credits": 8.5},
-    {"name": "Matt Henry", "role": "BOWL", "credits": 8.5}
+  "PBKS": [
+    {
+      "credits": 8.5,
+      "name": "Arshdeep Singh",
+      "player_id": "244048f6",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "Azmatullah Omarzai",
+      "player_id": "8f6dd463",
+      "role": "ALL"
+    },
+    {
+      "credits": 7.0,
+      "name": "BJ Dwarshuis",
+      "player_id": "e1b9f3a9",
+      "role": "BOWL"
+    },
+    {
+      "credits": 9.5,
+      "name": "C Connolly",
+      "player_id": "fe366f34",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "Harpreet Brar",
+      "player_id": "c05edf8e",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "LH Ferguson",
+      "player_id": "2f9d0389",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "M Jansen",
+      "player_id": "81c36ee9",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.5,
+      "name": "MP Stoinis",
+      "player_id": "d9273ee7",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "N Wadhera",
+      "player_id": "d1a60072",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.5,
+      "name": "P Simran Singh",
+      "player_id": "9418198b",
+      "role": "WK-BAT"
+    },
+    {
+      "credits": 9.0,
+      "name": "Priyansh Arya",
+      "player_id": "b5797845",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.5,
+      "name": "SS Iyer",
+      "player_id": "85ec8e33",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "Shashank Singh",
+      "player_id": "26989d80",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "Suryansh Shedge",
+      "player_id": "970ddd24",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "Vijaykumar Vyshak",
+      "player_id": "54e52590",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "Vishnu Vinod",
+      "player_id": "0494fa6e",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "XC Bartlett",
+      "player_id": "3b53243a",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "YS Chahal",
+      "player_id": "57ee1fde",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "Yash Thakur",
+      "player_id": "4b31f3a3",
+      "role": "BOWL"
+    }
   ],
-  "SA": [
-    {"name": "Temba Bavuma", "role": "BAT", "credits": 9.0},
-    {"name": "Quinton de Kock", "role": "WK-BAT", "credits": 10.0},
-    {"name": "Aiden Markram", "role": "BAT", "credits": 9.0},
-    {"name": "Rassie van der Dussen", "role": "BAT", "credits": 8.5},
-    {"name": "David Miller", "role": "BAT", "credits": 9.0},
-    {"name": "Heinrich Klaasen", "role": "WK-BAT", "credits": 9.5},
-    {"name": "Tristan Stubbs", "role": "BAT", "credits": 8.0},
-    {"name": "Marco Jansen", "role": "ALL", "credits": 8.5},
-    {"name": "Wiaan Mulder", "role": "ALL", "credits": 7.5},
-    {"name": "Keshav Maharaj", "role": "BOWL", "credits": 8.5},
-    {"name": "Tabraiz Shamsi", "role": "BOWL", "credits": 8.5},
-    {"name": "Kagiso Rabada", "role": "BOWL", "credits": 10.5},
-    {"name": "Anrich Nortje", "role": "BOWL", "credits": 9.0},
-    {"name": "Lungi Ngidi", "role": "BOWL", "credits": 8.0},
-    {"name": "Gerald Coetzee", "role": "BOWL", "credits": 8.0}
+  "RCB": [
+    {
+      "credits": 7.5,
+      "name": "Abhinandan Singh",
+      "player_id": "82c10dac",
+      "role": "BOWL"
+    },
+    {
+      "credits": 10.0,
+      "name": "B Kumar",
+      "player_id": "2e81a32d",
+      "role": "BOWL"
+    },
+    {
+      "credits": 9.5,
+      "name": "D Padikkal",
+      "player_id": "2c25d4f5",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "JA Duffy",
+      "player_id": "dadbdb68",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "JG Bethell",
+      "player_id": "3c55c703",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "JM Sharma",
+      "player_id": "800d2d97",
+      "role": "WK-BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "JR Hazlewood",
+      "player_id": "03806cf8",
+      "role": "BOWL"
+    },
+    {
+      "credits": 9.5,
+      "name": "KH Pandya",
+      "player_id": "5b8c830e",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "PD Salt",
+      "player_id": "3d284ca3",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "R Shepherd",
+      "player_id": "c5aef772",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.5,
+      "name": "RM Patidar",
+      "player_id": "c740ea83",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.0,
+      "name": "Rasikh Salam",
+      "player_id": "b8527c3d",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "Suyash Sharma",
+      "player_id": "9440ef41",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.5,
+      "name": "TH David",
+      "player_id": "f1f99156",
+      "role": "BAT"
+    },
+    {
+      "credits": 10.5,
+      "name": "V Kohli",
+      "player_id": "ba607b88",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "VR Iyer",
+      "player_id": "a24be938",
+      "role": "BAT"
+    }
   ],
-  "PAK": [
-    {"name": "Babar Azam", "role": "BAT", "credits": 10.5},
-    {"name": "Mohammad Rizwan", "role": "WK-BAT", "credits": 10.0},
-    {"name": "Fakhar Zaman", "role": "BAT", "credits": 9.0},
-    {"name": "Saim Ayub", "role": "BAT", "credits": 8.0},
-    {"name": "Shan Masood", "role": "BAT", "credits": 8.0},
-    {"name": "Salman Agha", "role": "ALL", "credits": 8.5},
-    {"name": "Iftikhar Ahmed", "role": "ALL", "credits": 7.5},
-    {"name": "Shadab Khan", "role": "ALL", "credits": 8.5},
-    {"name": "Mohammad Nawaz", "role": "ALL", "credits": 7.5},
-    {"name": "Shaheen Afridi", "role": "BOWL", "credits": 10.5},
-    {"name": "Naseem Shah", "role": "BOWL", "credits": 9.0},
-    {"name": "Haris Rauf", "role": "BOWL", "credits": 9.0},
-    {"name": "Abrar Ahmed", "role": "BOWL", "credits": 8.0},
-    {"name": "Mohammad Wasim", "role": "BOWL", "credits": 8.0},
-    {"name": "Usama Mir", "role": "BOWL", "credits": 7.5}
+  "RR": [
+    {
+      "credits": 7.0,
+      "name": "AF Milne",
+      "player_id": "350bb1b1",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.5,
+      "name": "Brijesh Sharma",
+      "player_id": "133bbd61",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.5,
+      "name": "D Ferreira",
+      "player_id": "f0af99a7",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.5,
+      "name": "Dhruv Jurel",
+      "player_id": "bcf325d2",
+      "role": "WK-BAT"
+    },
+    {
+      "credits": 10.0,
+      "name": "JC Archer",
+      "player_id": "5574750c",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "LG Pretorius",
+      "player_id": "60aa2db3",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "MD Shanaka",
+      "player_id": "3ff033bb",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "N Burger",
+      "player_id": "465aa633",
+      "role": "BOWL"
+    },
+    {
+      "credits": 9.0,
+      "name": "R Parag",
+      "player_id": "04a418e8",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.5,
+      "name": "RA Jadeja",
+      "player_id": "fe93fd9d",
+      "role": "ALL"
+    },
+    {
+      "credits": 8.0,
+      "name": "Ravi Bishnoi",
+      "player_id": "df064e1a",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "Ravi Singh",
+      "player_id": "548516a6",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "SB Dubey",
+      "player_id": "6b2ff18f",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "SO Hetmyer",
+      "player_id": "48a1d7b7",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "SS Mishra",
+      "player_id": "92500ad5",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "Sandeep Sharma",
+      "player_id": "ce820073",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.5,
+      "name": "TU Deshpande",
+      "player_id": "46a9bea1",
+      "role": "BOWL"
+    },
+    {
+      "credits": 11.0,
+      "name": "V Suryavanshi",
+      "player_id": "470f446b",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.0,
+      "name": "YBK Jaiswal",
+      "player_id": "6c19c6e5",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "Yash Raj Punja",
+      "player_id": "02dfebbe",
+      "role": "BOWL"
+    }
   ],
-  "SL": [
-    {"name": "Pathum Nissanka", "role": "BAT", "credits": 9.0},
-    {"name": "Kusal Mendis", "role": "WK-BAT", "credits": 9.0},
-    {"name": "Kusal Perera", "role": "WK-BAT", "credits": 8.5},
-    {"name": "Charith Asalanka", "role": "BAT", "credits": 8.5},
-    {"name": "Sadeera Samarawickrama", "role": "BAT", "credits": 8.0},
-    {"name": "Dhananjaya de Silva", "role": "ALL", "credits": 8.0},
-    {"name": "Wanindu Hasaranga", "role": "ALL", "credits": 10.0},
-    {"name": "Dunith Wellalage", "role": "ALL", "credits": 7.5},
-    {"name": "Angelo Mathews", "role": "ALL", "credits": 8.0},
-    {"name": "Maheesh Theekshana", "role": "BOWL", "credits": 8.5},
-    {"name": "Dushmantha Chameera", "role": "BOWL", "credits": 8.0},
-    {"name": "Matheesha Pathirana", "role": "BOWL", "credits": 8.5},
-    {"name": "Nuwan Thushara", "role": "BOWL", "credits": 8.0},
-    {"name": "Dilshan Madushanka", "role": "BOWL", "credits": 8.0},
-    {"name": "Kamindu Mendis", "role": "ALL", "credits": 7.5}
+  "SRH": [
+    {
+      "credits": 10.0,
+      "name": "Abhishek Sharma",
+      "player_id": "f29185a1",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "Aniket Verma",
+      "player_id": "a3b0600d",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "D Madushanka",
+      "player_id": "de7d833e",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "DA Payne",
+      "player_id": "6c79c098",
+      "role": "BOWL"
+    },
+    {
+      "credits": 9.0,
+      "name": "E Malinga",
+      "player_id": "5750bcb4",
+      "role": "BOWL"
+    },
+    {
+      "credits": 10.0,
+      "name": "H Klaasen",
+      "player_id": "235c2bb6",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.0,
+      "name": "HV Patel",
+      "player_id": "f986ca1a",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.0,
+      "name": "Harsh Dubey",
+      "player_id": "25228673",
+      "role": "BOWL"
+    },
+    {
+      "credits": 10.0,
+      "name": "Ishan Kishan",
+      "player_id": "752f7486",
+      "role": "WK-BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "JD Unadkat",
+      "player_id": "1e66c162",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "LS Livingstone",
+      "player_id": "50c6bc2b",
+      "role": "BAT"
+    },
+    {
+      "credits": 9.5,
+      "name": "Nithish Kumar Reddy",
+      "player_id": "aad0c365",
+      "role": "ALL"
+    },
+    {
+      "credits": 8.0,
+      "name": "PJ Cummins",
+      "player_id": "ded9240e",
+      "role": "BOWL"
+    },
+    {
+      "credits": 8.5,
+      "name": "PP Hinge",
+      "player_id": "ece7b6b3",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "R Smaran",
+      "player_id": "c1e53c3f",
+      "role": "BAT"
+    },
+    {
+      "credits": 7.5,
+      "name": "S Arora",
+      "player_id": "d7423da1",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.5,
+      "name": "Sakib Hussain",
+      "player_id": "280fff14",
+      "role": "BOWL"
+    },
+    {
+      "credits": 7.0,
+      "name": "Salil Arora",
+      "player_id": "d7423da1",
+      "role": "BAT"
+    },
+    {
+      "credits": 8.0,
+      "name": "Shivang Kumar",
+      "player_id": "7b44eb3e",
+      "role": "BOWL"
+    },
+    {
+      "credits": 9.0,
+      "name": "TM Head",
+      "player_id": "12b610c2",
+      "role": "BAT"
+    }
   ],
-  "WI": [
-    {"name": "Shai Hope", "role": "WK-BAT", "credits": 9.0},
-    {"name": "Brandon King", "role": "BAT", "credits": 8.5},
-    {"name": "Nicholas Pooran", "role": "WK-BAT", "credits": 10.0},
-    {"name": "Shimron Hetmyer", "role": "BAT", "credits": 9.0},
-    {"name": "Kyle Mayers", "role": "ALL", "credits": 8.5},
-    {"name": "Rovman Powell", "role": "BAT", "credits": 8.5},
-    {"name": "Andre Russell", "role": "ALL", "credits": 10.0},
-    {"name": "Jason Holder", "role": "ALL", "credits": 9.0},
-    {"name": "Roston Chase", "role": "ALL", "credits": 7.5},
-    {"name": "Akeal Hosein", "role": "BOWL", "credits": 8.0},
-    {"name": "Gudakesh Motie", "role": "BOWL", "credits": 8.0},
-    {"name": "Alzarri Joseph", "role": "BOWL", "credits": 8.5},
-    {"name": "Shamar Joseph", "role": "BOWL", "credits": 8.5},
-    {"name": "Romario Shepherd", "role": "ALL", "credits": 7.5},
-    {"name": "Obed McCoy", "role": "BOWL", "credits": 7.5}
-  ],
-  "BAN": [
-    {"name": "Litton Das", "role": "WK-BAT", "credits": 9.0},
-    {"name": "Tanzid Hasan", "role": "BAT", "credits": 8.0},
-    {"name": "Najmul Hossain Shanto", "role": "BAT", "credits": 8.5},
-    {"name": "Towhid Hridoy", "role": "BAT", "credits": 8.5},
-    {"name": "Mushfiqur Rahim", "role": "WK-BAT", "credits": 8.5},
-    {"name": "Mahmudullah", "role": "ALL", "credits": 8.0},
-    {"name": "Shakib Al Hasan", "role": "ALL", "credits": 10.0},
-    {"name": "Mehidy Hasan Miraz", "role": "ALL", "credits": 8.5},
-    {"name": "Rishad Hossain", "role": "ALL", "credits": 7.5},
-    {"name": "Taskin Ahmed", "role": "BOWL", "credits": 9.0},
-    {"name": "Mustafizur Rahman", "role": "BOWL", "credits": 9.0},
-    {"name": "Shoriful Islam", "role": "BOWL", "credits": 8.0},
-    {"name": "Tanzim Hasan Sakib", "role": "BOWL", "credits": 8.0},
-    {"name": "Nasum Ahmed", "role": "BOWL", "credits": 7.5},
-    {"name": "Soumya Sarkar", "role": "ALL", "credits": 7.5}
-  ]
+  "_meta": {
+    "credits_source": "formula",
+    "generated_at": "2026-06-01",
+    "note": "IPL 2026 season appearances; 2027 retentions not reflected",
+    "roles_source": "inferred from season appearances (see script docstring)",
+    "script": "scripts/build_cricket_squads.py",
+    "season": "2026",
+    "source": "Cricsheet IPL ball-by-ball JSON (cricsheet.org/downloads/ipl_json.zip)"
+  }
 }

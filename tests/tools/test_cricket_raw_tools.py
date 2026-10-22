@@ -153,6 +153,27 @@ async def test_get_schedule_off_season_empty_list():
     assert "error" not in response
 
 
+async def test_get_schedule_drops_past_matches_and_other_series():
+    # opus cook8 T8.10: the docstring promises "upcoming" and series filtering.
+    from sportiq.cricket import tools
+
+    mock_result = _ok_result(
+        {
+            "matches": [
+                {"id": "past", "date": "2000-01-01", "series_id": "s1"},
+                {"id": "future", "date": "2999-01-01", "series_id": "s1"},
+                {"id": "other_series", "date": "2999-01-01", "series_id": "s2"},
+                {"id": "undated", "series_id": "s1"},
+            ]
+        }
+    )
+    with patch("sportiq.cricket.tools.fixtures_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock(return_value=mock_result)
+        response = await tools.cricket_get_schedule(series_id="s1")
+
+    assert [m["id"] for m in response["data"]["matches"]] == ["future", "undated"]
+
+
 async def test_get_schedule_not_found_returns_envelope():
     from sportiq.core.errors import NotFoundError
     from sportiq.cricket import tools

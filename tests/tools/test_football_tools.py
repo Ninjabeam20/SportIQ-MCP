@@ -83,6 +83,9 @@ async def test_get_squad_no_key_serves_static_seed(monkeypatch):
     result = await tools.football_get_squad(team="ARG")
     assert result["meta"]["source"] == "static_seed"
     assert result["data"]["team"] == "ARG"
+    assert result["data"]["squad"] == []
+    assert "note" not in result["data"]
+    assert "APIFOOTBALL_KEY" in result["meta"]["note"]
 
 
 async def test_get_match_stats_invalid_team_id():

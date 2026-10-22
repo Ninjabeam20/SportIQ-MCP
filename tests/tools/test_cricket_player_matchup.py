@@ -36,6 +36,7 @@ def _mock_stats_result(
 
 # --- INVALID_INPUT ---
 
+
 async def test_invalid_same_player():
     result = await cricket_player_matchup("rohit_sharma", "rohit_sharma")
     assert result["error"]["code"] == "INVALID_INPUT"
@@ -74,6 +75,7 @@ async def test_same_player_trimmed_casefold_rejected_before_chain():
 
 # --- ALL_SOURCES_FAILED ---
 
+
 async def test_all_sources_failed_player_a():
     """If player_a fetch raises AllSourcesFailedError, return ALL_SOURCES_FAILED."""
     mock_b = _mock_stats_result("Bumrah", role="bowler", bowling_avg=22.0)
@@ -104,6 +106,7 @@ async def test_player_matchup_unexpected_stats_error_reraises():
 
 # --- NOT_FOUND (genuinely unknown player, distinct from a source outage) ---
 
+
 async def test_not_found_when_player_unknown():
     """A NotFoundError for either player yields NOT_FOUND, not ALL_SOURCES_FAILED."""
     from sportiq.core.errors import NotFoundError
@@ -132,14 +135,16 @@ async def test_not_found_propagates_attempts():
     mock_b = _mock_stats_result("Bumrah", role="bowler", bowling_avg=22.0)
     attempts = [{"name": "cricapi", "error": "not found"}]
     with patch("sportiq.cricket.intel_tools.player_stats_chain") as mock_chain:
-        mock_chain.fetch = AsyncMock(side_effect=[NotFoundError("no such player", attempts=attempts), mock_b])
+        mock_chain.fetch = AsyncMock(
+            side_effect=[NotFoundError("no such player", attempts=attempts), mock_b]
+        )
         result = await cricket_player_matchup("nonexistent_player", "bumrah")
     assert result["error"]["code"] == "NOT_FOUND"
     assert result["error"]["sources_tried"] == attempts
 
 
-
 # --- valid path ---
+
 
 async def test_valid_returns_envelope():
     mock_a = _mock_stats_result("Rohit Sharma", role="batter", batting_avg=45.0, strike_rate=135.0)
@@ -222,9 +227,22 @@ async def test_player_matchup_unwrapped_cricapi_cassette_shapes():
 
     assert "data" in result
     assert result["data"]["matchup_type"] == "batter_vs_bowler"
-    assert result["data"]["edge_holder"] == "player_b"
+    # r = 51.39 / 19.66 = 2.61 >= 1.15 → batter (player_a) under the monotonic rule
+    # (opus cook8 T8.4); the old bowler-first check returned player_b here.
+    assert result["data"]["edge_holder"] == "player_a"
     assert result["data"]["role_a"] == "Batter"
     assert result["data"]["role_b"] == "Bowler"
     assert result["data"]["signals"]["batting_avg_a"] == 51.39
     assert result["data"]["signals"]["strike_rate_a"] == 137.96
     assert result["data"]["signals"]["bowling_avg_b"] == 19.66
+
+
+async def test_player_matchup_rejects_name_input_with_hint():
+    # opus cook8 T8.10: names never resolve (player search is not wired).
+    with patch("sportiq.cricket.intel_tools.player_stats_chain") as mock_chain:
+        mock_chain.fetch = AsyncMock()
+        result = await cricket_player_matchup("Virat Kohli", "p_bumrah_001")
+
+    assert result["error"]["code"] == "INVALID_INPUT"
+    assert "names are not resolved" in result["error"]["suggestion"].lower()
+    mock_chain.fetch.assert_not_awaited()

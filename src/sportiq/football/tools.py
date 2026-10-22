@@ -111,12 +111,14 @@ async def football_get_squad(team: str) -> Envelope:
     """Return a national team's World Cup squad.
 
     Args:
-        team: Team code or name (e.g. "ARG"). Without an API-Football key, the
-            static seed serves an empty-but-valid squad (rosters are a follow-up).
+        team: Team code or name (e.g. "ARG"). Live rosters need an API-Football
+            key; without one the static seed serves an empty-but-valid squad
+            (no rosters are bundled).
 
     Returns:
-        data.squad: list of {name, number, position, age}.
+        data.squad: list of {name, number, position, age} (empty from the seed).
         meta.source: adapter that served the data.
+        meta.note: present when the seed served it — how to get live squads.
     """
     if not team or not team.strip():
         return error_envelope(code="INVALID_INPUT", message="team must be non-empty.")
@@ -130,7 +132,13 @@ async def football_get_squad(team: str) -> Envelope:
             message=f"Could not fetch squad for {team!r}.",
             sources_tried=e.attempts,
         )
-    return tool_response(result)
+    response = tool_response(result)
+    if isinstance(response["data"], dict) and "note" in response["data"]:
+        # Copy, don't mutate: the value may be the chain's cached object.
+        data = dict(response["data"])
+        response["meta"]["note"] = data.pop("note")
+        response["data"] = data
+    return response
 
 
 async def football_get_match_stats(team: int) -> Envelope:

@@ -29,8 +29,9 @@ def _bowler(name="Player B", bowling_avg=28.0):
 
 # --- batter_vs_bowler edge cases ---
 
+
 def test_batter_vs_bowler_batter_edge():
-    """batter_avg(50) > bowler_avg(43) * 1.15(49.45), bowler NOT < 42.5 → player_a edge."""
+    """r = batter_avg(50) / bowler_avg(43) = 1.16 >= 1.15 → player_a edge."""
     a = _batter("Virat", batting_avg=50.0)
     b = _bowler("Bumrah", bowling_avg=43.0)
     result = compute_matchup(a, b)
@@ -39,16 +40,16 @@ def test_batter_vs_bowler_batter_edge():
 
 
 def test_batter_vs_bowler_bowler_edge():
-    """bowling_avg(15) < batting_avg(20) * 0.85(17) → player_b (bowler) edge."""
+    """r = batting_avg(20) / bowling_avg(25) = 0.8 <= 0.85 → player_b (bowler) edge."""
     a = _batter("Batsman", batting_avg=20.0)
-    b = _bowler("Bowler", bowling_avg=15.0)
+    b = _bowler("Bowler", bowling_avg=25.0)
     result = compute_matchup(a, b)
     assert result["matchup_type"] == "batter_vs_bowler"
     assert result["edge_holder"] == "player_b"
 
 
 def test_batter_vs_bowler_neutral():
-    """batting_avg=35, bowling_avg=32 — too close → neutral."""
+    """r = 35 / 32 = 1.09 — within 0.85-1.15 → neutral."""
     a = _batter("Batsman", batting_avg=35.0)
     b = _bowler("Bowler", bowling_avg=32.0)
     result = compute_matchup(a, b)
@@ -59,14 +60,15 @@ def test_batter_vs_bowler_neutral():
 def test_batter_vs_bowler_reversed_order():
     """Bowler as player_a, batter as player_b — still correct."""
     a = _bowler("Bowler", bowling_avg=18.0)
-    b = _batter("Batter", batting_avg=40.0)
+    b = _batter("Batter", batting_avg=15.0)
     result = compute_matchup(a, b)
     assert result["matchup_type"] == "batter_vs_bowler"
-    # bowling_avg(18) < batting_avg(40) * 0.85(34) → bowler edge → player_a
+    # r = batting_avg(15) / bowling_avg(18) = 0.83 <= 0.85 → bowler edge → player_a
     assert result["edge_holder"] == "player_a"
 
 
 # --- batter_vs_batter ---
+
 
 def test_batter_vs_batter_higher_sr_wins():
     """player_a sr=145 >> player_b sr=110 → player_a edge."""
@@ -88,10 +90,23 @@ def test_batter_vs_batter_within_5_pct_neutral():
 
 # --- None stats → neutral, no crash ---
 
+
 def test_none_stats_neutral():
     """All None stats → neutral, no crash."""
-    a = {"name": "X", "role": "batter", "batting_avg": None, "strike_rate": None, "bowling_avg": None}
-    b = {"name": "Y", "role": "bowler", "batting_avg": None, "strike_rate": None, "bowling_avg": None}
+    a = {
+        "name": "X",
+        "role": "batter",
+        "batting_avg": None,
+        "strike_rate": None,
+        "bowling_avg": None,
+    }
+    b = {
+        "name": "Y",
+        "role": "bowler",
+        "batting_avg": None,
+        "strike_rate": None,
+        "bowling_avg": None,
+    }
     result = compute_matchup(a, b)
     assert result["edge_holder"] == "neutral"
     assert "signals" in result
@@ -106,9 +121,16 @@ def test_empty_dicts_no_crash():
 
 # --- matchup type detection ---
 
+
 def test_matchup_type_detection_wk_batter():
     """wk-batter role is treated as batter for matchup typing."""
-    a = {"name": "WK", "role": "wk-batter", "batting_avg": 40.0, "strike_rate": 130.0, "bowling_avg": None}
+    a = {
+        "name": "WK",
+        "role": "wk-batter",
+        "batting_avg": 40.0,
+        "strike_rate": 130.0,
+        "bowling_avg": None,
+    }
     b = _bowler("Bowler", bowling_avg=22.0)
     result = compute_matchup(a, b)
     assert result["matchup_type"] == "batter_vs_bowler"
@@ -124,8 +146,20 @@ def test_matchup_type_detection_bowler_vs_bowler():
 
 def test_matchup_type_detection_other():
     """all-rounder vs all-rounder → 'other'."""
-    a = {"name": "AR1", "role": "all-rounder", "batting_avg": None, "strike_rate": None, "bowling_avg": None}
-    b = {"name": "AR2", "role": "all-rounder", "batting_avg": None, "strike_rate": None, "bowling_avg": None}
+    a = {
+        "name": "AR1",
+        "role": "all-rounder",
+        "batting_avg": None,
+        "strike_rate": None,
+        "bowling_avg": None,
+    }
+    b = {
+        "name": "AR2",
+        "role": "all-rounder",
+        "batting_avg": None,
+        "strike_rate": None,
+        "bowling_avg": None,
+    }
     result = compute_matchup(a, b)
     assert result["matchup_type"] == "other"
     assert result["edge_holder"] == "neutral"
@@ -134,7 +168,14 @@ def test_matchup_type_detection_other():
 def test_signals_always_present():
     """signals dict is always returned with the expected keys."""
     result = compute_matchup(_batter(), _bowler())
-    for key in ["batting_avg_a", "batting_avg_b", "bowling_avg_a", "bowling_avg_b", "strike_rate_a", "strike_rate_b"]:
+    for key in [
+        "batting_avg_a",
+        "batting_avg_b",
+        "bowling_avg_a",
+        "bowling_avg_b",
+        "strike_rate_a",
+        "strike_rate_b",
+    ]:
         assert key in result["signals"], f"missing signal key: {key}"
 
 
@@ -145,6 +186,7 @@ def test_edge_reason_max_120_chars():
 
 
 # --- Cassette-shape tests (unwrapped CricAPI and RapidAPI) ---
+
 
 def test_unwrapped_cricapi_cassette_shape_non_other():
     """Feed unwrapped CricAPI cassette shape → non-other matchup with signals."""
@@ -169,7 +211,8 @@ def test_unwrapped_cricapi_cassette_shape_non_other():
 
     result = compute_matchup(kohli_unwrapped, bumrah_unwrapped)
     assert result["matchup_type"] == "batter_vs_bowler"
-    assert result["edge_holder"] == "player_b"
+    # r = 51.39 / 19.66 = 2.61 >= 1.15 → batter edge (monotonic rule, opus cook8 T8.4).
+    assert result["edge_holder"] == "player_a"
     assert result["player_a"] == "Virat Kohli"
     assert result["player_b"] == "Jasprit Bumrah"
     assert result["role_a"] == "Batter"
@@ -199,7 +242,8 @@ def test_wrapped_cricapi_shape_non_other():
 
     result = compute_matchup(kohli_wrapped, bumrah_wrapped)
     assert result["matchup_type"] == "batter_vs_bowler"
-    assert result["edge_holder"] == "player_b"
+    # r = 51.39 / 19.66 = 2.61 >= 1.15 → batter edge (monotonic rule, opus cook8 T8.4).
+    assert result["edge_holder"] == "player_a"
     assert result["signals"]["batting_avg_a"] == 51.39
     assert result["signals"]["bowling_avg_b"] == 19.66
 
@@ -219,3 +263,13 @@ def test_rapidapi_career_shape_in_matchup():
     assert result["matchup_type"] == "batter_vs_bowler"
     assert result["signals"]["batting_avg_a"] == 51.39
     assert result["signals"]["strike_rate_a"] == 137.96
+
+
+def test_player_matchup_edge_is_monotonic_in_batter_average():
+    # opus cook8 T8.4: bowler avg 25; raising the batter's average never helps the bowler.
+    b = _bowler("Bowler", bowling_avg=25.0)
+    expected = {29.0: "player_a", 30.0: "player_a", 25.0: "neutral", 20.0: "player_b"}
+    for batting_avg, holder in expected.items():
+        result = compute_matchup(_batter("Batter", batting_avg=batting_avg), b)
+        assert result["edge_holder"] == holder, batting_avg
+        assert len(result["edge_reason"]) <= 120
