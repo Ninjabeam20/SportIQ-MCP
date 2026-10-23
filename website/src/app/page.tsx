@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import TrustStrip from "@/components/TrustStrip";
 import FlagshipCards from "@/components/FlagshipCards";
+import WhatsNew from "@/components/WhatsNew";
 import FeaturePrompts from "@/components/FeaturePrompts";
 import ToolExplorer from "@/components/ToolExplorer";
 import ComparisonTable from "@/components/ComparisonTable";
@@ -21,6 +22,7 @@ export default function Home() {
         <Hero />
         <TrustStrip />
         <FlagshipCards />
+        <WhatsNew />
         <FeaturePrompts />
         <ToolExplorer />
         <ComparisonTable />
