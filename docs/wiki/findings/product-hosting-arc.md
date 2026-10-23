@@ -3,7 +3,7 @@ title: Product and hosting arc (GCP → paid → free → home server)
 type: finding
 tags: [hosting, cloud-run, home-server, monetization, history, uptime, waf]
 sources: [chat, cloud.md, 0011-pro-entitlement-gate, home-server-cutover]
-last_updated: 2026-10-22
+last_updated: 2026-10-23
 related: [[0011-pro-entitlement-gate]], [[home-server-cutover]], [[hosted-url-and-release-drift]], [[mac-cutover-inventory]], [[stateless-lifespan-teardown]], [[sportiq-health]]
 ---
 
@@ -21,13 +21,13 @@ One-page timeline of how SportIQ was hosted and sold. Read this when GitHub and 
 4. **Home-server migration (2026-08).** Production live is the Dell Compose stack behind Cloudflare Tunnel + Caddy: `https://sportiq.utkarshgupta.org/mcp`. Cutover: [[home-server-cutover]].
 5. **GCP Task 9 teardown (2026-09-02).** Scheduler, Cloud Run, Artifact Registry deleted. Project `sportiq-mcp-prod` shut down (`DELETE_REQUESTED`, billing unlinked). Owner also removed the GCP billing card. `ey2eariulq` HTTP 404.
 
-## Current (2026-09-25)
+## Current (2026-10-23)
 
 | Channel | Reality |
 | :--- | :--- |
-| Live connector | `https://sportiq.utkarshgupta.org/mcp` (Dell, stateless HTTP, package 0.3.2) |
+| Live connector | `https://sportiq.utkarshgupta.org/mcp` (Dell, stateless HTTP; package 0.3.2 until the v0.4.0 deploy) |
 | Cloud Run / Artifact Registry / project | **deleted** — project `sportiq-mcp-prod` is `DELETE_REQUESTED`; billing account/card removed |
-| PyPI / `uvx sportiq-mcp` | **0.3.2**; official MCP registry remotes = Dell URL |
+| PyPI / `uvx sportiq-mcp` | **0.4.0** (tag `v0.4.0`, 2026-10-23); official MCP registry 0.4.0, remotes = Dell URL |
 | Glama listing | Dell URL after owner GitHub sync (2026-09-02) |
 | Product | every tool free; no SportIQ paywall |
 

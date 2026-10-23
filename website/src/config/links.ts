@@ -7,6 +7,8 @@ export const LINKS = {
   hostedMcp: "https://sportiq.utkarshgupta.org/mcp",
   // Source
   github: "https://github.com/Ninjabeam20/SportIQ-MCP",
+  // Release notes for the version announced in the Hero badge
+  latestRelease: "https://github.com/Ninjabeam20/SportIQ-MCP/releases/tag/v0.4.0",
   registry: "https://registry.modelcontextprotocol.io",
   registryId: "io.github.Ninjabeam20/sportiq-mcp",
   email: "utkarshgupta885@gmail.com",

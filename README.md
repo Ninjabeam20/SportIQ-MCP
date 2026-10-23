@@ -27,6 +27,26 @@ MCP server that turns any AI assistant into a sports analyst across **FIFA World
 
 > **Every tool is free to use** — the three flagships and everything in the INTEL columns below have no SportIQ paywall or account requirement. Live/provider-backed data still depends on the keys and quota available to the host or local operator. If SportIQ is useful to you, [sponsor the project](https://github.com/sponsors/Ninjabeam20) to support ongoing development.
 
+## What's new in v0.4.0
+
+- **Two new tools (46 total):**
+  - `f1_simulate_championship`: a title-race Monte Carlo with exact elimination maths.
+  - `football_what_if`: replays World Cup 2026 from any stage, optionally flipping one real knockout result.
+- **Completed-tournament mode:** World Cup tools now answer from the real 2026 results (Spain won the final 1–0 after extra time) instead of re-simulating.
+- **7 MCP resources:** static reference data (the WC draw, team codes, F1 circuits, IPL venues and teams, the Dream11 scoring profile) plus the instructions.
+- **Accuracy fixes:**
+  - Official Dream11 T20 scoring and IPL squads generated from Cricsheet.
+  - An F1 pit model that sums the whole remaining race, legal compound sequences and the regulation race distance.
+  - Positive-EV value bets only.
+  - Extra-time and penalty results kept, team-name and venue resolution, and many more.
+- **Reliability:**
+  - A fix for a cache bug that wiped the cache about once a minute.
+  - No more per-request teardown errors.
+  - A `/healthz` liveness route.
+  - A 30 s per-tool deadline (`TOOL_DEADLINE_SECONDS`) and a 15 s budget per data chain.
+  - API keys no longer appear in logs.
+- **Upgrade:** `uvx sportiq-mcp@latest` picks up 0.4.0. The hosted connector URL stays the same.
+
 ## What it does
 
 Raw-data tools are table stakes; the intelligence layer is the product. Three flagships:
