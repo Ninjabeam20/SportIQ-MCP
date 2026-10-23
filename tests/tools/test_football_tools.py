@@ -1060,3 +1060,45 @@ async def test_what_if_rejects_replay_when_fixture_data_has_no_results():
 
     assert result["error"]["code"] == "ALL_SOURCES_FAILED"
     sim.assert_not_called()
+
+
+async def _call_with_one_semi_missing(tool, **kwargs):
+    # Complete 2026 snapshot minus the France-Spain semi-final: the final (and so
+    # the champion) is known, but the exact knockout can't be rebuilt.
+    fixtures = [
+        f
+        for f in await _complete_wc2026_fixtures()
+        if not (
+            "semi" in str(f.get("stage", "")).lower()
+            and {f["home"], f["away"]} == {"France", "Spain"}
+        )
+    ]
+    with (
+        patch("sportiq.football.intel_tools.football_groups_chain") as gmock,
+        patch("sportiq.football.intel_tools.football_fixtures_chain") as fmock,
+        patch("sportiq.football.intel_tools.simulate_tournament") as sim,
+    ):
+        gmock.fetch = AsyncMock(return_value=_fr(_draw_payload()))
+        fmock.fetch = AsyncMock(return_value=_fr({"fixtures": fixtures}, source="openfootball"))
+        result = await tool(**kwargs)
+    return result, sim
+
+
+async def test_simulate_bracket_known_champion_with_missing_semi_returns_error():
+    from sportiq.football import intel_tools
+
+    result, sim = await _call_with_one_semi_missing(
+        intel_tools.football_simulate_bracket, iterations=100, seed=1
+    )
+    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+    sim.assert_not_called()
+
+
+async def test_knockout_path_known_champion_with_missing_semi_returns_error():
+    from sportiq.football import intel_tools
+
+    result, sim = await _call_with_one_semi_missing(
+        intel_tools.football_knockout_path, team="FRA", iterations=100, seed=1
+    )
+    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+    sim.assert_not_called()

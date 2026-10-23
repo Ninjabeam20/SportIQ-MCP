@@ -15,11 +15,15 @@ import asyncio
 import os
 import tempfile
 
+from sportiq.core.errors import NotFoundError
+
 # Minimal static registry: session_key → (year, round_number)
 # Extend as needed; Phase 3.1 will auto-fetch from OpenF1 /sessions.
+# Each entry verified against cached OpenF1 Race sessions + F1DB races
+# (2026-10-23); never add an unverified mapping (it would serve the wrong race).
 _SESSION_REGISTRY: dict[int, tuple[int, int]] = {
-    9877: (2025, 8),  # 2025 Monaco GP (placeholder — update with real round)
-    9158: (2024, 6),  # 2024 Monaco GP
+    9877: (2025, 20),  # 2025 Mexico City GP, 2025-10-26
+    9523: (2024, 8),  # 2024 Monaco GP, 2024-05-26
 }
 
 
@@ -67,6 +71,11 @@ class FastF1LapsAdapter:
             return lap_records
 
         lap_records = await asyncio.to_thread(_load_laps)
+        if not lap_records:
+            # Empty-but-OK must not be cached as success (adapter contract).
+            raise NotFoundError(
+                f"fastf1 has no laps for driver {driver_number} in session {session_key}"
+            )
         return {"laps": lap_records}
 
     async def healthcheck(self) -> bool:
@@ -153,7 +162,11 @@ class FastF1StandingsAdapter:
                 "constructors": _ranked(list(teams.values())),
             }
 
-        return await asyncio.to_thread(_load_standings)
+        standings = await asyncio.to_thread(_load_standings)
+        if not standings["drivers"]:
+            # Every round failed to load: an empty table is not a result.
+            raise NotFoundError(f"fastf1 could not load any {year} race results")
+        return standings
 
     async def healthcheck(self) -> bool:
         try:

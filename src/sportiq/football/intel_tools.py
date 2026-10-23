@@ -224,6 +224,24 @@ def _exact_if_completed(groups: dict, fixtures_result, state: ResultsState | Non
     return tournament_from_results(groups, state)
 
 
+def _completed_but_incomplete(fixtures_result, state: ResultsState | None) -> Envelope | None:
+    """Error when the feed names the champion but misses an earlier knockout result.
+
+    Simulating around the gap would contradict the known champion (e.g. give
+    another team a title probability), so refuse instead.
+    """
+    if state is None or _sim_mode(fixtures_result, state) != "completed":
+        return None
+    return error_envelope(
+        code="ALL_SOURCES_FAILED",
+        message=(
+            f"The fixture feed names {state.champion} as champion but is missing earlier "
+            "knockout results, so the completed bracket cannot be rebuilt exactly."
+        ),
+        suggestion="Retry later once the fixture source has every 2026 knockout result.",
+    )
+
+
 async def _maybe_nudge_single(
     groups_value: dict, ratings: dict
 ) -> tuple[dict, bool, FallbackResult | None]:
@@ -532,6 +550,8 @@ async def football_simulate_bracket(iterations: int = 10000, seed: int | None = 
     ratings = _conditioned_ratings(seed_ratings, state)
     # Every result locked (the tournament is over): the answer is exact; skip the sim.
     sim = _exact_if_completed(groups, fixtures_result, state)
+    if sim is None and (gap := _completed_but_incomplete(fixtures_result, state)) is not None:
+        return gap
     if sim is None:
         try:
             sim = await _run_bracket_sim(
@@ -587,6 +607,8 @@ async def football_knockout_path(
     state, fixtures_result = await _fetch_live_state(result.value)
     ratings = _conditioned_ratings(base_ratings, state)
     sim = _exact_if_completed(groups, fixtures_result, state)
+    if sim is None and (gap := _completed_but_incomplete(fixtures_result, state)) is not None:
+        return gap
     if sim is None:
         try:
             sim = await _run_bracket_sim(

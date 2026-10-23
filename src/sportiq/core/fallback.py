@@ -16,7 +16,7 @@ from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
 from sportiq.core.cache import get_cache
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.logging import get_logger
-from sportiq.core.ratelimit import Budget, refund, reserve
+from sportiq.core.ratelimit import Budget, Reservation, refund, reserve_window
 from sportiq.core.redact import scrub
 
 log = get_logger(__name__)
@@ -78,6 +78,7 @@ class FallbackChain(Generic[T]):
         # Per-key stampede guard: concurrent misses for the same key serialize,
         # and the waiters serve from the cache the first caller populated.
         self._key_locks: dict[str, asyncio.Lock] = {}
+        self._key_lock_users: dict[str, int] = {}
 
     def _fresh_hit(self, cached, started: float) -> FallbackResult[T] | None:
         if cached is not None and self.fresh_ttl > 0 and cached.age_seconds <= self.fresh_ttl:
@@ -109,6 +110,10 @@ class FallbackChain(Generic[T]):
             return hit
 
         lock = self._key_locks.setdefault(key, asyncio.Lock())
+        # Count holders + waiters: a released lock reads unlocked for a moment
+        # before the next waiter re-acquires it, so `locked()` alone would evict
+        # it under a waiter and let a new caller fetch the same key in parallel.
+        self._key_lock_users[key] = self._key_lock_users.get(key, 0) + 1
         try:
             async with lock:
                 # Re-check: a concurrent caller holding the lock may have
@@ -119,7 +124,9 @@ class FallbackChain(Generic[T]):
                     return hit
                 return await self._fetch_uncached(cache, key, cached, started, **kwargs)
         finally:
-            if not lock.locked():
+            self._key_lock_users[key] -= 1
+            if self._key_lock_users[key] == 0:
+                del self._key_lock_users[key]
                 self._key_locks.pop(key, None)
 
     async def _fetch_uncached(
@@ -148,10 +155,10 @@ class FallbackChain(Generic[T]):
                 break
 
             budget: Budget | None = getattr(adapter, "budget", None)
-            reserved = False
+            reserved: Reservation | None = None
             if budget is not None:
-                reserved = await reserve(budget)
-                if not reserved:
+                reserved = await reserve_window(budget)
+                if reserved is None:
                     attempts.append(
                         {
                             "name": adapter.name,
@@ -187,8 +194,10 @@ class FallbackChain(Generic[T]):
                 else:
                     value = await adapter.fetch(**kwargs)
             except Exception as e:
-                if reserved:
-                    await refund(budget)
+                if reserved is not None:
+                    # Refund the windows actually charged (the fetch may end in a
+                    # later minute / UTC day than it started).
+                    await refund(budget, reserved)
                 if isinstance(e, NotFoundError):
                     saw_not_found = True
                 else:

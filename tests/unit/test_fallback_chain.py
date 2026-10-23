@@ -261,3 +261,40 @@ async def test_fallback_chain_treats_cache_get_error_as_miss(monkeypatch):
 
     assert primary.call_count == 1
     assert result.value == {"x": 1}
+
+
+@pytest.mark.asyncio
+async def test_fallback_chain_keeps_key_lock_while_waiters_remain_after_failed_fetch():
+    # Review R1: A fails while B waits; A must not evict the key lock, or C (arriving
+    # while B fetches) makes a fresh lock and hits upstream in parallel with B.
+    class _Slow:
+        name = "slow"
+
+        def __init__(self):
+            self.active = 0
+            self.max_active = 0
+
+        async def fetch(self, **kwargs):
+            self.active += 1
+            self.max_active = max(self.max_active, self.active)
+            try:
+                await asyncio.sleep(0.05)
+                raise RuntimeError("upstream down")
+            finally:
+                self.active -= 1
+
+        async def healthcheck(self) -> bool:
+            return False
+
+    adapter = _Slow()
+    chain = FallbackChain(name="r1", adapters=[adapter], cache_key_fn=_key, fresh_ttl=60)
+
+    async def call(delay: float):
+        await asyncio.sleep(delay)
+        with pytest.raises(AllSourcesFailedError):
+            await chain.fetch(q="same")
+
+    await asyncio.gather(call(0), call(0.001), call(0.07))
+
+    assert adapter.max_active == 1
+    assert chain._key_locks == {}

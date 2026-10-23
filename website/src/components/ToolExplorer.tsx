@@ -91,7 +91,7 @@ export default function ToolExplorer() {
                 activeTab === "football" ? "text-sport-football bg-white/5 border-b-2 border-b-sport-football" : "text-white/60 hover:text-white hover:bg-white/5"
               }`}
             >
-              ⚽ Football (15)
+              ⚽ Football ({FOOTBALL_TOOLS.length})
             </button>
             <button
               onClick={() => setActiveTab("f1")}
@@ -99,7 +99,7 @@ export default function ToolExplorer() {
                 activeTab === "f1" ? "text-sport-f1 bg-white/5 border-b-2 border-b-sport-f1" : "text-white/60 hover:text-white hover:bg-white/5"
               }`}
             >
-              🏎️ F1 (13)
+              🏎️ F1 ({F1_TOOLS.length})
             </button>
             <button
               onClick={() => setActiveTab("cricket")}
@@ -107,7 +107,7 @@ export default function ToolExplorer() {
                 activeTab === "cricket" ? "text-sport-cricket bg-white/5 border-b-2 border-b-sport-cricket" : "text-white/60 hover:text-white hover:bg-white/5"
               }`}
             >
-              🏏 Cricket (14)
+              🏏 Cricket ({CRICKET_TOOLS.length})
             </button>
           </div>
 

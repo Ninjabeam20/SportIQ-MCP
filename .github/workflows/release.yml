@@ -38,6 +38,15 @@ jobs:
       - name: Test + coverage (release quality gate; a tag can't publish a red tree)
         run: uv run --python 3.13 --extra dev python -m pytest -q --cov=sportiq --cov-fail-under=84
 
+      - name: Audit shipped deps (security gate; same flags as security.yml)
+        # security.yml doesn't run on tags, so the release commit is audited here.
+        run: |
+          uv export --frozen --no-dev --no-hashes -o shipped-requirements.txt
+          uvx pip-audit -r shipped-requirements.txt --ignore-vuln CVE-2025-69872 --ignore-vuln GHSA-6v7p-g79w-8964 --ignore-vuln PYSEC-2026-4146
+
+      - name: Static security analysis (security gate)
+        run: uv run --python 3.13 --extra dev bandit -r src -ll -q
+
       - name: Verify build artifacts (security gate, also builds dist/)
         run: uv run --python 3.13 --extra dev python scripts/check_release_build.py
 

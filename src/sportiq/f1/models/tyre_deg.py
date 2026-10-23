@@ -117,6 +117,21 @@ def fit_degradation(laps: list[dict], compound: str) -> dict:
     # (brand-new tyre); without tyre_life, 0-based index i anchors intercept at the first valid lap.
     tyre_ages = np.array([float(lap.get("tyre_life", i)) for i, lap in enumerate(valid)])
 
+    # A slope needs independent age variation: repeated ages (e.g. two fresh
+    # stints at age 0) crash polyfit or give an arbitrary slope. Report the
+    # distinct-age count as the effective sample count so callers' "< 2"
+    # fallback applies.
+    finite = np.isfinite(tyre_ages)
+    tyre_ages, durations = tyre_ages[finite], durations[finite]
+    distinct_ages = len(np.unique(tyre_ages))
+    if distinct_ages < 2:
+        return {
+            "intercept": float(durations.mean()) if len(durations) else 0.0,
+            "slope": 0.0,
+            "residual_std": float(durations.std()) if len(durations) else 0.0,
+            "sample_count": distinct_ages,
+        }
+
     coeffs = np.polyfit(tyre_ages, durations, deg=1)
     fitted = np.polyval(coeffs, tyre_ages)
     residuals = durations - fitted
@@ -125,5 +140,5 @@ def fit_degradation(laps: list[dict], compound: str) -> dict:
         "intercept": float(coeffs[1]),
         "slope": float(coeffs[0]),
         "residual_std": float(residuals.std()),
-        "sample_count": len(valid),
+        "sample_count": len(tyre_ages),
     }

@@ -1,14 +1,12 @@
 """Tests for tyre degradation model."""
+
 from __future__ import annotations
 
 from sportiq.f1.models.tyre_deg import annotate_laps_with_stints, fit_degradation
 
 
 def _make_laps(times: list[float], compound: str = "SOFT") -> list[dict]:
-    return [
-        {"lap_duration": t, "compound": compound, "tyre_life": i}
-        for i, t in enumerate(times)
-    ]
+    return [{"lap_duration": t, "compound": compound, "tyre_life": i} for i, t in enumerate(times)]
 
 
 def test_positive_slope_increasing_lap_times():
@@ -71,11 +69,31 @@ def test_fit_on_real_shape_laps_yields_positive_slope():
     # degrading stint, must produce a non-zero positive slope — proving the
     # model now consumes telemetry instead of falling back to constants.
     laps = [
-        {"lap_number": n, "lap_duration": round(80.0 + 0.09 * (n - 1), 3)}
-        for n in range(1, 16)
+        {"lap_number": n, "lap_duration": round(80.0 + 0.09 * (n - 1), 3)} for n in range(1, 16)
     ]
     stints = [{"lap_start": 1, "lap_end": 15, "compound": "SOFT", "tyre_age_at_start": 0}]
     annotated = annotate_laps_with_stints(laps, stints)
     result = fit_degradation(annotated, "SOFT")
     assert result["slope"] > 0
     assert result["sample_count"] >= 2
+
+
+def test_fit_degradation_repeated_zero_ages_is_insufficient_not_a_crash():
+    # Review R4: two fresh stints both at age 0 → no age variation to fit.
+    laps = [
+        {"lap_duration": 80.0, "compound": "SOFT", "tyre_life": 0},
+        {"lap_duration": 80.1, "compound": "SOFT", "tyre_life": 0},
+    ]
+    result = fit_degradation(laps, "SOFT")
+    assert result["slope"] == 0.0
+    assert result["sample_count"] < 2  # callers' insufficient-fit fallback
+
+
+def test_fit_degradation_repeated_nonzero_ages_gives_no_arbitrary_slope():
+    laps = [
+        {"lap_duration": 80.0, "compound": "SOFT", "tyre_life": 1},
+        {"lap_duration": 80.1, "compound": "SOFT", "tyre_life": 1},
+    ]
+    result = fit_degradation(laps, "SOFT")
+    assert result["slope"] == 0.0
+    assert result["sample_count"] < 2

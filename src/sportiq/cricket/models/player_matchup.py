@@ -4,6 +4,12 @@ from __future__ import annotations
 
 import contextlib
 
+# Heuristic pivot for the batter-vs-bowler edge: one T20 average treated as
+# "par" for both batting and bowling. A documented baseline, not a measured
+# league mean.
+_T20_PIVOT_AVG = 25.0
+
+
 _BATTER_ROLES = {"batter", "wk-batter", "bat", "wk-bat", "wicketkeeper batter"}
 _BOWLER_ROLES = {"bowler", "bowl"}
 
@@ -272,24 +278,26 @@ def compute_matchup(stats_a: dict, stats_b: dict) -> dict:
             batter_is_a = False
 
         if batter_avg is not None and bowler_avg is not None and bowler_avg > 0:
-            # One ratio, two thresholds: monotonic in both averages (a better
-            # batting average can never flip the edge to the bowler).
-            r = batter_avg / bowler_avg
+            # Each player against a T20 pivot: batter strength = avg / P, bowler
+            # strength = P / bowling avg (a higher bowling average is a worse
+            # bowler). r = batter_avg * bowler_avg / P**2 rises with both averages,
+            # so a better batter or a worse bowler can only move the edge to the batter.
+            r = (batter_avg * bowler_avg) / (_T20_PIVOT_AVG**2)
             if r >= 1.15:
                 edge_holder = "player_a" if batter_is_a else "player_b"
                 edge_reason = (
-                    f"Batter avg {batter_avg:.1f} / bowler avg {bowler_avg:.1f} "
-                    f"= {r:.2f} (>=1.15) — batter has the edge."
+                    f"Bat avg {batter_avg:.1f} x bowl avg {bowler_avg:.1f} / "
+                    f"{_T20_PIVOT_AVG:g}^2 = {r:.2f} (>=1.15): batter edge."
                 )[:120]
             elif r <= 0.85:
                 edge_holder = "player_b" if batter_is_a else "player_a"
                 edge_reason = (
-                    f"Batter avg {batter_avg:.1f} / bowler avg {bowler_avg:.1f} "
-                    f"= {r:.2f} (<=0.85) — bowler has the edge."
+                    f"Bat avg {batter_avg:.1f} x bowl avg {bowler_avg:.1f} / "
+                    f"{_T20_PIVOT_AVG:g}^2 = {r:.2f} (<=0.85): bowler edge."
                 )[:120]
             else:
                 edge_holder = "neutral"
-                edge_reason = (f"Batter/bowler avg ratio {r:.2f} is within 0.85-1.15 — even.")[:120]
+                edge_reason = (f"Batter-vs-bowler index {r:.2f} is within 0.85-1.15: even.")[:120]
 
     elif matchup_type == "batter_vs_batter":
         if sr_a is not None and sr_b is not None and max(sr_a, sr_b) > 0:

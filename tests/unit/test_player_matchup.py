@@ -31,7 +31,7 @@ def _bowler(name="Player B", bowling_avg=28.0):
 
 
 def test_batter_vs_bowler_batter_edge():
-    """r = batter_avg(50) / bowler_avg(43) = 1.16 >= 1.15 → player_a edge."""
+    """r = 50 x 43 / 25^2 = 3.44 >= 1.15 → player_a edge."""
     a = _batter("Virat", batting_avg=50.0)
     b = _bowler("Bumrah", bowling_avg=43.0)
     result = compute_matchup(a, b)
@@ -40,7 +40,7 @@ def test_batter_vs_bowler_batter_edge():
 
 
 def test_batter_vs_bowler_bowler_edge():
-    """r = batting_avg(20) / bowling_avg(25) = 0.8 <= 0.85 → player_b (bowler) edge."""
+    """r = 20 x 25 / 25^2 = 0.8 <= 0.85 → player_b (bowler) edge."""
     a = _batter("Batsman", batting_avg=20.0)
     b = _bowler("Bowler", bowling_avg=25.0)
     result = compute_matchup(a, b)
@@ -49,9 +49,9 @@ def test_batter_vs_bowler_bowler_edge():
 
 
 def test_batter_vs_bowler_neutral():
-    """r = 35 / 32 = 1.09 — within 0.85-1.15 → neutral."""
-    a = _batter("Batsman", batting_avg=35.0)
-    b = _bowler("Bowler", bowling_avg=32.0)
+    """r = 25 x 26 / 25^2 = 1.04 — within 0.85-1.15 → neutral."""
+    a = _batter("Batsman", batting_avg=25.0)
+    b = _bowler("Bowler", bowling_avg=26.0)
     result = compute_matchup(a, b)
     assert result["matchup_type"] == "batter_vs_bowler"
     assert result["edge_holder"] == "neutral"
@@ -63,7 +63,7 @@ def test_batter_vs_bowler_reversed_order():
     b = _batter("Batter", batting_avg=15.0)
     result = compute_matchup(a, b)
     assert result["matchup_type"] == "batter_vs_bowler"
-    # r = batting_avg(15) / bowling_avg(18) = 0.83 <= 0.85 → bowler edge → player_a
+    # r = 15 x 18 / 25^2 = 0.43 <= 0.85 → bowler edge → player_a
     assert result["edge_holder"] == "player_a"
 
 
@@ -211,7 +211,7 @@ def test_unwrapped_cricapi_cassette_shape_non_other():
 
     result = compute_matchup(kohli_unwrapped, bumrah_unwrapped)
     assert result["matchup_type"] == "batter_vs_bowler"
-    # r = 51.39 / 19.66 = 2.61 >= 1.15 → batter edge (monotonic rule, opus cook8 T8.4).
+    # r = 51.39 x 19.66 / 25^2 = 1.62 >= 1.15 → batter edge (pivot rule, review R5).
     assert result["edge_holder"] == "player_a"
     assert result["player_a"] == "Virat Kohli"
     assert result["player_b"] == "Jasprit Bumrah"
@@ -242,7 +242,7 @@ def test_wrapped_cricapi_shape_non_other():
 
     result = compute_matchup(kohli_wrapped, bumrah_wrapped)
     assert result["matchup_type"] == "batter_vs_bowler"
-    # r = 51.39 / 19.66 = 2.61 >= 1.15 → batter edge (monotonic rule, opus cook8 T8.4).
+    # r = 51.39 x 19.66 / 25^2 = 1.62 >= 1.15 → batter edge (pivot rule, review R5).
     assert result["edge_holder"] == "player_a"
     assert result["signals"]["batting_avg_a"] == 51.39
     assert result["signals"]["bowling_avg_b"] == 19.66
@@ -273,3 +273,17 @@ def test_player_matchup_edge_is_monotonic_in_batter_average():
         result = compute_matchup(_batter("Batter", batting_avg=batting_avg), b)
         assert result["edge_holder"] == holder, batting_avg
         assert len(result["edge_reason"]) <= 120
+
+
+def test_player_matchup_edge_is_monotonic_in_bowling_average():
+    # Review R5: a HIGHER bowling average is a WORSE bowler, so with the batter
+    # fixed at 30, raising the bowler's average must move the edge toward the batter.
+    rank = {"player_b": 0, "neutral": 1, "player_a": 2}  # player_a is the batter
+    edges = [
+        compute_matchup(_batter("Bat", batting_avg=30.0), _bowler("Bowl", bowling_avg=avg))[
+            "edge_holder"
+        ]
+        for avg in (20.0, 30.0, 40.0)
+    ]
+    assert [rank[e] for e in edges] == sorted(rank[e] for e in edges)
+    assert edges[-1] == "player_a"

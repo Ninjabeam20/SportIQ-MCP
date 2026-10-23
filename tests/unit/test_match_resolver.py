@@ -152,3 +152,36 @@ async def test_resolve_match_maps_rapidapi_match_info_shape():
         "venue": "MCG",
         "series_id": "9237",
     }
+
+
+def _fixture(*parts: str) -> dict:
+    import json
+    from pathlib import Path
+
+    return json.loads(Path(__file__).parents[1].joinpath("fixtures", *parts).read_text())
+
+
+@pytest.mark.parametrize(
+    ("chain_value", "venue"),
+    [
+        # CricAPI adapter returns the unwrapped `data` (teams = names list).
+        (_fixture("cricapi", "match_scorecard.json")["data"], "Wankhede Stadium, Mumbai"),
+        # RapidAPI Cricbuzz scard is returned raw (matchHeader.team1/team2 objects).
+        (_fixture("rapidapi", "scorecard.json"), ""),
+    ],
+    ids=["cricapi", "rapidapi"],
+)
+async def test_resolve_match_scorecard_fallback_reads_recorded_provider_shapes(chain_value, venue):
+    # Review R6: both committed scorecard fixtures must resolve via the fallback.
+    from sportiq.cricket import match_resolver
+
+    with (
+        patch("sportiq.cricket.match_resolver.fixtures_chain") as mock_f,
+        patch("sportiq.cricket.match_resolver.scorecard_chain") as mock_s,
+    ):
+        mock_f.fetch = AsyncMock(side_effect=AllSourcesFailedError("fixtures failed"))
+        mock_s.fetch = AsyncMock(return_value=_fr(chain_value))
+        result = await match_resolver.resolve_match("m789")
+
+    assert (result["team_a"], result["team_b"]) == ("India", "Australia")
+    assert result["venue"] == venue

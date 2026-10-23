@@ -208,3 +208,47 @@ async def test_fastf1_standings_sums_season_points_per_driver(monkeypatch):
         "McLaren": 43.0,
         "Red Bull Racing": 43.0,
     }
+
+
+async def test_fastf1_laps_session_9877_loads_mexico_2025_round_20():
+    # Review R7: 9877 is the 2025 Mexico City GP (OpenF1 + F1DB), not round 8.
+    from sportiq.f1.adapters.fastf1_local import FastF1LapsAdapter
+
+    mock_fastf1 = MagicMock()
+    mock_laps = MagicMock()
+    mock_laps.iterrows.return_value = [
+        (0, {"LapNumber": 1, "LapTime": MagicMock(total_seconds=lambda: 80.0), "TyreLife": 1})
+    ]
+    mock_fastf1.get_session.return_value.laps.pick_drivers.return_value = mock_laps
+
+    with patch.dict(sys.modules, {"fastf1": mock_fastf1}):
+        await FastF1LapsAdapter().fetch(session_key=9877, driver_number=1)
+
+    mock_fastf1.get_session.assert_called_once_with(2025, 20, "R")
+
+
+async def test_fastf1_laps_absent_driver_raises_not_found():
+    # Review R8: no laps for the driver → NotFoundError, not a cacheable empty success.
+    from sportiq.core.errors import NotFoundError
+    from sportiq.f1.adapters.fastf1_local import FastF1LapsAdapter
+
+    mock_fastf1 = MagicMock()
+    mock_fastf1.get_session.return_value.laps.pick_drivers.return_value.iterrows.return_value = []
+
+    with patch.dict(sys.modules, {"fastf1": mock_fastf1}), pytest.raises(NotFoundError):
+        await FastF1LapsAdapter().fetch(session_key=9877, driver_number=99)
+
+
+async def test_fastf1_standings_all_rounds_failing_raises_not_found():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.f1.adapters.fastf1_local import FastF1StandingsAdapter
+
+    mock_fastf1 = MagicMock()
+    mock_fastf1.get_event_schedule.return_value.iterrows.return_value = [
+        (0, {"RoundNumber": 1}),
+        (1, {"RoundNumber": 2}),
+    ]
+    mock_fastf1.get_session.side_effect = RuntimeError("load failed")
+
+    with patch.dict(sys.modules, {"fastf1": mock_fastf1}), pytest.raises(NotFoundError):
+        await FastF1StandingsAdapter().fetch(year=2025)
