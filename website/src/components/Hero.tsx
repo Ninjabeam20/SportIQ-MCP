@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { LINKS } from "@/config/links";
 
 export default function Hero() {
   const [typedText, setTypedText] = useState("");
-  const fullText = "> Simulate the World Cup 2026 bracket 10,000×…";
+  const fullText = "> What if France had beaten Spain? Replay the final 10,000×…";
   const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
@@ -35,11 +36,18 @@ export default function Hero() {
       <div className="max-w-7xl mx-auto px-4 w-full grid lg:grid-cols-2 gap-16 items-center">
         <div className="flex flex-col gap-8">
           <div className="space-y-6">
+            <a
+              href={LINKS.latestRelease}
+              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-white/80 hover:bg-white/10 transition-colors"
+            >
+              <span className="rounded-full bg-sport-football/80 px-2 py-0.5 text-[10px] font-bold uppercase text-white">New</span>
+              v0.4.0: F1 title-race sim, World Cup what-if, MCP resources →
+            </a>
             <h1 className="font-oswald text-5xl sm:text-6xl lg:text-[5rem] leading-[0.9] font-bold text-white uppercase tracking-tight">
               Turn any AI into your personal sports analyst
             </h1>
             <p className="text-xl text-white/80 max-w-xl leading-relaxed">
-              Monte Carlo World Cup sims, F1 pit strategy, Dream11 optimization & +EV value bets — inside your AI assistant.
+              World Cup 2026 replays & what-ifs, the F1 title race, pit strategy, Dream11 optimization & model-vs-market edges — inside your AI assistant.
             </p>
           </div>
 
@@ -51,7 +59,7 @@ export default function Hero() {
               Install free &rarr;
             </Link>
             <Link
-              href="#pricing"
+              href="#sponsor"
               className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-white border border-white/20 rounded-full hover:bg-white/10 transition-colors"
             >
               Sponsor the project
@@ -60,7 +68,7 @@ export default function Hero() {
 
           <div className="text-sm font-mono text-white/50 space-y-1">
             <p>Works with Claude · ChatGPT · Cursor · any MCP client</p>
-            <p>· 44 tools · 3 sports</p>
+            <p>· 46 tools · 3 sports</p>
           </div>
         </div>
 
@@ -82,34 +90,18 @@ export default function Hero() {
             {showResults && (
               <div className="space-y-3 pt-2 text-white/90 animate-in fade-in slide-in-from-bottom-2 duration-700">
                 <div className="flex items-center justify-between group">
-                  <span className="flex items-center gap-2 w-32"><span className="text-lg">🏆</span> Brazil</span>
-                  <span className="text-sport-football font-bold w-12 text-right">18.4%</span>
+                  <span className="flex items-center gap-2 w-32"><span className="text-lg">🏆</span> France</span>
+                  <span className="text-sport-football font-bold w-12 text-right">53.2%</span>
                   <div className="flex-1 h-1.5 bg-white/10 rounded-full ml-4 overflow-hidden">
-                    <div className="h-full bg-sport-football w-[18.4%] rounded-full shadow-[0_0_10px_rgba(22,163,74,0.5)]" />
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between group">
-                  <span className="flex items-center gap-2 w-32"><span className="text-lg">🇫🇷</span> France</span>
-                  <span className="text-white/80 w-12 text-right">15.1%</span>
-                  <div className="flex-1 h-1.5 bg-white/10 rounded-full ml-4 overflow-hidden">
-                    <div className="h-full bg-white/40 w-[15.1%] rounded-full" />
+                    <div className="h-full bg-sport-football w-[53.2%] rounded-full shadow-[0_0_10px_rgba(22,163,74,0.5)]" />
                   </div>
                 </div>
                 
                 <div className="flex items-center justify-between group">
                   <span className="flex items-center gap-2 w-32"><span className="text-lg">🇦🇷</span> Argentina</span>
-                  <span className="text-white/80 w-12 text-right">12.7%</span>
+                  <span className="text-white/80 w-12 text-right">46.8%</span>
                   <div className="flex-1 h-1.5 bg-white/10 rounded-full ml-4 overflow-hidden">
-                    <div className="h-full bg-white/30 w-[12.7%] rounded-full" />
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between group">
-                  <span className="flex items-center gap-2 w-32"><span className="text-lg">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span> England</span>
-                  <span className="text-white/80 w-12 text-right">9.8%</span>
-                  <div className="flex-1 h-1.5 bg-white/10 rounded-full ml-4 overflow-hidden">
-                    <div className="h-full bg-white/20 w-[9.8%] rounded-full" />
+                    <div className="h-full bg-white/40 w-[46.8%] rounded-full" />
                   </div>
                 </div>
                 

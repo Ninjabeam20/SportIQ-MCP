@@ -14,8 +14,8 @@ from __future__ import annotations
 # Helpers
 # ---------------------------------------------------------------------------
 
-_LONG_100 = "x" * 101   # one over the 100-char cap
-_LONG_200 = "y" * 201   # one over the 200-char cap
+_LONG_100 = "x" * 101  # one over the 100-char cap
+_LONG_200 = "y" * 201  # one over the 200-char cap
 
 
 def _is_invalid_input(resp: dict) -> bool:
@@ -287,13 +287,15 @@ async def test_football_knockout_path_team_too_long():
 
 
 def test_pitch_data_cache_key_no_raw_colon():
+    from sportiq import __version__
     from sportiq.cricket.chains import pitch_data_chain
 
     key = pitch_data_chain.cache_key_fn(venue="malicious:venue*name")
-    # The key must start with the static prefix
-    assert key.startswith("sportiq:cricket:pitch:")
+    # The key must start with the static (versioned) prefix
+    prefix = f"sportiq:cricket:pitch:{__version__}:"
+    assert key.startswith(prefix)
     # The raw user input must NOT appear in the key suffix
-    suffix = key[len("sportiq:cricket:pitch:"):]
+    suffix = key[len(prefix) :]
     assert ":" not in suffix, f"raw colon leaked into key suffix: {key!r}"
     assert "*" not in suffix, f"raw star leaked into key suffix: {key!r}"
 
@@ -329,7 +331,7 @@ def test_football_squad_cache_key_no_raw_colon():
 
     key = football_squad_chain.cache_key_fn(team="Arg:entina*")
     assert key.startswith("sportiq:football:squad:")
-    suffix = key[len("sportiq:football:squad:"):]
+    suffix = key[len("sportiq:football:squad:") :]
     assert ":" not in suffix, f"raw colon leaked into key suffix: {key!r}"
     assert "*" not in suffix, f"raw star leaked into key suffix: {key!r}"
 
@@ -339,7 +341,7 @@ def test_f1_sessions_cache_key_no_raw_colon_with_country():
 
     key = f1_sessions_chain.cache_key_fn(year=2025, country="Great:Britain*")
     assert key.startswith("sportiq:f1:sessions:2025:")
-    suffix = key[len("sportiq:f1:sessions:2025:"):]
+    suffix = key[len("sportiq:f1:sessions:2025:") :]
     assert ":" not in suffix, f"raw colon leaked into key suffix: {key!r}"
     assert "*" not in suffix, f"raw star leaked into key suffix: {key!r}"
 

@@ -27,18 +27,18 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "SportIQ — AI sports intelligence for football, F1 & cricket",
-  description: "SportIQ plugs 44 live sports tools into any AI (Claude, ChatGPT, Cursor): FIFA World Cup 2026 football, Formula 1, and IPL cricket. Ask in plain English — it simulates brackets, finds value bets, optimizes Dream11 teams, and models F1 pit strategy. Free, open-source, installs in seconds via uvx.",
-  metadataBase: new URL("https://sportiq.app"),
+  description: "SportIQ plugs 46 sports tools into any AI (Claude, ChatGPT, Cursor): FIFA World Cup 2026 football, Formula 1, and IPL cricket. Ask in plain English — it replays the World Cup 2026 and runs what-ifs, simulates the F1 title race, models pit strategy, builds Dream11 teams, and surfaces model-vs-market edges (positive-EV filtered). Free, open-source, installs in seconds via uvx.",
+  metadataBase: new URL("https://sport-iq-sports-analysis.vercel.app"),
   openGraph: {
     title: "SportIQ — AI sports intelligence for football, F1 & cricket",
-    description: "An MCP server that gives Claude — and any AI assistant — Monte Carlo World Cup simulations, F1 pit-strategy prediction, and Dream11 optimization.",
-    url: "https://sportiq.app",
+    description: "An MCP server that gives Claude — and any AI assistant — World Cup 2026 replays and what-ifs, an F1 title-race simulator, pit-strategy prediction, and Dream11 optimization.",
+    url: "https://sport-iq-sports-analysis.vercel.app",
     siteName: "SportIQ",
     images: [
       {
-        url: "/og.png",
-        width: 1200,
-        height: 630,
+        url: "/logo-full.png",
+        width: 1476,
+        height: 488,
         alt: "SportIQ — AI sports intelligence for football, F1 & cricket",
       },
     ],
@@ -48,8 +48,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "SportIQ — AI sports intelligence for football, F1 & cricket",
-    description: "An MCP server that gives Claude — and any AI assistant — Monte Carlo World Cup simulations, F1 pit-strategy prediction, and Dream11 optimization.",
-    images: ["/og.png"],
+    description: "An MCP server that gives Claude — and any AI assistant — World Cup 2026 replays and what-ifs, an F1 title-race simulator, pit-strategy prediction, and Dream11 optimization.",
+    images: ["/logo-full.png"],
   },
 };
 
@@ -70,28 +70,6 @@ export default function RootLayout({
               name: "SportIQ",
               applicationCategory: "SportsApplication",
               operatingSystem: "Any",
-              offers: [
-                {
-                  "@type": "Offer",
-                  price: "0",
-                  priceCurrency: "USD",
-                },
-                {
-                  "@type": "Offer",
-                  price: "5",
-                  priceCurrency: "USD",
-                },
-                {
-                  "@type": "Offer",
-                  price: "10",
-                  priceCurrency: "USD",
-                },
-                {
-                  "@type": "Offer",
-                  price: "49",
-                  priceCurrency: "USD",
-                },
-              ],
             }),
           }}
         />
@@ -123,7 +101,7 @@ export default function RootLayout({
                   name: "Is it free?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Yes — all 44 tools are free, including the full intelligence layer: Monte Carlo bracket simulations, F1 pit-strategy models, Dream11 optimizers, and value-bet detection. No key or account required.",
+                    text: "Yes — all 46 tools are free, including the full intelligence layer: World Cup replays and what-ifs, the F1 title-race simulator, pit-strategy models, Dream11 optimizers, and model-vs-market edges. The hosted server needs no key; some live feeds need provider keys when self-hosting.",
                   },
                 },
                 {
@@ -131,7 +109,7 @@ export default function RootLayout({
                   name: "How can I support SportIQ?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "Every tool is free, but you can sponsor SportIQ on GitHub — Supporter ($5/mo), Pro ($10/mo), or Lifetime ($49 one-time) — to help cover hosting and keep the project maintained. Purely voluntary; you get the same fully-unlocked server either way.",
+                    text: "Every tool is free, but you can sponsor SportIQ on GitHub — Supporter ($5/mo), Backer ($10/mo), or Lifetime ($49 one-time) — to help cover hosting and keep the project maintained. Purely voluntary; you get the same fully-unlocked server either way.",
                   },
                 },
                 {

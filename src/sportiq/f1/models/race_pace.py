@@ -3,9 +3,10 @@
 compare_race_pace() fits a per-compound degradation model for two drivers and
 computes the pace delta (intercept difference) on each shared compound.
 """
+
 from __future__ import annotations
 
-from sportiq.f1.models.tyre_deg import annotate_laps_with_stints, fit_degradation
+from sportiq.f1.models.tyre_deg import annotate_laps_with_stints, compound_key, fit_degradation
 
 
 def compare_race_pace(
@@ -38,12 +39,12 @@ def compare_race_pace(
 
     # Collect distinct compounds for each driver
     compounds_a = {
-        lap["compound"].upper()
+        compound_key(lap["compound"])
         for lap in annotated_a
         if lap.get("compound") and lap.get("lap_duration") and float(lap["lap_duration"]) > 0
     }
     compounds_b = {
-        lap["compound"].upper()
+        compound_key(lap["compound"])
         for lap in annotated_b
         if lap.get("compound") and lap.get("lap_duration") and float(lap["lap_duration"]) > 0
     }

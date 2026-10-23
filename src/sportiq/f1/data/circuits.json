@@ -3,19 +3,19 @@
     "circuit": "Silverstone",
     "country": "United Kingdom",
     "f1db_id": "silverstone",
-    "pit_loss_s": 31.9,
+    "pit_loss_s": 29.8,
     "typical_stops": 2,
     "lap_length_km": 5.891,
-    "sample_size": 75
+    "sample_size": 105
   },
   "4": {
     "circuit": "Hungaroring",
     "country": "Hungary",
     "f1db_id": "hungaroring",
-    "pit_loss_s": 23.0,
+    "pit_loss_s": 23.3,
     "typical_stops": 2,
     "lap_length_km": 4.381,
-    "sample_size": 105
+    "sample_size": 149
   },
   "6": {
     "circuit": "Imola",
@@ -30,10 +30,10 @@
     "circuit": "Spa-Francorchamps",
     "country": "Belgium",
     "f1db_id": "spa-francorchamps",
-    "pit_loss_s": 21.2,
+    "pit_loss_s": 21.7,
     "typical_stops": 2,
     "lap_length_km": 7.004,
-    "sample_size": 84
+    "sample_size": 103
   },
   "9": {
     "circuit": "Austin",
@@ -48,10 +48,19 @@
     "circuit": "Melbourne",
     "country": "Australia",
     "f1db_id": "melbourne",
-    "pit_loss_s": 22.6,
+    "pit_loss_s": 22.7,
     "typical_stops": 2,
     "lap_length_km": 5.278,
-    "sample_size": 43
+    "sample_size": 62
+  },
+  "12": {
+    "circuit": "Kuala Lumpur",
+    "country": "Malaysia",
+    "f1db_id": "sepang",
+    "pit_loss_s": 27.4,
+    "typical_stops": 2,
+    "lap_length_km": 5.543,
+    "sample_size": 27
   },
   "14": {
     "circuit": "Interlagos",
@@ -66,37 +75,37 @@
     "circuit": "Catalunya",
     "country": "Spain",
     "f1db_id": "catalunya",
-    "pit_loss_s": 25.1,
+    "pit_loss_s": 25.4,
     "typical_stops": 2,
     "lap_length_km": 4.657,
-    "sample_size": 124
+    "sample_size": 166
   },
   "19": {
     "circuit": "Spielberg",
     "country": "Austria",
     "f1db_id": "spielberg",
-    "pit_loss_s": 22.7,
+    "pit_loss_s": 22.8,
     "typical_stops": 2,
     "lap_length_km": 4.326,
-    "sample_size": 104
+    "sample_size": 140
   },
   "22": {
     "circuit": "Monte Carlo",
     "country": "Monaco",
     "f1db_id": "monaco",
-    "pit_loss_s": 20.5,
+    "pit_loss_s": 21.0,
     "typical_stops": 2,
     "lap_length_km": 3.337,
-    "sample_size": 43
+    "sample_size": 65
   },
   "23": {
     "circuit": "Montreal",
     "country": "Canada",
     "f1db_id": "montreal",
-    "pit_loss_s": 22.1,
+    "pit_loss_s": 23.0,
     "typical_stops": 2,
     "lap_length_km": 4.361,
-    "sample_size": 73
+    "sample_size": 91
   },
   "39": {
     "circuit": "Monza",
@@ -105,43 +114,43 @@
     "pit_loss_s": 26.9,
     "typical_stops": 1,
     "lap_length_km": 5.793,
-    "sample_size": 74
+    "sample_size": 76
   },
   "46": {
     "circuit": "Suzuka",
     "country": "Japan",
     "f1db_id": "suzuka",
-    "pit_loss_s": 25.2,
+    "pit_loss_s": 25.3,
     "typical_stops": 2,
     "lap_length_km": 5.807,
-    "sample_size": 85
+    "sample_size": 97
   },
   "49": {
     "circuit": "Shanghai",
     "country": "China",
     "f1db_id": "shanghai",
-    "pit_loss_s": 25.4,
-    "typical_stops": 2,
+    "pit_loss_s": 25.9,
+    "typical_stops": 1,
     "lap_length_km": 5.451,
-    "sample_size": 45
+    "sample_size": 50
   },
   "55": {
     "circuit": "Zandvoort",
     "country": "Netherlands",
     "f1db_id": "zandvoort",
-    "pit_loss_s": 26.0,
+    "pit_loss_s": 24.1,
     "typical_stops": 3,
     "lap_length_km": 4.259,
-    "sample_size": 81
+    "sample_size": 120
   },
   "61": {
     "circuit": "Singapore",
     "country": "Singapore",
     "f1db_id": "marina-bay",
-    "pit_loss_s": 29.0,
+    "pit_loss_s": 26.7,
     "typical_stops": 1,
     "lap_length_km": 4.927,
-    "sample_size": 48
+    "sample_size": 68
   },
   "63": {
     "circuit": "Sakhir",
@@ -174,10 +183,10 @@
     "circuit": "Baku",
     "country": "Azerbaijan",
     "f1db_id": "baku",
-    "pit_loss_s": 23.2,
+    "pit_loss_s": 23.3,
     "typical_stops": 1,
     "lap_length_km": 6.003,
-    "sample_size": 36
+    "sample_size": 38
   },
   "149": {
     "circuit": "Jeddah",
@@ -201,10 +210,10 @@
     "circuit": "Miami",
     "country": "United States",
     "f1db_id": "miami",
-    "pit_loss_s": 24.4,
+    "pit_loss_s": 21.3,
     "typical_stops": 1,
     "lap_length_km": 5.412,
-    "sample_size": 24
+    "sample_size": 43
   },
   "152": {
     "circuit": "Las Vegas",
@@ -214,5 +223,15 @@
     "typical_stops": 2,
     "lap_length_km": 6.201,
     "sample_size": 55
+  },
+  "153": {
+    "circuit": "Madring",
+    "country": "Spain",
+    "f1db_id": "madring",
+    "pit_loss_s": 27.3,
+    "typical_stops": 2,
+    "lap_length_km": 5.416,
+    "sample_size": 14,
+    "low_sample": true
   }
 }

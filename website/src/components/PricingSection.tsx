@@ -2,14 +2,15 @@ import { LINKS, PRICING, Tier } from "@/config/links";
 
 export default function PricingSection() {
   return (
-    <section id="pricing" className="py-24 bg-gradient-to-b from-sky-canvas to-sky-canvas/80">
+    <section id="sponsor" className="py-24 bg-gradient-to-b from-sky-canvas to-sky-canvas/80">
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="font-oswald text-4xl sm:text-5xl uppercase tracking-tight mb-4">
             Support SportIQ
           </h2>
           <p className="text-white/70 max-w-2xl mx-auto">
-            Every tool is already free — all 44 of them, no key, no account.
+            All 46 tools are free. The hosted server needs no key; some live
+            feeds need provider keys when self-hosting.
             Sponsoring just keeps the servers running and the project maintained.
           </p>
         </div>

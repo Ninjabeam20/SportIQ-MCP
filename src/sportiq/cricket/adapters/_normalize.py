@@ -35,6 +35,18 @@ def canonical_role(role: str | None) -> str:
     return _ROLE_ALIASES.get(key, "BAT")
 
 
+def _player_id(p: dict) -> str | None:
+    """Provider player ID (CricAPI/RapidAPI ``id``, seed ``player_id``), stringified."""
+    pid = p.get("id") or p.get("player_id")
+    return str(pid) if pid not in (None, "") else None
+
+
+def _credits(p: dict) -> float | None:
+    """Contest credits, or None when the source has none (never a fake 0.0)."""
+    raw = p.get("credits")
+    return float(raw) if raw not in (None, "") else None
+
+
 def normalise_squad_payload(
     payload: dict,
     *,
@@ -45,7 +57,7 @@ def normalise_squad_payload(
 
     Output:
         {
-            "players": [{"name", "role", "credits", "team"}, ...],
+            "players": [{"name", "role", "credits", "team", "player_id"}, ...],
             "team": <team or None>,
             "source": <source name>,
         }
@@ -59,6 +71,9 @@ def normalise_squad_payload(
 
     For source="static_seed" the input is already keyed by team — we just
     inject ``team`` into each player record.
+
+    ``player_id`` is the provider ID (stringified) or None; ``credits`` is None
+    when the source carries no credits.
     """
     players: list[dict] = []
     resolved_team = team
@@ -73,18 +88,28 @@ def normalise_squad_payload(
             squads = data.get("squad", [])
         else:
             squads = []
+        from sportiq.cricket.teams import IPL_TEAM_NAMES, resolve_team_code
+
         wanted = (team or "").strip().upper()
+        # Resolve the filter to a code ("Mumbai Indians" → "MI"). Exact matches
+        # only: a substring test matched nothing for "MI" and both PBKS and CSK
+        # for "Kings".
+        wanted_code = resolve_team_code(wanted, IPL_TEAM_NAMES) or wanted
         for block in squads:
-            block_team = block.get("teamName") or block.get("team", "")
-            if wanted and wanted not in block_team.upper():
+            block_team = block.get("teamName") or block.get("team") or ""
+            if wanted and not (
+                resolve_team_code(block_team, IPL_TEAM_NAMES) == wanted_code
+                or block_team.upper() == wanted
+            ):
                 continue
             for p in block.get("players", []):
                 players.append(
                     {
                         "name": p.get("name", ""),
                         "role": canonical_role(p.get("role")),
-                        "credits": float(p.get("credits", 0.0)),
+                        "credits": _credits(p),
                         "team": block_team,
+                        "player_id": _player_id(p),
                     }
                 )
         if not resolved_team and squads:
@@ -96,8 +121,9 @@ def normalise_squad_payload(
                 {
                     "name": p.get("name", ""),
                     "role": canonical_role(p.get("role")),
-                    "credits": float(p.get("credits", 0.0)),
+                    "credits": _credits(p),
                     "team": team or "",
+                    "player_id": _player_id(p),
                 }
             )
     else:

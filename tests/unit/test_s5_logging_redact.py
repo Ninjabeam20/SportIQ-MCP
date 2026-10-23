@@ -89,3 +89,43 @@ def test_analytics_jsonl_noop_when_unset(monkeypatch, tmp_path):
     monkeypatch.setattr(config_module.settings, "sportiq_analytics_jsonl", None)
     _analytics_jsonl_processor(None, "info", {"event": "tool_call"})
     assert list(tmp_path.iterdir()) == []
+
+
+async def test_httpx_request_lines_not_logged_at_info(caplog):
+    import logging
+
+    import httpx
+
+    from sportiq.core.logging import configure_logging
+
+    configure_logging()
+    assert logging.getLogger("httpx").getEffectiveLevel() >= logging.WARNING
+    assert logging.getLogger("httpcore").getEffectiveLevel() >= logging.WARNING
+
+    transport = httpx.MockTransport(lambda r: httpx.Response(200, json={}))
+    with caplog.at_level(logging.INFO):
+        async with httpx.AsyncClient(transport=transport) as client:
+            await client.get("https://api.cricapi.com/v1/x?apikey=SECRET123")
+
+    assert "SECRET123" not in caplog.text
+
+
+def test_redaction_covers_contextvars_and_nested_values():
+    import structlog
+
+    from sportiq.core.logging import configure_logging
+
+    configure_logging()
+    structlog.contextvars.bind_contextvars(user_agent="x https://h/?apikey=SECRET123")
+    try:
+        # Run the configured chain directly: no stream I/O, same processor order.
+        event: object = {"event": "probe", "extra": {"url": "https://h/?apiKey=SECRET456"}}
+        for processor in structlog.get_config()["processors"]:
+            event = processor(None, "info", event)
+    finally:
+        structlog.contextvars.clear_contextvars()
+
+    rendered = str(event)
+    assert "probe" in rendered
+    assert "SECRET123" not in rendered
+    assert "SECRET456" not in rendered

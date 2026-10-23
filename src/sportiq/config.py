@@ -25,7 +25,9 @@ class Settings(BaseSettings):
 
     cricapi_key: str | None = None
     apifootball_key: str | None = None
-    footballdata_key: str | None = None  # optional higher tier for football-data.org
+    footballdata_key: str | None = (
+        None  # football-data.org; required for WC endpoints (403 without)
+    )
     rapidapi_key: str | None = None
     theodds_key: str | None = None  # the-odds-api.com — 500 req/month free; cricket + football odds
 
@@ -52,6 +54,8 @@ class Settings(BaseSettings):
     http_rate_limit_per_minute: int = Field(default=60, gt=0)
     http_global_rate_limit_per_minute: int = Field(default=300, gt=0)
     expensive_tool_concurrency: int = Field(default=2, gt=0)
+    # Wall-clock cap per tool call (semaphore wait included) -> UPSTREAM_TIMEOUT envelope.
+    tool_deadline_seconds: float = Field(default=30.0, gt=0)
 
     sportiq_log_level: str = "INFO"
     sportiq_log_format: Literal["pretty", "json"] = Field(default_factory=_default_log_format)

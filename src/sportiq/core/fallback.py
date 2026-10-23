@@ -16,7 +16,7 @@ from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
 from sportiq.core.cache import get_cache
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.logging import get_logger
-from sportiq.core.ratelimit import Budget, refund, reserve
+from sportiq.core.ratelimit import Budget, Reservation, refund, reserve_window
 from sportiq.core.redact import scrub
 
 log = get_logger(__name__)
@@ -57,6 +57,7 @@ class FallbackChain(Generic[T]):
         fresh_ttl: int,
         stale_ttl: int = 0,
         time_budget_s: float | None = 12.0,
+        total_budget_s: float | None = 15.0,
     ) -> None:
         self.name = name
         self.adapters = adapters
@@ -69,9 +70,15 @@ class FallbackChain(Generic[T]):
         # None disables. (Adapters doing sync-blocking work, e.g. fastf1, cannot
         # be preempted mid-call — for those this degrades to no cap, as today.)
         self.time_budget_s = time_budget_s
+        # Wall-clock cap for the whole adapter walk (measured from fetch() start),
+        # so a 3-adapter chain can't take 3x time_budget_s. Adapters left when it
+        # runs out are skipped (no budget token reserved) and the chain falls to
+        # stale cache / AllSourcesFailedError. None disables.
+        self.total_budget_s = total_budget_s
         # Per-key stampede guard: concurrent misses for the same key serialize,
         # and the waiters serve from the cache the first caller populated.
         self._key_locks: dict[str, asyncio.Lock] = {}
+        self._key_lock_users: dict[str, int] = {}
 
     def _fresh_hit(self, cached, started: float) -> FallbackResult[T] | None:
         if cached is not None and self.fresh_ttl > 0 and cached.age_seconds <= self.fresh_ttl:
@@ -85,27 +92,41 @@ class FallbackChain(Generic[T]):
             )
         return None
 
+    async def _cache_get(self, cache, key: str):
+        # Fail open: a broken cache read is a miss, never a failed tool call.
+        try:
+            return await cache.get(key)
+        except Exception as e:
+            log.warning("chain.cache.read_failed", chain=self.name, error=scrub(str(e)))
+            return None
+
     async def fetch(self, **kwargs: Any) -> FallbackResult[T]:
         started = time.monotonic()
         cache = get_cache()
         key = self.cache_key_fn(**kwargs)
 
-        hit = self._fresh_hit(await cache.get(key), started)
+        hit = self._fresh_hit(await self._cache_get(cache, key), started)
         if hit is not None:
             return hit
 
         lock = self._key_locks.setdefault(key, asyncio.Lock())
+        # Count holders + waiters: a released lock reads unlocked for a moment
+        # before the next waiter re-acquires it, so `locked()` alone would evict
+        # it under a waiter and let a new caller fetch the same key in parallel.
+        self._key_lock_users[key] = self._key_lock_users.get(key, 0) + 1
         try:
             async with lock:
                 # Re-check: a concurrent caller holding the lock may have
                 # populated the cache while we waited.
-                cached = await cache.get(key)
+                cached = await self._cache_get(cache, key)
                 hit = self._fresh_hit(cached, started)
                 if hit is not None:
                     return hit
                 return await self._fetch_uncached(cache, key, cached, started, **kwargs)
         finally:
-            if not lock.locked():
+            self._key_lock_users[key] -= 1
+            if self._key_lock_users[key] == 0:
+                del self._key_lock_users[key]
                 self._key_locks.pop(key, None)
 
     async def _fetch_uncached(
@@ -116,12 +137,28 @@ class FallbackChain(Generic[T]):
         # (every adapter raised NotFoundError) from "sources unavailable".
         saw_not_found = False
         saw_other_failure = False
+        deadline = started + self.total_budget_s if self.total_budget_s is not None else None
         for index, adapter in enumerate(self.adapters):
+            remaining = deadline - time.monotonic() if deadline is not None else None
+            if remaining is not None and remaining <= 0:
+                attempts.append(
+                    {
+                        "name": adapter.name,
+                        "status": "skipped",
+                        "reason": "chain_deadline",
+                        "duration_ms": 0,
+                    }
+                )
+                log.warning("chain.deadline_exceeded", chain=self.name, adapter=adapter.name)
+                # Same as a rate-limit skip: an unasked source can't confirm NOT_FOUND.
+                saw_other_failure = True
+                break
+
             budget: Budget | None = getattr(adapter, "budget", None)
-            reserved = False
+            reserved: Reservation | None = None
             if budget is not None:
-                reserved = await reserve(budget)
-                if not reserved:
+                reserved = await reserve_window(budget)
+                if reserved is None:
                     attempts.append(
                         {
                             "name": adapter.name,
@@ -142,19 +179,25 @@ class FallbackChain(Generic[T]):
                     continue
 
             adapter_started = time.monotonic()
+            if self.time_budget_s is not None and remaining is not None:
+                timeout: float | None = min(self.time_budget_s, remaining)
+            elif remaining is not None:
+                timeout = remaining
+            else:
+                timeout = self.time_budget_s
             try:
-                if self.time_budget_s is not None:
+                if timeout is not None:
                     # wait_for (not asyncio.timeout): the inner coroutine runs as
                     # its own task, so an expiry can never leave a pending
                     # cancellation on the caller's task.
-                    value = await asyncio.wait_for(
-                        adapter.fetch(**kwargs), timeout=self.time_budget_s
-                    )
+                    value = await asyncio.wait_for(adapter.fetch(**kwargs), timeout=timeout)
                 else:
                     value = await adapter.fetch(**kwargs)
             except Exception as e:
-                if reserved:
-                    await refund(budget)
+                if reserved is not None:
+                    # Refund the windows actually charged (the fetch may end in a
+                    # later minute / UTC day than it started).
+                    await refund(budget, reserved)
                 if isinstance(e, NotFoundError):
                     saw_not_found = True
                 else:
@@ -186,7 +229,11 @@ class FallbackChain(Generic[T]):
             )
             # Token was reserved before fetch; success keeps it. Do not consume
             # a second time.
-            await cache.set(key, value, ttl_seconds=max(self.fresh_ttl, self.stale_ttl))
+            try:
+                await cache.set(key, value, ttl_seconds=max(self.fresh_ttl, self.stale_ttl))
+            except Exception as e:
+                # Fail open: the fetch succeeded; losing the cache write must not lose it.
+                log.warning("chain.cache.write_failed", chain=self.name, error=scrub(str(e)))
             return FallbackResult(
                 value=value,
                 source=adapter.name,

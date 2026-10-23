@@ -3,7 +3,7 @@ title: Parlay Builder
 type: model
 tags: [parlay, accumulator, core]
 sources: [football-build-accumulator]
-last_updated: 2026-09-25
+last_updated: 2026-10-22
 related: [[football-build-accumulator]], [[football-find-value-bets]], [[value-bet]]
 ---
 
@@ -43,8 +43,16 @@ Match outcomes are not independent in general (shared tournament context, weathe
 
 When no picks survive the filter (or the input list is empty), returns:
 - `legs_used == 0`, `legs == []`
-- `combined_odds == 1.0`, `combined_model_prob == 1.0`, `combined_edge == 0.0`
+- `combined_odds`, `combined_model_prob`, `combined_edge` all `None`, with
+  `note: "No legs met the edge threshold."` — not `1.0`, because an empty product would read as a
+  certain even-money accumulator (changed 2026-10-22)
 - `risk_flag == False`
+
+## Odds basis
+
+Every result carries `combined_odds_basis: "best price per leg across bookmakers (not a
+single-bookmaker acca)"`. Each leg's price can come from a different bookmaker, so no single book
+necessarily offers the combined odds.
 
 ## Bounds enforcement
 

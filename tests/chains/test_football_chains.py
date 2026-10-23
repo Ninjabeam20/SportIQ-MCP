@@ -1,4 +1,5 @@
 """FallbackChain behavior for football chains — network adapters stubbed."""
+
 from __future__ import annotations
 
 import pytest
@@ -100,24 +101,25 @@ async def test_squad_chain_keys_by_team():
     # in the key (S.3b hashing prevents cache-key injection via ':' or '*').
     assert key_a != key_b
     assert key_a.startswith("sportiq:football:squad:")
-    assert "ARG" not in key_a[len("sportiq:football:squad:"):]
+    assert "ARG" not in key_a[len("sportiq:football:squad:") :]
     # Int team IDs must be normalised to str without crashing
     key_int = chains.football_squad_chain.cache_key_fn(team=26)
     assert key_int.startswith("sportiq:football:squad:")
 
 
-
-@respx.mock
+@respx.mock(assert_all_called=False)
 async def test_squad_chain_empty_api_football_falls_through_to_seed(monkeypatch):
-    # A1: with a key set but api_football returning an empty squad (country code
-    # vs numeric id), the chain must walk past to the static seed, not stop.
+    # A1: with a key set, a country code (not api_football's numeric id) must
+    # walk past to the static seed, not stop — and (cook4 T4.8) without
+    # spending an API-Football request on a guaranteed miss.
     from sportiq.config import settings
     from sportiq.football import chains
 
     monkeypatch.setattr(settings, "apifootball_key", "test-key")
-    respx.get("https://v3.football.api-sports.io/players/squads").mock(
+    route = respx.get("https://v3.football.api-sports.io/players/squads").mock(
         return_value=Response(200, json={"response": []})
     )
     result = await chains.football_squad_chain.fetch(team="ARG")
     assert result.source == "static_seed"
     assert result.value["team"] == "ARG"
+    assert not route.called

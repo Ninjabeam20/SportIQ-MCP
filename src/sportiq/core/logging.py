@@ -11,14 +11,24 @@ _ANALYTICS_EVENTS = frozenset({"tool_call", "mcp_request"})
 _ANALYTICS_JSONL_MAX_BYTES = 50 * 1024 * 1024
 
 
-def _redact_event_processor(logger: object, method: str, event_dict: dict) -> dict:
-    """Scrub secret values from all string fields in a structlog event dict."""
+def _redact_value(val: object) -> object:
     from sportiq.core.redact import scrub
 
+    if isinstance(val, str):
+        return scrub(val)
+    if isinstance(val, dict):
+        return {k: _redact_value(v) for k, v in val.items()}
+    if isinstance(val, list):
+        return [_redact_value(v) for v in val]
+    if isinstance(val, tuple):
+        return tuple(_redact_value(v) for v in val)
+    return val
+
+
+def _redact_event_processor(logger: object, method: str, event_dict: dict) -> dict:
+    """Scrub secret values from all string fields (recursing into dict/list/tuple)."""
     for key in list(event_dict.keys()):
-        val = event_dict[key]
-        if isinstance(val, str):
-            event_dict[key] = scrub(val)
+        event_dict[key] = _redact_value(event_dict[key])
     return event_dict
 
 
@@ -76,10 +86,14 @@ def configure_logging() -> None:
     """Configure structlog. Pretty in dev (default), JSON in prod."""
     level = getattr(logging, settings.sportiq_log_level.upper(), logging.INFO)
     logging.basicConfig(format="%(message)s", stream=sys.stderr, level=level)
+    # httpx logs every request URL at INFO; CricAPI/The Odds API keys ride in the query string.
+    for name in ("httpx", "httpcore"):
+        logging.getLogger(name).setLevel(max(level, logging.WARNING))
 
     processors: list = [
-        _redact_event_processor,
         structlog.contextvars.merge_contextvars,
+        # After the contextvars merge so bound values are scrubbed too.
+        _redact_event_processor,
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso", utc=True),
         _analytics_jsonl_processor,

@@ -3,11 +3,11 @@ title: Tournament Monte Carlo (flagship)
 type: model
 tags: [football, monte-carlo, bracket, 2026-format]
 sources: [wc2026_bracket.json]
-last_updated: 2026-07-14
-related: [[group-sim]], [[poisson-xg]], [[elo]], [[football-simulate-bracket]], [[0008-football-fallback-strategy]]
+last_updated: 2026-10-22
+related: [[group-sim]], [[poisson-xg]], [[elo]], [[football-simulate-bracket]], [[football-what-if]], [[live-conditioning]], [[0008-football-fallback-strategy]]
 ---
 
-# Tournament Monte Carlo (flagship engine)
+# Tournament Monte Carlo (flagship)
 
 Drives `football_simulate_bracket`. Per iteration: simulate all **12 groups**, take the **top 2 + 8 best third-placed** teams (32 qualifiers — the 2026 format), slot them into the **official FIFA 2026 knockout structure**, and play it to a champion. Aggregating gives each team's probability of reaching every round and winning.
 
@@ -27,3 +27,15 @@ The knockout structure lives in `src/sportiq/football/data/wc2026_bracket.json`,
 - `win` mass == 1 (one champion per iteration).
 - Round probabilities are monotone; champion title-probability is stable (±2%) across seeds at ~10k iterations.
 - Seeded simulations are reproducible, and the R32 qualifier mass is automatic 24 + best-third 8.
+
+## Unrated entrants
+`DEFAULT_RATING = 1500.0` (exported from `bracket_sim.py`) is the rating for any draw entrant without a
+seed rating. The tools apply it explicitly and list those teams in `meta.default_rating_teams` with a note,
+instead of defaulting silently.
+
+## Exact result when the tournament is complete
+`tournament_from_results(groups, results)` returns the same shape as `simulate_tournament` with
+`iterations=0` and 1.0/0.0 per round reached, built directly from the locked knockout (via the per-tie
+round labels in [[results-state]]). It returns `None` — so the caller runs the Monte Carlo — unless the
+champion is known and every round R32 → final has its full set of labelled ties. The bracket and
+knockout-path tools call it first, so a finished tournament never pays for 10k iterations.

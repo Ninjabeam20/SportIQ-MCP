@@ -16,7 +16,7 @@ _The first backers to go all-in. Be the first._
 
 <!-- - [@username](https://github.com/username) -->
 
-## Pro Supporters
+## Backers
 
 _Sponsors supporting ongoing development and hosting (every tool is fully unlocked either way)._
 

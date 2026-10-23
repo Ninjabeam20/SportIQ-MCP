@@ -180,3 +180,33 @@ def test_solver_rejects_optimal_status_without_captain_selection(monkeypatch):
     monkeypatch.setattr(pulp.LpProblem, "solve", patched_solve)
     with pytest.raises(RuntimeError, match="captain"):
         solve(_synthetic_pool())
+
+
+def test_dream11_solver_passes_time_limit_to_cbc(monkeypatch):
+    import pulp
+
+    real_cmd = pulp.COIN_CMD
+    seen: list[dict] = []
+
+    def _recording_cmd(*args, **kwargs):
+        seen.append(kwargs)
+        return real_cmd(*args, **kwargs)
+
+    # solve() imports COIN_CMD from pulp at call time, so patch it there.
+    monkeypatch.setattr(pulp, "COIN_CMD", _recording_cmd)
+    result = solve(_synthetic_pool())
+
+    assert len(result["players"]) == 11
+    assert seen[0]["timeLimit"] == 10
+
+
+def test_dream11_solver_reports_role_shortfall():
+    # opus cook8 T8.5: two BATs in the pool, the balanced XI needs three.
+    pool = [c for c in _synthetic_pool() if not (c["role"] == "BAT" and c["name"][-1] in "1234")]
+    pool += [_candidate("A_Bat1", "BAT", 10.5, 90, "A"), _candidate("B_Bat1", "BAT", 10.0, 85, "B")]
+    with pytest.raises(InvalidInputError) as exc_info:
+        solve(pool)
+    msg = str(exc_info.value)
+    assert "BAT" in msg
+    assert "need 3" in msg
+    assert "have 2" in msg

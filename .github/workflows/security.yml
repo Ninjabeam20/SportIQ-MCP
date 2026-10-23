@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
       - name: Sync deps
         run: uv sync --extra dev
       - name: Audit dependencies for known CVEs
@@ -22,16 +22,26 @@ jobs:
         # for all other transitive deps still applies via non-zero exit on any CVE.
         # CVE-2025-69872: diskcache pickle RCE — acceptable risk (local-only cache).
         # GHSA-6v7p-g79w-8964: msgpack — fix is 1.2.1 but signalrcore (fastf1's
-        # live-timing client, optional f1 extra) pins msgpack below it; msgpack is
-        # not on the hosted server path. Drop the ignore when signalrcore unpins.
-        run: uv run pip-audit --skip-editable --ignore-vuln CVE-2025-69872 --ignore-vuln GHSA-6v7p-g79w-8964
+        # live-timing client) pins msgpack below it. msgpack is only in the optional
+        # f1 extra (fastf1 → signalrcore → msgpack); the hosted image no longer
+        # installs it (ADR-0014). Accepted for [f1] self-hosters because SportIQ
+        # never opens fastf1's live-timing (SignalR) client, the only msgpack
+        # decode path. Drop the ignore when signalrcore unpins.
+        # pyjwt: transitive via mcp; SportIQ never calls jwt; no fixed release as of 2026-10-22 — re-check monthly.
+        run: uv run pip-audit --skip-editable --ignore-vuln CVE-2025-69872 --ignore-vuln GHSA-6v7p-g79w-8964 --ignore-vuln PYSEC-2026-4146
+      - name: Audit what the image ships (base deps, no dev)
+        # The Dockerfile installs the base deps only (no f1 extra, ADR-0014); the
+        # step above audits --extra dev.
+        run: |
+          uv export --frozen --no-dev --no-hashes -o shipped-requirements.txt
+          uvx pip-audit -r shipped-requirements.txt --ignore-vuln CVE-2025-69872 --ignore-vuln GHSA-6v7p-g79w-8964 --ignore-vuln PYSEC-2026-4146
 
   bandit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
       - name: Sync deps
         run: uv sync --extra dev
       - name: Static security analysis
@@ -53,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
       - name: Sync deps
         run: uv sync --extra dev
       - name: Verify build artifacts exclude sensitive paths

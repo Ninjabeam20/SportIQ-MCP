@@ -9,8 +9,8 @@ efficiently, and how to interpret every response.
 
 | Module | Tools | Data scope |
 |--------|-------|-----------|
-| **Football** | 15 tools | FIFA WC 2026 — groups, fixtures, odds, Monte Carlo bracket |
-| **F1** | 13 tools | OpenF1 telemetry, tyre deg, pit strategy, pace comparison |
+| **Football** | 16 tools | FIFA WC 2026 — groups, fixtures, odds, Monte Carlo bracket, what-if replay |
+| **F1** | 14 tools | OpenF1 telemetry, tyre deg, pit strategy, pace comparison, title-race simulator |
 | **Cricket** | 14 tools | IPL live scores, squads, odds, fantasy XI, probability edge |
 | **Cross-sport** | 1 tool | Joint multi-match model across football + cricket |
 | **Core** | 1 tool | Health / quota status |
@@ -34,22 +34,33 @@ extra informational calls unless the user explicitly asks for them.
 ### "Compare model vs market for today's cricket"
 1. `cricket_find_value_bets()` — 1 call. Returns matches with edge > 0.
 
-### "Who will win the World Cup 2026?"
-1. `football_simulate_bracket()` — 1 call. Returns per-team title probabilities.
-   Default 10,000 iterations gives ±2% stable results.
+### "Who won the World Cup 2026?" / "How did the model do?"
+1. `football_simulate_bracket()` — 1 call. The tournament ended with the
+   2026-07-19 final. Read `meta.mode`: `completed` means real results were
+   replayed and `meta.champion` is the actual winner; `pre_tournament_prior`
+   means no result data was available, so the output is only the model's
+   pre-tournament view, not a forecast.
+
+### "What if France had beaten Spain in the semi-final?"
+1. `football_what_if(replay_from="final", flip_winner_of="ESP-FRA")` — 1 call.
+   Keeps the real results before `replay_from`, flips that tie's winner, simulates the rest.
+
+### "Who can still win the F1 drivers' title?"
+1. `f1_simulate_championship(year=2026)` — 1 call. Title probabilities plus exact
+   mathematical elimination (`eliminated: true` means the title is out of reach).
 
 ### "Predict Argentina vs France"
 1. `football_match_predictor(home_team="ARG", away_team="FRA")` — 1 call.
    Returns most likely scoreline + outcome probabilities.
 
-### "What's the best F1 pit strategy for Verstappen at Monaco?"
-1. `f1_get_sessions(year=2025, country="Monaco")` → pick the `session_key` for the race
+### "What was the best pit strategy for Norris in the latest Grand Prix?"
+1. `f1_get_sessions(year=2026, session_name="Race", latest_completed=True)` → its `session_key` (e.g. `11353`, the 2026 Dutch GP)
 2. `f1_predict_pit_strategy(session_key=<key>, driver_number=1)`
    — 2 calls.
 
-### "Which F1 drivers are faster at Monaco?"
-1. `f1_get_sessions(year=2025, country="Monaco")` → pick `session_key`
-2. `f1_head_to_head_pace(session_key=<key>, driver_a=1, driver_b=16)`
+### "Which F1 drivers were faster at the Dutch GP?"
+1. `f1_get_sessions(year=2026, country="Netherlands", session_name="Race")` → pick `session_key`
+2. `f1_head_to_head_pace(session_key=<key>, driver_a=1, driver_b=3)`
    — 2 calls.
 
 ### "Build me a multi-match model"
@@ -103,7 +114,8 @@ Every tool returns one of two shapes:
   "As of about X minutes ago…" and advise retrying in a few minutes.
 - `meta.estimated: true` → output is model-generated (ILP solver, Monte Carlo, tyre fit).
   Qualify with "model estimate" in your response.
-- Live scorecard TTL: 30 s. Odds TTL: 5 min. Fixtures: 6 h. Standings: 10 min.
+- Cricket live scorecard TTL: 30 s. Odds TTL: 5 min. Football fixtures: 6 h (the WC 2026 is over).
+  F1 completed-session laps/stints: 24 h. Standings: 10 min.
 
 ---
 
@@ -114,8 +126,8 @@ Every tool returns one of two shapes:
 | `ALL_SOURCES_FAILED` | Tell user data is temporarily unavailable. Check `sources_tried` for context. |
 | `NOT_FOUND` | Entity doesn't exist — re-check the team code or match ID. |
 | `INVALID_INPUT` | Fix the argument; `message` states what's wrong. |
-| `RATE_LIMITED` | Quota exhausted for the day. Advise retrying after midnight UTC. |
-| `UPSTREAM_TIMEOUT` | Upstream slow; retry once after 60 s. |
+| `RATE_LIMITED` | Defined but not currently emitted: budget exhaustion surfaces as `ALL_SOURCES_FAILED` with `skipped` / `rate_limited` attempts. Advise retrying after midnight UTC. |
+| `UPSTREAM_TIMEOUT` | The call hit the per-tool deadline (30 s by default); upstreams were slow or a simulation was queued. Retry once after 60 s. |
 
 ---
 
@@ -130,16 +142,18 @@ tell the user to set the appropriate key:
 | `CRICAPI_KEY` | Live cricket scores, schedules, squads |
 | `APIFOOTBALL_KEY` | Football fixtures and standings |
 | `THEODDS_KEY` | Live market odds (cricket + football) |
+| `FOOTBALLDATA_KEY` | football-data.org World Cup endpoints (they return 403 without it) |
 
-Tools that use only static seeds or OpenF1 (which is public/free) work without any key.
+Tools that use only static seeds or historical OpenF1 sessions (keyless) work without any key.
+Live-session OpenF1 telemetry needs paid authentication, which SportIQ does not wire.
 
 ---
 
 ## Team and player codes
 
 - **IPL teams:** MI, CSK, RCB, KKR, SRH, DC, PBKS, RR, GT, LSG
-- **F1 drivers:** use race number (1=Verstappen, 16=Leclerc, 44=Hamilton, 63=Russell, 4=Norris, 81=Piastri, 14=Alonso, 55=Sainz, 11=Perez, 10=Gasly)
-- **WC 2026 teams:** 3-letter FIFA codes (ARG, BRA, FRA, ENG, ESP, GER, POR, NED, BEL, ITA, etc.)
+- **F1 drivers:** use race number. 2026 examples: 1=Norris, 3=Verstappen, 12=Antonelli, 16=Leclerc, 44=Hamilton, 63=Russell, 81=Piastri. Driver numbers change by season; use `f1_get_drivers(session_key)` for the session's list.
+- **WC 2026 teams:** 3-letter FIFA codes of the 48 entrants (ARG, BRA, FRA, ENG, ESP, GER, POR, NED, BEL, MAR, USA, etc.); `football_get_groups()` lists them all.
 - Codes are case-insensitive in all tools.
 
 ---

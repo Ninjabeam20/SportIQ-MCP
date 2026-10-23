@@ -3,31 +3,46 @@
 Five tools composing chains + models into actionable strategy answers.
 Flagship: f1_predict_pit_strategy.
 """
+
 from __future__ import annotations
 
 import asyncio
+import math
+
+import numpy as np
 
 from sportiq.core.errors import AllSourcesFailedError, NotFoundError
 from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta
 from sportiq.f1.chains import (
     f1_drivers_chain,
     f1_laps_chain,
+    f1_schedule_chain,
     f1_session_meta_chain,
+    f1_standings_chain,
     f1_stints_chain,
     f1_weather_chain,
 )
 from sportiq.f1.circuits import profile_for_circuit_key
+from sportiq.f1.data.tyres import normalize_compound
+from sportiq.f1.models.championship_sim import simulate_championship
 from sportiq.f1.models.pit_strategy import _DEFAULT_PIT_LOSS_S
 from sportiq.f1.models.pit_strategy import predict as _predict_strategy
 from sportiq.f1.models.quali_analysis import best_lap_per_driver, gap_to_pole, grid_projection
 from sportiq.f1.models.race_pace import compare_race_pace
-from sportiq.f1.models.tyre_deg import annotate_laps_with_stints, fit_degradation
+from sportiq.f1.models.tyre_deg import (
+    annotate_laps_with_stints,
+    fit_degradation,
+    slow_outlier_mask,
+)
 from sportiq.f1.models.undercut import undercut_window
 
 # Cap concurrent per-driver lap fetches. When asyncio.gather fan-out is added
 # later (e.g. fetching laps for all 20 drivers in parallel), this semaphore
 # ensures at most 5 in-flight requests hit OpenF1 at once.
 _F1_LAP_SEMAPHORE = asyncio.Semaphore(5)
+
+# Undercut gap used when race time to current_lap can't be measured (disclosed in meta).
+_DEFAULT_UNDERCUT_GAP_S = 2.0
 
 
 def _rainfall_mm(entry: dict) -> float:
@@ -39,6 +54,22 @@ def _rainfall_mm(entry: dict) -> float:
         return float(raw)
     except (TypeError, ValueError):
         return 0.0
+
+
+# FIA minimum race distance (km); Monaco runs the shorter 260 km distance.
+_RACE_DISTANCE_KM = 305.0
+_MONACO_DISTANCE_KM = 260.0
+# circuits.json names Monaco "Monte Carlo" (F1DB); accept both spellings.
+_MONACO_NAMES = frozenset({"Monaco", "Monte Carlo"})
+
+
+def _regulation_total_laps(circuit: dict | None) -> int | None:
+    """Estimated race laps from the circuit profile's lap length, else None."""
+    lap_km = (circuit or {}).get("lap_length_km")
+    if not lap_km:
+        return None
+    distance = _MONACO_DISTANCE_KM if circuit.get("circuit") in _MONACO_NAMES else _RACE_DISTANCE_KM
+    return math.ceil(distance / float(lap_km))
 
 
 async def _fetch_driver_laps(session_key: int, driver_number: int):
@@ -72,7 +103,7 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
     Args:
         session_key: OpenF1 session identifier.
         driver_number: Driver's race number.
-        compound: Tyre compound (SOFT, MEDIUM, HARD, INTER, WET).
+        compound: Tyre compound (SOFT, MEDIUM, HARD, INTER, WET; "INTERMEDIATE" = INTER).
 
     Returns:
         data: {intercept, slope, residual_std, sample_count}.
@@ -83,12 +114,13 @@ async def f1_tyre_degradation(session_key: int, driver_number: int, compound: st
             code="INVALID_INPUT",
             message="session_key must be positive and driver_number must be 1-99.",
         )
-    compound_upper = compound.upper()
-    if compound_upper not in {"SOFT", "MEDIUM", "HARD", "INTER", "WET"}:
+    normalized = normalize_compound(compound)  # accepts OpenF1's "INTERMEDIATE"
+    if normalized is None:
         return error_envelope(
             code="INVALID_INPUT",
-            message="compound must be SOFT, MEDIUM, HARD, INTER, or WET.",
+            message="compound must be SOFT, MEDIUM, HARD, INTER (INTERMEDIATE), or WET.",
         )
+    compound_upper = str(normalized)
 
     # OpenF1 /laps carries no compound/tyre_life — those live on /stints, which we
     # merge in to enrich the fit. Laps are required; stint enrichment is
@@ -153,6 +185,9 @@ async def f1_undercut_window(
 
     Returns:
         data: {laps_to_clear, viable, marginal}.
+        meta.gap_to_target_s: attacker-minus-target race time at current_lap.
+        meta.gap_source: "cumulative_lap_time", or "default" (assumed 2.0 s, also
+            in meta.assumed_gap_s) when either driver lacks a full lap history.
         meta.estimated: true.
     """
     if session_key <= 0:
@@ -184,13 +219,40 @@ async def f1_undercut_window(
             sources_tried=e.attempts,
         )
 
-    def _recent_pace(laps_payload: dict) -> float:
+    def _laps_to_now(laps_payload: dict) -> list[dict]:
+        # Decision time is current_lap: laps after it must not leak in. Laps
+        # without a lap_number can't be placed and are kept (fastf1/older shapes).
         laps = laps_payload.get("laps", [])
+        return [
+            lap for lap in laps if lap.get("lap_number") is None or lap["lap_number"] <= current_lap
+        ]
+
+    def _recent_pace(laps: list[dict]) -> float:
         recent = [lap["lap_duration"] for lap in laps[-5:] if lap.get("lap_duration")]
         return sum(recent) / len(recent) if recent else 83.0
 
-    attacker_pace = _recent_pace(attacker_laps.value)
-    target_pace = _recent_pace(target_laps.value)
+    def _elapsed_to_now(laps: list[dict]) -> float | None:
+        # Cumulative race time to current_lap; None unless every lap 1..current_lap
+        # has a duration (OpenF1 often omits lap 1, so this falls back often).
+        by_lap = {lap.get("lap_number"): lap.get("lap_duration") for lap in laps}
+        durations = [by_lap.get(n) for n in range(1, current_lap + 1)]
+        if any(d is None for d in durations):
+            return None
+        return float(sum(durations))
+
+    attacker_now = _laps_to_now(attacker_laps.value)
+    target_now = _laps_to_now(target_laps.value)
+    attacker_pace = _recent_pace(attacker_now)
+    target_pace = _recent_pace(target_now)
+
+    attacker_elapsed = _elapsed_to_now(attacker_now)
+    target_elapsed = _elapsed_to_now(target_now)
+    if attacker_elapsed is not None and target_elapsed is not None:
+        gap_s = round(attacker_elapsed - target_elapsed, 3)
+        gap_source = "cumulative_lap_time"
+    else:
+        gap_s = _DEFAULT_UNDERCUT_GAP_S
+        gap_source = "default"
 
     # Measured per-circuit pit loss (F1DB) when the circuit resolves; else the
     # generic 22.0s default. fresh_tyre_delta stays a generic estimate (F1DB
@@ -202,7 +264,7 @@ async def f1_undercut_window(
         target_pace_s=target_pace,
         pit_loss_s=pit_loss_s,
         fresh_tyre_delta_s=1.5,
-        gap_to_target_s=2.0,
+        gap_to_target_s=gap_s,
     )
     return {
         "data": result,
@@ -211,6 +273,10 @@ async def f1_undercut_window(
             "estimated": True,
             "attacker": attacker_number,
             "target": target_number,
+            "current_lap": current_lap,
+            "gap_to_target_s": gap_s,
+            "gap_source": gap_source,
+            "assumed_gap_s": gap_s if gap_source == "default" else None,
             "pit_loss_s": pit_loss_s,
             "circuit_profile": profile is not None,
             "circuit": profile["circuit"] if profile else None,
@@ -228,15 +294,15 @@ async def f1_head_to_head_pace(session_key: int, driver_a: int, driver_b: int) -
         driver_b: Second driver's race number.
 
     Returns:
-        data: {driver_a_avg_s, driver_b_avg_s, delta_s, faster_driver}.
+        data: {driver_a_avg_s, driver_b_avg_s, delta_s, faster_driver}. The
+            "avg" values are median lap times after dropping pit-out laps and
+            slow outliers (safety-car / in-laps).
         meta.estimated: true.
     """
     if session_key <= 0:
         return error_envelope(code="INVALID_INPUT", message="session_key must be positive.")
     if not 1 <= driver_a <= 99 or not 1 <= driver_b <= 99:
-        return error_envelope(
-            code="INVALID_INPUT", message="driver_a and driver_b must be 1-99."
-        )
+        return error_envelope(code="INVALID_INPUT", message="driver_a and driver_b must be 1-99.")
     if driver_a == driver_b:
         return error_envelope(code="INVALID_INPUT", message="driver_a and driver_b must differ.")
 
@@ -253,8 +319,18 @@ async def f1_head_to_head_pace(session_key: int, driver_a: int, driver_b: int) -
         )
 
     def _avg(payload: dict) -> float | None:
-        laps = [lap["lap_duration"] for lap in payload.get("laps", []) if lap.get("lap_duration")]
-        return round(sum(laps) / len(laps), 3) if laps else None
+        # Representative pace: drop pit-out laps and laps with no time, then the
+        # tyre-deg slow-outlier filter (SC / in-laps), then take the median.
+        durations = np.array(
+            [
+                float(lap["lap_duration"])
+                for lap in payload.get("laps", [])
+                if lap.get("lap_duration") and not lap.get("is_pit_out_lap")
+            ]
+        )
+        if durations.size == 0:
+            return None
+        return round(float(np.median(durations[slow_outlier_mask(durations)])), 3)
 
     avg_a = _avg(laps_a.value)
     avg_b = _avg(laps_b.value)
@@ -301,7 +377,9 @@ async def f1_weather_strategy_impact(session_key: int) -> Envelope:
 
     weather = weather_result.value.get("weather", [])
     has_rain = any(_rainfall_mm(w) > 0 for w in weather)
-    temps = [float(w["track_temperature"]) for w in weather if w.get("track_temperature") is not None]
+    temps = [
+        float(w["track_temperature"]) for w in weather if w.get("track_temperature") is not None
+    ]
     avg_temp = round(sum(temps) / len(temps), 1) if temps else None
 
     if has_rain:
@@ -309,10 +387,14 @@ async def f1_weather_strategy_impact(session_key: int) -> Envelope:
         recommendation = "Switch to intermediate tyres immediately — rainfall detected."
     elif avg_temp is not None and avg_temp > 45:
         compound_rec = "HARD"
-        recommendation = f"High track temperature ({avg_temp}°C) — prefer HARD to reduce thermal degradation."
+        recommendation = (
+            f"High track temperature ({avg_temp}°C) — prefer HARD to reduce thermal degradation."
+        )
     elif avg_temp is not None and avg_temp < 25:
         compound_rec = "SOFT"
-        recommendation = f"Cool track ({avg_temp}°C) — SOFT tyres will reach operating temperature faster."
+        recommendation = (
+            f"Cool track ({avg_temp}°C) — SOFT tyres will reach operating temperature faster."
+        )
     else:
         compound_rec = "MEDIUM"
         recommendation = "Nominal conditions — MEDIUM is the baseline choice."
@@ -342,24 +424,27 @@ async def f1_predict_pit_strategy(
 
     Args:
         session_key: OpenF1 session identifier for a recorded race.
-        driver_number: Driver's race number (e.g. 1 for Verstappen).
+        driver_number: Driver's race number (driver numbers change by season; use f1_get_drivers).
         current_lap: Current lap to project from (default 1 = full race ahead).
-        total_laps: Total race laps. If omitted, inferred from the highest
-            observed lap_number in the fetched laps (correct for Monaco 78 /
-            Spa 44), falling back to 57 when no laps are available. An explicit
-            value always wins.
+        total_laps: Total race laps. If omitted, estimated from the regulation
+            minimum race distance (305 km; Monaco 260 km) over the circuit's lap
+            length; INVALID_INPUT when the circuit is unknown. An explicit value
+            always wins.
 
     Returns:
         data.stop_laps: recommended pit laps.
         data.compound_sequence: tyre compounds for each stint.
         data.expected_finish_position: currently always None (not modelled).
         data.confidence: 0.0-1.0 model confidence.
-        meta.total_laps: race length used (explicit arg, else inferred from laps).
+        data.net_saving_s: stay-out time minus the best one-stop time (seconds).
+        data.current_tyre_age: laps on the current tyre set at current_lap.
+        meta.total_laps: race length used.
+        meta.total_laps_source: "explicit" or "regulation_estimate".
         meta.estimated: true.
 
     Example:
-        f1_predict_pit_strategy(session_key=9158, driver_number=1)
-        f1_predict_pit_strategy(session_key=9158, driver_number=16, current_lap=20, total_laps=78)
+        f1_predict_pit_strategy(session_key=11353, driver_number=1, total_laps=72)
+        f1_predict_pit_strategy(session_key=11353, driver_number=1, current_lap=20)
     """
     if session_key <= 0 or not 1 <= driver_number <= 99:
         return error_envelope(
@@ -367,13 +452,9 @@ async def f1_predict_pit_strategy(
             message="session_key must be positive and driver_number must be 1-99.",
         )
     if not 1 <= current_lap <= 200:
-        return error_envelope(
-            code="INVALID_INPUT", message="current_lap must be in [1, 200]."
-        )
+        return error_envelope(code="INVALID_INPUT", message="current_lap must be in [1, 200].")
     if total_laps is not None and not 1 <= total_laps <= 200:
-        return error_envelope(
-            code="INVALID_INPUT", message="total_laps must be in [1, 200]."
-        )
+        return error_envelope(code="INVALID_INPUT", message="total_laps must be in [1, 200].")
     if total_laps is not None and current_lap > total_laps:
         return error_envelope(
             code="INVALID_INPUT",
@@ -423,16 +504,29 @@ async def f1_predict_pit_strategy(
         weather = weather_result.value.get("weather", [])
 
     laps = laps_result.value.get("laps", [])
-    # Caller left total_laps unset → infer from the highest observed lap_number
-    # (the flagship already fetched the laps); fall back to 57 if none carry one.
-    if total_laps is None:
-        observed = [n for lap in laps if (n := lap.get("lap_number")) and n > 0]
-        total_laps = max(observed) if observed else 57
 
     # Measured per-circuit pit loss when resolvable; else the model default.
     # gather may hand back an exception here — treat anything non-dict as "unknown".
     circuit = profile if isinstance(profile, dict) else None
     pit_loss_s = circuit["pit_loss_s"] if circuit else _DEFAULT_PIT_LOSS_S
+
+    # Race length: explicit arg, else the regulation minimum distance over the
+    # circuit's lap length. Never max(observed lap): a live/partial session's
+    # observed laps are not the planned race distance.
+    total_laps_source = "explicit"
+    if total_laps is None:
+        total_laps = _regulation_total_laps(circuit)
+        total_laps_source = "regulation_estimate"
+        if total_laps is None:
+            return error_envelope(
+                code="INVALID_INPUT",
+                message="total_laps is required for this circuit.",
+            )
+        if current_lap > total_laps:
+            return error_envelope(
+                code="INVALID_INPUT",
+                message=f"current_lap must be <= total_laps ({total_laps}, regulation estimate).",
+            )
 
     # Annotate laps with compound/tyre_life from /stints so the degradation fit
     # uses telemetry instead of silently falling back to TyreSpec constants.
@@ -453,6 +547,7 @@ async def f1_predict_pit_strategy(
             "session_key": session_key,
             "driver_number": driver_number,
             "total_laps": total_laps,
+            "total_laps_source": total_laps_source,
             "estimated": True,
             "stint_enrichment": stints_result is not None,
             "weather_enrichment": weather_result is not None,
@@ -460,6 +555,94 @@ async def f1_predict_pit_strategy(
             "circuit_profile": circuit is not None,
             "circuit": circuit["circuit"] if circuit else None,
             **staleness_meta(*sources),
+        },
+    }
+
+
+_CHAMPIONSHIP_MIN_ITER = 1000
+_CHAMPIONSHIP_MAX_ITER = 20000
+
+
+def _remaining_rounds(races: list[dict], completed_round: int) -> list[dict]:
+    """Rounds dated after the last completed round (all rounds when none is known)."""
+    done = next((r for r in races if r.get("round") == completed_round), None)
+    if done is None or not done.get("date"):
+        return [
+            {"round": r["round"], "sprint": bool(r.get("sprint"))}
+            for r in races
+            if r.get("round", 0) > completed_round
+        ]
+    return [
+        {"round": r["round"], "sprint": bool(r.get("sprint"))}
+        for r in races
+        if (r.get("date") or "") > done["date"]
+    ]
+
+
+async def f1_simulate_championship(
+    year: int = 2026, iterations: int = 10000, seed: int | None = None
+) -> Envelope:
+    """Estimate each driver's F1 drivers' title probability for the rest of a season.
+
+    Monte Carlo over the remaining races and sprints (Plackett-Luce finishing
+    orders weighted by each driver's season points rate), plus exact
+    elimination maths: a driver who cannot catch the leader's current points
+    even by winning every remaining race and sprint has title_prob 0.0.
+    This is not a cricket or football tool.
+
+    Args:
+        year: Championship season (2018-2030, default 2026).
+        iterations: Monte Carlo iterations, clamped to 1000-20000 (default 10000).
+        seed: Optional RNG seed for reproducible probabilities.
+
+    Returns:
+        data.drivers: [{code, points_now, title_prob, expected_points,
+            eliminated, max_possible}] sorted by title_prob.
+        data.max_remaining_points: most points one driver can still score.
+        data.rounds_remaining: races left after the last completed round.
+        meta.estimated: true. meta.model: "plackett-luce-points-rate".
+        meta.is_stale: true if standings or schedule came from stale cache.
+    """
+    if year < 2018 or year > 2030:
+        return error_envelope(code="INVALID_INPUT", message="year must be between 2018 and 2030.")
+    if seed is not None and not (0 <= seed <= 2**64 - 1):
+        return error_envelope(code="INVALID_INPUT", message="seed must be in [0, 2**64 - 1].")
+    try:
+        standings_r, schedule_r = await asyncio.gather(
+            f1_standings_chain.fetch(year=year), f1_schedule_chain.fetch(year=year)
+        )
+    except (AllSourcesFailedError, NotFoundError) as e:
+        return error_envelope(
+            code=e.code,
+            message=f"Could not load F1 standings or schedule for {year}.",
+            sources_tried=e.attempts,
+        )
+    drivers = standings_r.value.get("drivers") or []
+    if not drivers:
+        return error_envelope(code="NOT_FOUND", message=f"No driver standings for {year} yet.")
+    completed = int(standings_r.value.get("round") or 0)
+    remaining = _remaining_rounds(schedule_r.value.get("races") or [], completed)
+    n_iter = max(_CHAMPIONSHIP_MIN_ITER, min(_CHAMPIONSHIP_MAX_ITER, iterations))
+    sim = await asyncio.to_thread(
+        simulate_championship,
+        drivers,
+        remaining,
+        year=year,
+        n_iter=n_iter,
+        seed=seed,
+        rounds_completed=completed,
+    )
+    return {
+        "data": sim,
+        "meta": {
+            "source": standings_r.source,
+            "year": year,
+            "rounds_completed": completed,
+            "iterations": n_iter,
+            "seed": seed,
+            "estimated": True,
+            "model": "plackett-luce-points-rate",
+            **staleness_meta(standings_r, schedule_r),
         },
     }
 
@@ -495,16 +678,10 @@ async def f1_qualifying_analysis(session_key: int) -> Envelope:
 
     driver_list = drivers_result.value.get("drivers", [])
     driver_info = {
-        str(d.get("driver_number", "")): d
-        for d in driver_list
-        if d.get("driver_number")
+        str(d.get("driver_number", "")): d for d in driver_list if d.get("driver_number")
     }
 
-    tasks = [
-        _fetch_driver_laps(session_key, int(dn))
-        for dn in driver_info
-        if dn.isdigit()
-    ]
+    tasks = [_fetch_driver_laps(session_key, int(dn)) for dn in driver_info if dn.isdigit()]
     raw_results = await asyncio.gather(*tasks, return_exceptions=True)
 
     all_laps: list[dict] = []
@@ -554,9 +731,7 @@ async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -
     if session_key <= 0:
         return error_envelope(code="INVALID_INPUT", message="session_key must be positive.")
     if not 1 <= driver_a <= 99 or not 1 <= driver_b <= 99:
-        return error_envelope(
-            code="INVALID_INPUT", message="driver_a and driver_b must be 1-99."
-        )
+        return error_envelope(code="INVALID_INPUT", message="driver_a and driver_b must be 1-99.")
     if driver_a == driver_b:
         return error_envelope(code="INVALID_INPUT", message="driver_a and driver_b must differ.")
 
@@ -592,9 +767,13 @@ async def f1_race_pace_compare(session_key: int, driver_a: int, driver_b: int) -
             stints_r, (AllSourcesFailedError, NotFoundError)
         ):
             raise stints_r
-    stints_a = stints_a_r.value.get("stints", []) if not isinstance(stints_a_r, BaseException) else []
+    stints_a = (
+        stints_a_r.value.get("stints", []) if not isinstance(stints_a_r, BaseException) else []
+    )
     laps_b = laps_b_r.value.get("laps", [])
-    stints_b = stints_b_r.value.get("stints", []) if not isinstance(stints_b_r, BaseException) else []
+    stints_b = (
+        stints_b_r.value.get("stints", []) if not isinstance(stints_b_r, BaseException) else []
+    )
 
     result = compare_race_pace(laps_a, stints_a, laps_b, stints_b, driver_a, driver_b)
     stint_results = [r for r in (stints_a_r, stints_b_r) if not isinstance(r, BaseException)]
@@ -617,5 +796,6 @@ def register_f1_intel_tools(mcp) -> None:
     mcp.tool(annotations=READ_ONLY)(f1_head_to_head_pace)
     mcp.tool(annotations=READ_ONLY)(f1_weather_strategy_impact)
     mcp.tool(annotations=READ_ONLY)(f1_predict_pit_strategy)
+    mcp.tool(annotations=READ_ONLY)(f1_simulate_championship)
     mcp.tool(annotations=READ_ONLY)(f1_qualifying_analysis)
     mcp.tool(annotations=READ_ONLY)(f1_race_pace_compare)

@@ -3,7 +3,7 @@ title: Home-server cutover of the public MCP
 type: finding
 tags: [home-server, cloudflare, caddy, cloud-run, deploy]
 sources: [chat]
-last_updated: 2026-09-25
+last_updated: 2026-10-22
 related: [[0012-hosted-abuse-controls]], [[hosted-url-and-release-drift]], [[mac-cutover-inventory]], [[product-hosting-arc]]
 ---
 
@@ -56,6 +56,7 @@ sessions (`mcp<2`). SDK v2 would be a separate migration, not a cutover step.
 ## Plans
 
 - Canonical: `docs/superpowers/plans/2026-08-13-home-server-migration.md`
-- Overlay `grok_changes8.md`–`grok_changes13.md` (local-only). Tasks 5–9 are
+- Overlay `grok_changes8.md`–`grok_changes13.md` (local-only; archived to
+  `done/` on 2026-10-22, ledger `done/README.md`). Tasks 5–9 are
   done (2026-09-02): Dell is live; GCP project `sportiq-mcp-prod` is
   `DELETE_REQUESTED`.

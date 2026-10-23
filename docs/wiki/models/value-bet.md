@@ -3,7 +3,7 @@ title: Value-Bet Detector
 type: model
 tags: [football, odds, betting, value, devig]
 sources: [the-odds-api, poisson-xg]
-last_updated: 2026-09-25
+last_updated: 2026-10-22
 related: [[football-find-value-bets]], [[football-match-predictor]], [[the-odds-api]], [[poisson-xg]]
 ---
 
@@ -31,11 +31,17 @@ exceeds the de-vigged market probability by a threshold, the bet is +EV.
   proportionally across outcomes. Adequate for a comparison baseline (we need a
   yardstick, not a calibrated fair price). Empty / all-zero input returns `{}`.
 - `find_value(model_probs, bookmaker, min_edge) -> list[dict]` — for each outcome
-  that carries a valid price: `edge = model_prob - devigged_market_prob`; emit
-  `{outcome, model_prob, fair_odds (1/model_prob), market_odds, edge, bookmaker}`
-  where `edge >= min_edge`. Outcomes with a missing (`None`), non-positive, or
-  non-numeric price are skipped. Direct calls to `implied_prob` still raise on
-  `<= 0` by design.
+  that carries a valid price: `edge = model_prob - devigged_market_prob` and
+  `ev_pct = (model_prob × market_odds − 1) × 100`. A pick is emitted only when
+  `edge >= min_edge` **and** `ev_pct > 0` (positive expected value at the offered
+  price — a de-vig edge alone can still lose money once the margin is paid). Each pick is
+  `{outcome, model_prob, fair_odds (1/model_prob), market_odds, edge, ev_pct, bookmaker,
+  price_updated_at}`, where `price_updated_at` is the bookmaker's `last_update` (kept by both
+  [[the-odds-api]] normalisers). Outcomes with a missing (`None`), non-positive, non-finite or
+  non-numeric price are skipped. Direct calls to `implied_prob` still raise on `<= 0` by design.
+- `has_commenced(event, now=None) -> bool` — true when the event's `commence_time` is at or
+  before now. The value-bet tools skip started or in-play events, since a pre-match model must not
+  be priced against live odds; a missing or unparseable time counts as not started.
 
 ## Why multiplicative de-vig
 

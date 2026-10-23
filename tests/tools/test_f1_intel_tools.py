@@ -59,6 +59,26 @@ async def test_f1_tyre_degradation_invalid_compound():
     assert result["error"]["code"] == "INVALID_INPUT"
 
 
+async def test_tyre_degradation_accepts_intermediate_input():
+    from sportiq.f1 import intel_tools
+
+    # OpenF1 stints say "INTERMEDIATE"; both spellings of the input fit those laps.
+    laps = {"laps": [{"lap_duration": 95.0 + 0.1 * i, "lap_number": i + 1} for i in range(8)]}
+    stints = {"stints": [{"compound": "INTERMEDIATE", "lap_start": 1, "lap_end": 8}]}
+    for compound in ("INTER", "INTERMEDIATE"):
+        with (
+            patch("sportiq.f1.intel_tools.f1_laps_chain") as mock_laps,
+            patch("sportiq.f1.intel_tools.f1_stints_chain") as mock_stints,
+        ):
+            mock_laps.fetch = AsyncMock(return_value=_fr(laps))
+            mock_stints.fetch = AsyncMock(return_value=_fr(stints))
+            result = await intel_tools.f1_tyre_degradation(
+                session_key=9094, driver_number=1, compound=compound
+            )
+        assert result["data"]["sample_count"] == 8
+        assert result["meta"]["compound"] == "INTER"
+
+
 async def test_f1_tyre_degradation_all_sources_failed():
     from sportiq.f1 import intel_tools
 
@@ -162,6 +182,46 @@ async def test_f1_undercut_window_uses_circuit_profile_when_resolved():
     assert result["meta"]["circuit_profile"] is True
     assert result["meta"]["pit_loss_s"] == monaco["pit_loss_s"]
     assert result["meta"]["circuit"] == "Monte Carlo"
+
+
+def _numbered_laps(durations: list[float]) -> dict:
+    return {"laps": [{"lap_number": i + 1, "lap_duration": d} for i, d in enumerate(durations)]}
+
+
+async def _undercut(attacker: dict, target: dict, current_lap: int) -> dict:
+    from sportiq.f1 import intel_tools
+
+    async def _by_driver(session_key, driver_number):
+        return _fr(attacker if driver_number == 1 else target)
+
+    with (
+        patch("sportiq.f1.intel_tools.f1_laps_chain") as mock,
+        patch("sportiq.f1.intel_tools._resolve_circuit_profile", AsyncMock(return_value=None)),
+    ):
+        mock.fetch = AsyncMock(side_effect=_by_driver)
+        return await intel_tools.f1_undercut_window(
+            session_key=9877, attacker_number=1, target_number=16, current_lap=current_lap
+        )
+
+
+async def test_undercut_window_uses_laps_up_to_current_lap():
+    # After lap 20 the attacker suddenly laps 5 s faster; used, that would flip
+    # the pace comparison. At current_lap=20 those future laps must be ignored.
+    attacker_full = _numbered_laps([91.0] * 20 + [86.0] * 10)
+    attacker_now = _numbered_laps([91.0] * 20)
+    target = _numbered_laps([90.0] * 30)
+    full = await _undercut(attacker_full, target, current_lap=20)
+    truncated = await _undercut(attacker_now, target, current_lap=20)
+    assert full["data"] == truncated["data"]
+    assert full["meta"]["gap_to_target_s"] == truncated["meta"]["gap_to_target_s"] == 20.0
+    assert full["meta"]["gap_source"] == "cumulative_lap_time"
+
+
+async def test_undercut_window_reports_assumed_gap_when_unavailable():
+    # No lap_number / lap-1 duration -> no cumulative race time -> disclosed default.
+    result = await _undercut(_laps_payload(), _laps_payload(), current_lap=25)
+    assert result["meta"]["assumed_gap_s"] == 2.0
+    assert result["meta"]["gap_source"] == "default"
 
 
 async def test_resolve_circuit_profile_happy_path_returns_real_profile():
@@ -278,6 +338,28 @@ async def test_f1_head_to_head_pace_tie_has_no_faster_driver():
     assert result["data"]["faster_driver"] is None
 
 
+async def test_head_to_head_pace_excludes_pit_out_laps():
+    # Audit `h2h_pit_lap_reversal`: 19 clean 90 s laps plus one slow pit-out lap
+    # vs a rival's twenty 91 s laps. Raw averaging called driver A slower.
+    from sportiq.f1 import intel_tools
+
+    a = {
+        "laps": [{"lap_number": i, "lap_duration": 90.0} for i in range(1, 20)]
+        + [{"lap_number": 20, "lap_duration": 130.0, "is_pit_out_lap": True}]
+    }
+    b = {"laps": [{"lap_number": i, "lap_duration": 91.0} for i in range(1, 21)]}
+
+    async def _by_driver(session_key, driver_number):
+        return _fr(a if driver_number == 1 else b)
+
+    with patch("sportiq.f1.intel_tools.f1_laps_chain") as mock:
+        mock.fetch = AsyncMock(side_effect=_by_driver)
+        result = await intel_tools.f1_head_to_head_pace(session_key=9877, driver_a=1, driver_b=16)
+    assert result["data"]["driver_a_avg_s"] == 90.0
+    assert result["data"]["delta_s"] == -1.0
+    assert result["data"]["faster_driver"] == 1
+
+
 # -- f1_weather_strategy_impact -----------------------------------------------
 
 
@@ -356,28 +438,64 @@ async def test_f1_predict_pit_strategy_returns_stop_laps():
     assert isinstance(result["data"]["stop_laps"], list)
 
 
-async def test_f1_predict_pit_strategy_infers_total_laps_from_lap_numbers():
-    from sportiq.f1 import intel_tools
-
-    # 78 laps observed (Monaco length). Caller omits total_laps, so it should be
-    # inferred as 78 rather than the old hard-coded 57.
-    laps_p = {
+def _twenty_observed_laps() -> dict:
+    # A live/partial session: only 20 of the race's laps observed so far.
+    return {
         "laps": [
-            {"lap_number": i, "lap_duration": 80.0 + 0.05 * i, "compound": "SOFT", "tyre_life": i}
-            for i in range(1, 79)
+            {"lap_number": i, "lap_duration": 90.0 + 0.05 * i, "compound": "MEDIUM", "tyre_life": i}
+            for i in range(1, 21)
         ]
     }
+
+
+async def test_pit_strategy_uses_regulation_estimate_not_observed_laps():
+    from sportiq.f1 import intel_tools
+
+    silverstone = {"circuit": "Silverstone", "pit_loss_s": 20.5, "lap_length_km": 5.891}
+    with (
+        patch("sportiq.f1.intel_tools.f1_laps_chain") as mock_laps,
+        patch("sportiq.f1.intel_tools.f1_stints_chain") as mock_stints,
+        patch("sportiq.f1.intel_tools.f1_weather_chain") as mock_weather,
+        patch(
+            "sportiq.f1.intel_tools._resolve_circuit_profile",
+            AsyncMock(return_value=silverstone),
+        ),
+    ):
+        mock_laps.fetch = AsyncMock(return_value=_fr(_twenty_observed_laps()))
+        mock_stints.fetch = AsyncMock(return_value=_fr({"stints": []}))
+        mock_weather.fetch = AsyncMock(return_value=_fr({"weather": []}))
+        result = await intel_tools.f1_predict_pit_strategy(
+            session_key=9877, driver_number=1, current_lap=20
+        )
+    # ceil(305 / 5.891) = 52, not the 20 observed laps.
+    assert result["meta"]["total_laps"] == 52
+    assert result["meta"]["total_laps_source"] == "regulation_estimate"
+
+
+async def test_pit_strategy_requires_total_laps_without_profile():
+    from sportiq.f1 import intel_tools
+
     with (
         patch("sportiq.f1.intel_tools.f1_laps_chain") as mock_laps,
         patch("sportiq.f1.intel_tools.f1_stints_chain") as mock_stints,
         patch("sportiq.f1.intel_tools.f1_weather_chain") as mock_weather,
         patch("sportiq.f1.intel_tools._resolve_circuit_profile", AsyncMock(return_value=None)),
     ):
-        mock_laps.fetch = AsyncMock(return_value=_fr(laps_p))
+        mock_laps.fetch = AsyncMock(return_value=_fr(_twenty_observed_laps()))
         mock_stints.fetch = AsyncMock(return_value=_fr({"stints": []}))
         mock_weather.fetch = AsyncMock(return_value=_fr({"weather": []}))
         result = await intel_tools.f1_predict_pit_strategy(session_key=9877, driver_number=1)
-    assert result["meta"]["total_laps"] == 78
+    assert result["error"]["code"] == "INVALID_INPUT"
+    assert "total_laps is required" in result["error"]["message"]
+
+
+def test_regulation_total_laps_uses_monaco_distance():
+    from sportiq.f1 import intel_tools
+    from sportiq.f1.circuits import profile_for_circuit_key
+
+    monaco = profile_for_circuit_key(22)  # committed "Monte Carlo" profile
+    # ceil(260 / 3.337) = 78 (the real Monaco race distance).
+    assert intel_tools._regulation_total_laps(monaco) == 78
 
 
 async def test_f1_predict_pit_strategy_all_sources_failed():
@@ -458,3 +576,113 @@ async def test_f1_predict_pit_strategy_weather_unexpected_error_reraises():
         mock_weather.fetch = AsyncMock(side_effect=RuntimeError("unexpected weather error"))
         with pytest.raises(RuntimeError, match="unexpected weather error"):
             await intel_tools.f1_predict_pit_strategy(session_key=9877, driver_number=1)
+
+
+# -- f1_simulate_championship --------------------------------------------------
+
+
+def _standings_payload() -> dict:
+    return {
+        "season": 2026,
+        "round": 21,
+        "drivers": [
+            {"position": 1, "code": "NOR", "points": 400.0},
+            {"position": 2, "code": "PIA", "points": 370.0},
+            {"position": 3, "code": "VER", "points": 300.0},
+        ],
+        "constructors": [],
+    }
+
+
+def _schedule_payload() -> dict:
+    return {
+        "season": 2026,
+        "races": [
+            {"round": 20, "raceName": "R20", "date": "2026-11-08", "sprint": False},
+            {"round": 21, "raceName": "R21", "date": "2026-11-22", "sprint": False},
+            {"round": 22, "raceName": "R22", "date": "2026-11-29", "sprint": True},
+            {"round": 23, "raceName": "R23", "date": "2026-12-06", "sprint": False},
+        ],
+    }
+
+
+def _stale_fr(value):
+    return FallbackResult(
+        value=value,
+        source="cache:stale",
+        is_stale=True,
+        data_age_seconds=900,
+        fallback_used=True,
+        duration_ms=1,
+    )
+
+
+async def test_f1_simulate_championship_returns_envelope_and_eliminates():
+    from sportiq.f1 import intel_tools
+
+    with (
+        patch("sportiq.f1.intel_tools.f1_standings_chain") as mock_st,
+        patch("sportiq.f1.intel_tools.f1_schedule_chain") as mock_sc,
+    ):
+        mock_st.fetch = AsyncMock(return_value=_fr(_standings_payload(), source="jolpica"))
+        mock_sc.fetch = AsyncMock(return_value=_fr(_schedule_payload(), source="jolpica"))
+        result = await intel_tools.f1_simulate_championship(year=2026, iterations=1000, seed=5)
+    data, meta = result["data"], result["meta"]
+    # Rounds 22 (sprint) + 23 remain: 25 + 8 + 25 = 58.
+    assert data["rounds_remaining"] == 2
+    assert data["max_remaining_points"] == 58
+    ver = next(d for d in data["drivers"] if d["code"] == "VER")
+    assert ver["eliminated"] is True and ver["title_prob"] == 0.0
+    assert sum(d["title_prob"] for d in data["drivers"]) == pytest.approx(1.0, abs=1e-3)
+    assert meta["estimated"] is True
+    assert meta["model"] == "plackett-luce-points-rate"
+    assert meta["iterations"] == 1000
+    assert meta["is_stale"] is False
+
+
+async def test_f1_simulate_championship_propagates_staleness():
+    from sportiq.f1 import intel_tools
+
+    with (
+        patch("sportiq.f1.intel_tools.f1_standings_chain") as mock_st,
+        patch("sportiq.f1.intel_tools.f1_schedule_chain") as mock_sc,
+    ):
+        mock_st.fetch = AsyncMock(return_value=_fr(_standings_payload(), source="jolpica"))
+        mock_sc.fetch = AsyncMock(return_value=_stale_fr(_schedule_payload()))
+        result = await intel_tools.f1_simulate_championship(year=2026, iterations=1000, seed=5)
+    assert result["meta"]["is_stale"] is True
+    assert result["meta"]["data_age_seconds"] == 900
+    assert result["meta"]["fallback_used"] is True
+
+
+async def test_f1_simulate_championship_clamps_iterations():
+    from sportiq.f1 import intel_tools
+
+    with (
+        patch("sportiq.f1.intel_tools.f1_standings_chain") as mock_st,
+        patch("sportiq.f1.intel_tools.f1_schedule_chain") as mock_sc,
+    ):
+        mock_st.fetch = AsyncMock(return_value=_fr(_standings_payload(), source="jolpica"))
+        mock_sc.fetch = AsyncMock(return_value=_fr(_schedule_payload(), source="jolpica"))
+        result = await intel_tools.f1_simulate_championship(year=2026, iterations=5, seed=1)
+    assert result["meta"]["iterations"] == 1000
+
+
+async def test_f1_simulate_championship_all_sources_failed():
+    from sportiq.f1 import intel_tools
+
+    with (
+        patch("sportiq.f1.intel_tools.f1_standings_chain") as mock_st,
+        patch("sportiq.f1.intel_tools.f1_schedule_chain") as mock_sc,
+    ):
+        mock_st.fetch = AsyncMock(side_effect=AllSourcesFailedError("down", attempts=[]))
+        mock_sc.fetch = AsyncMock(return_value=_fr(_schedule_payload(), source="jolpica"))
+        result = await intel_tools.f1_simulate_championship(year=2026)
+    assert result["error"]["code"] == "ALL_SOURCES_FAILED"
+
+
+async def test_f1_simulate_championship_invalid_year():
+    from sportiq.f1 import intel_tools
+
+    result = await intel_tools.f1_simulate_championship(year=1999)
+    assert result["error"]["code"] == "INVALID_INPUT"

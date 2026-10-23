@@ -1,5 +1,6 @@
 """The committed circuits.json (F1DB-derived) must be well-formed, and a
 circuit's measured pit loss must actually move the undercut verdict."""
+
 from __future__ import annotations
 
 from sportiq.f1.circuits import load_circuit_profiles, profile_for_circuit_key
@@ -37,3 +38,14 @@ def test_pit_loss_spread_changes_undercut_verdict():
     verdict_low = undercut_window(pit_loss_s=low, **kw)
     verdict_high = undercut_window(pit_loss_s=high, **kw)
     assert verdict_low["laps_to_clear"] != verdict_high["laps_to_clear"]
+
+
+def test_circuits_include_madrid_flagged_low_sample():
+    """Opus cook9 T9.4: a one-race circuit is written and flagged, not dropped."""
+    madrid = profile_for_circuit_key(153)
+    assert madrid is not None
+    assert madrid["circuit"] == "Madring"
+    assert madrid["low_sample"] is True
+    assert madrid["lap_length_km"] > 0
+    # Well-sampled circuits carry no flag.
+    assert "low_sample" not in profile_for_circuit_key(2)

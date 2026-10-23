@@ -17,19 +17,21 @@ Mirrors the wiki page at docs/wiki/models/dream11-scoring.md. Load this when wor
 - Max 7 from one team
 - Total credits ≤ 100
 
-## Scoring (key events)
-- Batting run: +1 pt; Boundary bonus: +1 pt; Six bonus: +2 pts
-- Half-century bonus (50+): +4 pts; Century bonus (100+): +8 pts
+## Scoring (key events) — profile `dream11-t20-2026-10-10`
+Source: official Dream11 T20 table, https://login.dream11.com/games/fantasy-cricket/how-to-play (checked 2026-10-10). Constants live in `src/sportiq/cricket/data/scoring.py`.
+- Batting run: +1 pt; Boundary bonus: +4 pts; Six bonus: +6 pts
+- Milestones (highest reached only): 25 runs +4; 50 runs +8; 75 runs +12; 100 runs +16
 - Dismissal duck: -2 pts (BAT/ALL/WK only, dismissed for 0)
-- Wicket: +25 pts; LBW / bowled bonus: +8 pts (each)
-- 3-wicket haul: +4 pts; 4-wicket haul: +8 pts; 5-wicket haul: +16 pts
+- Dot ball: +1 pt; Wicket (excl. run out): +30 pts; LBW / bowled bonus: +8 pts (each)
+- 3-wicket haul: +4 pts; 4-wicket haul: +8 pts; 5-wicket haul: +12 pts
 - Maiden over: +12 pts
 - Catch: +8 pts; 3-catch bonus: +4 pts
 - Stumping: +12 pts
 - Run-out (direct): +12 pts; Run-out (indirect): +6 pts
 - Captain multiplier: 2×; Vice-captain: 1.5×
+- Not modelled: announced lineup +4, playing substitute +4 (per selection, not per innings)
 
-## Strike-rate buckets (≥10 balls faced)
+## Strike-rate buckets (≥10 balls faced; never for bowlers)
 - >170: +6 pts
 - 150.01–170: +4 pts
 - 130–150: +2 pts
@@ -38,9 +40,9 @@ Mirrors the wiki page at docs/wiki/models/dream11-scoring.md. Load this when wor
 - <50: -6 pts
 
 ## Economy buckets (≥2 overs bowled)
-- ≤5: +6 pts
-- 5.01–6: +4 pts
-- 6.01–7: +2 pts
+- below 5: +6 pts
+- 5–5.99: +4 pts
+- 6–7: +2 pts
 - 10–11: -2 pts
 - 11.01–12: -4 pts
 - >12: -6 pts

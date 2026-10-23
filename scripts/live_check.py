@@ -16,6 +16,7 @@ Usage:
     uv run python scripts/live_check.py --sport f1      # one sport (free)
     uv run python scripts/live_check.py --only f1_get_weather
 """
+
 from __future__ import annotations
 
 import argparse
@@ -98,7 +99,9 @@ async def _run_probe(p: Probe, ctx: dict) -> Row:
 async def discover_f1(ctx: dict) -> None:
     from sportiq.f1 import tools
 
-    env = await tools.f1_get_sessions(year=2023)
+    # Latest *completed* race only: historical sessions are keyless on OpenF1;
+    # a future/live session would need paid auth.
+    env = await tools.f1_get_sessions(year=2026, session_name="Race", latest_completed=True)
     sessions = env.get("data", {}).get("sessions", []) if "data" in env else []
     race = next((s for s in sessions if s.get("session_name") == "Race"), None) or (
         sessions[-1] if sessions else None
@@ -136,14 +139,42 @@ def cricket_probes() -> list[Probe]:
     from sportiq.cricket import tools as ct
 
     return [
-        Probe("cricket_get_live_matches", "cricket", lambda c: ct.cricket_get_live_matches(), "cricapi_key"),
-        Probe("cricket_get_scorecard", "cricket", lambda c: ct.cricket_get_scorecard(c["match_id"]), "cricapi_key"),
-        Probe("cricket_get_points_table", "cricket", lambda c: ct.cricket_get_points_table(c["series_id"]), "cricapi_key"),
-        Probe("cricket_get_schedule", "cricket", lambda c: ct.cricket_get_schedule(), "cricapi_key"),
+        Probe(
+            "cricket_get_live_matches",
+            "cricket",
+            lambda c: ct.cricket_get_live_matches(),
+            "cricapi_key",
+        ),
+        Probe(
+            "cricket_get_scorecard",
+            "cricket",
+            lambda c: ct.cricket_get_scorecard(c["match_id"]),
+            "cricapi_key",
+        ),
+        Probe(
+            "cricket_get_points_table",
+            "cricket",
+            lambda c: ct.cricket_get_points_table(c["series_id"]),
+            "cricapi_key",
+        ),
+        Probe(
+            "cricket_get_schedule", "cricket", lambda c: ct.cricket_get_schedule(), "cricapi_key"
+        ),
         Probe("cricket_get_squad", "cricket", lambda c: ct.cricket_get_squad(team="MI")),
-        Probe("cricket_player_form_index", "cricket", lambda c: ci.cricket_player_form_index(player_id=c["player_id"]), "cricapi_key"),
-        Probe("cricket_get_pitch_report", "cricket", lambda c: ci.cricket_get_pitch_report(venue="Wankhede Stadium")),
-        Probe("cricket_get_live_odds", "cricket", lambda c: ct.cricket_get_live_odds(), "theodds_key"),
+        Probe(
+            "cricket_player_form_index",
+            "cricket",
+            lambda c: ci.cricket_player_form_index(player_id=c["player_id"]),
+            "cricapi_key",
+        ),
+        Probe(
+            "cricket_get_pitch_report",
+            "cricket",
+            lambda c: ci.cricket_get_pitch_report(venue="Wankhede Stadium"),
+        ),
+        Probe(
+            "cricket_get_live_odds", "cricket", lambda c: ct.cricket_get_live_odds(), "theodds_key"
+        ),
     ]
 
 
@@ -152,17 +183,54 @@ def f1_probes() -> list[Probe]:
     from sportiq.f1 import tools as ft
 
     return [
-        Probe("f1_get_sessions", "f1", lambda c: ft.f1_get_sessions(year=2023)),
-        Probe("f1_get_standings", "f1", lambda c: ft.f1_get_standings(year=2023)),
-        Probe("f1_get_race_results", "f1", lambda c: ft.f1_get_race_results(year=2023, round=6)),
+        Probe("f1_get_sessions", "f1", lambda c: ft.f1_get_sessions(year=2026)),
+        Probe("f1_get_standings", "f1", lambda c: ft.f1_get_standings(year=2026)),
+        Probe("f1_get_race_results", "f1", lambda c: ft.f1_get_race_results(year=2026, round=6)),
         Probe("f1_get_drivers", "f1", lambda c: ft.f1_get_drivers(session_key=c["session_key"])),
-        Probe("f1_get_lap_times", "f1", lambda c: ft.f1_get_lap_times(session_key=c["session_key"], driver_number=c["driver_number"])),
+        Probe(
+            "f1_get_lap_times",
+            "f1",
+            lambda c: ft.f1_get_lap_times(
+                session_key=c["session_key"], driver_number=c["driver_number"]
+            ),
+        ),
         Probe("f1_get_weather", "f1", lambda c: ft.f1_get_weather(session_key=c["session_key"])),
-        Probe("f1_tyre_degradation", "f1", lambda c: fi.f1_tyre_degradation(session_key=c["session_key"], driver_number=c["driver_number"], compound="SOFT")),
-        Probe("f1_undercut_window", "f1", lambda c: fi.f1_undercut_window(session_key=c["session_key"], attacker_number=c["driver_a"], target_number=c["driver_b"], current_lap=20)),
-        Probe("f1_head_to_head_pace", "f1", lambda c: fi.f1_head_to_head_pace(session_key=c["session_key"], driver_a=c["driver_a"], driver_b=c["driver_b"])),
-        Probe("f1_weather_strategy_impact", "f1", lambda c: fi.f1_weather_strategy_impact(session_key=c["session_key"])),
-        Probe("f1_predict_pit_strategy", "f1", lambda c: fi.f1_predict_pit_strategy(session_key=c["session_key"], driver_number=c["driver_number"], current_lap=15)),
+        Probe(
+            "f1_tyre_degradation",
+            "f1",
+            lambda c: fi.f1_tyre_degradation(
+                session_key=c["session_key"], driver_number=c["driver_number"], compound="SOFT"
+            ),
+        ),
+        Probe(
+            "f1_undercut_window",
+            "f1",
+            lambda c: fi.f1_undercut_window(
+                session_key=c["session_key"],
+                attacker_number=c["driver_a"],
+                target_number=c["driver_b"],
+                current_lap=20,
+            ),
+        ),
+        Probe(
+            "f1_head_to_head_pace",
+            "f1",
+            lambda c: fi.f1_head_to_head_pace(
+                session_key=c["session_key"], driver_a=c["driver_a"], driver_b=c["driver_b"]
+            ),
+        ),
+        Probe(
+            "f1_weather_strategy_impact",
+            "f1",
+            lambda c: fi.f1_weather_strategy_impact(session_key=c["session_key"]),
+        ),
+        Probe(
+            "f1_predict_pit_strategy",
+            "f1",
+            lambda c: fi.f1_predict_pit_strategy(
+                session_key=c["session_key"], driver_number=c["driver_number"], current_lap=15
+            ),
+        ),
     ]
 
 
@@ -171,17 +239,52 @@ def football_probes() -> list[Probe]:
     from sportiq.football import tools as bt
 
     return [
-        Probe("football_get_fixtures", "football", lambda c: bt.football_get_fixtures(), "apifootball_key"),
-        Probe("football_get_standings", "football", lambda c: bt.football_get_standings(), "apifootball_key"),
-        Probe("football_get_top_scorers", "football", lambda c: bt.football_get_top_scorers(), "apifootball_key"),
+        Probe(
+            "football_get_fixtures",
+            "football",
+            lambda c: bt.football_get_fixtures(),
+            "apifootball_key",
+        ),
+        Probe(
+            "football_get_standings",
+            "football",
+            lambda c: bt.football_get_standings(),
+            "apifootball_key",
+        ),
+        Probe(
+            "football_get_top_scorers",
+            "football",
+            lambda c: bt.football_get_top_scorers(),
+            "apifootball_key",
+        ),
         Probe("football_get_squad", "football", lambda c: bt.football_get_squad(team="ARG")),
         Probe("football_get_groups", "football", lambda c: bt.football_get_groups()),
         Probe("football_get_odds", "football", lambda c: bt.football_get_odds(), "theodds_key"),
-        Probe("football_match_predictor", "football", lambda c: bi.football_match_predictor(home_team="ARG", away_team="BRA")),
-        Probe("football_xg_model", "football", lambda c: bi.football_xg_model(home_team="ARG", away_team="BRA")),
-        Probe("football_simulate_group", "football", lambda c: bi.football_simulate_group(group="A", iterations=500)),
-        Probe("football_knockout_path", "football", lambda c: bi.football_knockout_path(team="FRA", iterations=500, seed=1)),
-        Probe("football_simulate_bracket", "football", lambda c: bi.football_simulate_bracket(iterations=300, seed=1)),
+        Probe(
+            "football_match_predictor",
+            "football",
+            lambda c: bi.football_match_predictor(home_team="ARG", away_team="BRA"),
+        ),
+        Probe(
+            "football_xg_model",
+            "football",
+            lambda c: bi.football_xg_model(home_team="ARG", away_team="BRA"),
+        ),
+        Probe(
+            "football_simulate_group",
+            "football",
+            lambda c: bi.football_simulate_group(group="A", iterations=500),
+        ),
+        Probe(
+            "football_knockout_path",
+            "football",
+            lambda c: bi.football_knockout_path(team="FRA", iterations=500, seed=1),
+        ),
+        Probe(
+            "football_simulate_bracket",
+            "football",
+            lambda c: bi.football_simulate_bracket(iterations=300, seed=1),
+        ),
     ]
 
 

@@ -3,7 +3,7 @@ title: Pro-entitlement gate (V1 presence check + V2a hosted enforcement)
 type: decision
 tags: [monetization, entitlements, gating]
 sources: [chat, v1.md, v2.md]
-last_updated: 2026-09-25
+last_updated: 2026-10-22
 related: [[product-hosting-arc]]
 ---
 
@@ -52,7 +52,8 @@ V1 deliberately includes two indirections so **V2 needs no further tool edits**:
   (FastMCP schema unchanged), and tags `__sportiq_gated__` for coverage tests.
 
 V1 = presence check. V2 (`v2.md`) = hosted online enforcement. V3 (`v3.md`) =
-other platforms + hardening.
+other platforms + hardening. All three plans are local-only and archived in `done/`;
+V3 was never started and was superseded by the 2026-07-01 reversal.
 
 ## V2a — hosted shared-key enforcement (implemented 2026-06-20)
 

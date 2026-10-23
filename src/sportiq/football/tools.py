@@ -100,6 +100,9 @@ async def football_get_standings(limit: int = 50, offset: int = 0) -> Envelope:
             message="Could not fetch World Cup 2026 standings.",
             sources_tried=e.attempts,
         )
+    # derived_standings flags a table built from stale fixtures; never swallow it.
+    if result.value.pop("upstream_is_stale", False):
+        result.is_stale = True
     result.value = paginate(result.value, "standings", limit, offset)
     return tool_response(result)
 
@@ -108,12 +111,14 @@ async def football_get_squad(team: str) -> Envelope:
     """Return a national team's World Cup squad.
 
     Args:
-        team: Team code or name (e.g. "ARG"). Without an API-Football key, the
-            static seed serves an empty-but-valid squad (rosters are a follow-up).
+        team: Team code or name (e.g. "ARG"). Live rosters need an API-Football
+            key; without one the static seed serves an empty-but-valid squad
+            (no rosters are bundled).
 
     Returns:
-        data.squad: list of {name, number, position, age}.
+        data.squad: list of {name, number, position, age} (empty from the seed).
         meta.source: adapter that served the data.
+        meta.note: present when the seed served it — how to get live squads.
     """
     if not team or not team.strip():
         return error_envelope(code="INVALID_INPUT", message="team must be non-empty.")
@@ -127,7 +132,13 @@ async def football_get_squad(team: str) -> Envelope:
             message=f"Could not fetch squad for {team!r}.",
             sources_tried=e.attempts,
         )
-    return tool_response(result)
+    response = tool_response(result)
+    if isinstance(response["data"], dict) and "note" in response["data"]:
+        # Copy, don't mutate: the value may be the chain's cached object.
+        data = dict(response["data"])
+        response["meta"]["note"] = data.pop("note")
+        response["data"] = data
+    return response
 
 
 async def football_get_match_stats(team: int) -> Envelope:
@@ -176,10 +187,11 @@ async def football_get_top_scorers() -> Envelope:
 
 
 async def football_get_odds(team: str | None = None) -> Envelope:
-    """Return live market head-to-head odds for upcoming World Cup 2026 matches.
+    """Return market head-to-head odds for any World Cup 2026 events the odds feed still lists.
 
     Sourced from The Odds API (requires THEODDS_KEY). Without a key the call
-    returns a clean ALL_SOURCES_FAILED envelope rather than crashing.
+    returns a clean ALL_SOURCES_FAILED envelope rather than crashing. The
+    tournament ended with the 2026-07-19 final, so the feed is normally empty.
 
     Args:
         team: Optional team name to filter events (case-insensitive substring,
@@ -187,7 +199,7 @@ async def football_get_odds(team: str | None = None) -> Envelope:
 
     Returns:
         data.events: list of {event_id, home, away, commence_time, bookmakers:
-            [{name, home, draw, away}]} with decimal 1X2 prices per bookmaker.
+            [{name, home, draw, away, last_update}]} with decimal 1X2 prices per bookmaker.
         meta.source: adapter that served the data (theodds / cache:stale).
     """
     try:

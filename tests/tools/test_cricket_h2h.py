@@ -172,3 +172,34 @@ async def test_meta_estimated_true():
         result = await cricket_head_to_head("MI", "CSK")
 
     assert result["meta"]["estimated"] is True
+
+
+async def test_head_to_head_without_player_stats_is_uninformative():
+    # opus cook8 T8.3: both sides at default form → the 50/50 is a non-answer.
+    mock_squad_a = _mock_squad_result([{"name": "P1"}, {"name": "P2"}])
+    mock_squad_b = _mock_squad_result([{"name": "Q1"}, {"name": "Q2"}])
+
+    with patch("sportiq.cricket.intel_tools.squad_chain") as ms:
+        ms.fetch = AsyncMock(side_effect=[mock_squad_a, mock_squad_b])
+        result = await cricket_head_to_head("MI", "CSK")
+
+    assert result["meta"]["estimate_quality"] == "uninformative"
+
+
+async def test_head_to_head_skips_stats_lookup_for_seed_squad_ids():
+    # Seed squads carry Cricsheet registry IDs; CricAPI/RapidAPI use their own
+    # IDs, so forwarding them would only burn provider quota.
+    seed_a = _mock_squad_result([{"name": "RD Gaikwad", "player_id": "45a43fe2"}])
+    seed_b = _mock_squad_result([{"name": "RG Sharma", "player_id": "740742ef"}])
+    seed_a.value["source"] = seed_b.value["source"] = "static_seed"
+
+    with (
+        patch("sportiq.cricket.intel_tools.squad_chain") as ms,
+        patch("sportiq.cricket.intel_tools.player_stats_chain") as mps,
+    ):
+        ms.fetch = AsyncMock(side_effect=[seed_a, seed_b])
+        mps.fetch = AsyncMock()
+        result = await cricket_head_to_head("CSK", "MI")
+
+    mps.fetch.assert_not_awaited()
+    assert "data" in result

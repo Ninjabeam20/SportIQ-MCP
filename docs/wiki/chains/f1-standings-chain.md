@@ -3,7 +3,7 @@ title: F1 Standings Chain
 type: chain
 tags: [f1, standings]
 sources: []
-last_updated: 2026-09-25
+last_updated: 2026-10-22
 related: [[jolpica]], [[fastf1]], [[f1-get-standings]]
 ---
 
@@ -27,4 +27,6 @@ related: [[jolpica]], [[fastf1]], [[f1-get-standings]]
 
 ## Cache key
 
-`sportiq:f1:standings:{year}`
+`sportiq:f1:standings:{version}:{year}`, where `version` is the package `__version__`. Both adapters
+return one normalised driver/constructor row shape (2026-10-22); versioning the key stops an
+old-shape entry from being served during the 7-day stale window after an upgrade.

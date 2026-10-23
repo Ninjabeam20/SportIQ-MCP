@@ -3,7 +3,7 @@ title: f1_predict_pit_strategy
 type: tool
 tags: [f1, pit-stop, strategy, intel, flagship]
 sources: []
-last_updated: 2026-09-25
+last_updated: 2026-10-22
 related: [[f1-laps-chain]], [[f1-stints-chain]], [[f1-weather-chain]], [[pit-strategy]]
 ---
 
@@ -24,7 +24,7 @@ async def f1_predict_pit_strategy(
 
 ## Args
 - `session_key` — OpenF1 session key (obtain from `f1_get_sessions`). Must point to a Race session.
-- `driver_number` — Driver number (e.g. 1 for Verstappen).
+- `driver_number` — Driver number (e.g. 1 = Norris in 2026; driver numbers change by season; use `f1_get_drivers`).
 - `current_lap` — Current race lap at prediction time (default 1).
 - `total_laps` — Total race laps. If omitted, inferred from the highest observed `lap_number` in the fetched laps (correct for Monaco 78 / Spa 44), falling back to 57 when no laps are available. An explicit value always wins. The resolved value is echoed in `meta.total_laps`.
 

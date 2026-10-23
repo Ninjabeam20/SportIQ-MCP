@@ -3,7 +3,8 @@
 > Deep knowledge-transfer document, written 2026-07-07 against v0.3.1 (commit `b7a1392`),
 > refreshed 2026-07-14 on `codex_changes`, and again **2026-08-30** after Task 8 flip
 > (package version 0.3.2; live connector is the Dell home server; Task 9 deleted
-> Cloud Run 2026-09-02). Read this first. For known weaknesses read `GAPS.md`. For operational
+> Cloud Run 2026-09-02), and **2026-10-22** for the opus remediation (package version 0.4.0, release
+> pending: 46 tools, 7 MCP resources). Read this first. For known weaknesses read `GAPS.md`. For operational
 > rules read `CLAUDE.md`.
 
 ---
@@ -12,7 +13,7 @@
 
 **sportiq-mcp** is a Python MCP (Model Context Protocol) server that turns any AI assistant
 (Claude, ChatGPT, Cursor, …) into a sports analyst across three sports: **FIFA World Cup 2026
-football, Formula 1, and IPL cricket**. It exposes **44 AI-callable tools** (including the
+football, Formula 1, and IPL cricket**. It exposes **46 AI-callable tools** (including the
 meta-tool `sportiq_health`) over stdio (local install via `uvx sportiq-mcp`) or streamable-HTTP (hosted
 on the Dell home server at `https://sportiq.utkarshgupta.org/mcp`. Cloud Run was
 deleted in Task 9 (2026-09-02); old `*.run.app` URLs 404.
@@ -52,12 +53,12 @@ tables, tool registration order — always that order.
 | Cache | Redis primary, `diskcache` automatic fallback | ADR-0003: local dev must never require a daemon; prod host actually runs diskcache too (zero-spend rule) |
 | ILP solver | PuLP + CBC binary | ADR-0002: OR-Tools deliberately excluded (heavy dependency); CBC is apt/brew-installable |
 | Stats | scipy (Poisson) + numpy (vectorized Monte Carlo) | Bracket sim runs thousands of iterations per call |
-| DataFrames | pandas | F1 lap-time regression fits |
+| DataFrames | pandas (optional `f1` extra only) | Pulled in for fastf1; no SportIQ module imports it, so it is not in the base install or the hosted image (ADR-0014) |
 | F1 telemetry | `fastf1` — **optional extra**, lazy-imported | Huge dependency; only needed for one local adapter |
 | Testing | pytest + pytest-asyncio (auto mode) + respx | ADR-0006: no live HTTP in tests, ever; cassettes in `tests/fixtures/` |
 | Lint | ruff (line 100, E/F/I/W/UP/B/SIM/RUF) | |
 | Logging | structlog — JSON on hosted HTTP (`SPORTIQ_LOG_FORMAT=json` in Compose; Cloud Run auto-detects via `K_SERVICE`), pretty locally | Cloud Logging / docker json-file rotation |
-| Deploy | Docker Compose on the Dell (`apps` network, no host ports) is production. `cloud.md` is the old Cloud Run runbook (deleted 2026-09-02) | Stub-package trick in Dockerfile keeps the heavy scipy/pandas layer cached across source edits |
+| Deploy | Docker Compose on the Dell (`apps` network, no host ports) is production. `cloud.md` is the old Cloud Run runbook (deleted 2026-09-02) | Stub-package trick in Dockerfile keeps the heavy scipy/numpy layer cached across source edits |
 | Publish | GitHub Actions OIDC Trusted Publishing to PyPI on `v*` tags | ADR-0010: no long-lived PyPI token in secrets |
 
 **Deliberately excluded** (do not add): OR-Tools, SQLAlchemy, FastAPI, OpenTelemetry, any
@@ -86,8 +87,9 @@ TOOLS  (src/sportiq/{sport}/tools.py = RAW, intel_tools.py = INTEL)
 FallbackChain singletons  (src/sportiq/{sport}/chains.py — module level)
         │   1. fresh cache hit? return
         │   2. per-key asyncio.Lock (stampede guard), re-check cache
-        │   3. walk adapters in order: budget peek → fetch (12s wall cap)
-        │      → success: consume budget token, cache write, return
+        │   3. walk adapters in order: budget reserve → fetch (12s per adapter,
+        │      15s total per chain) → failure: refund token; success: keep
+        │      token, cache write (fail-open), return
         │   4. all failed: stale cache within stale_ttl? return is_stale=True
         │   5. else raise NotFoundError (all raised NF) / AllSourcesFailedError
         ▼
@@ -160,9 +162,10 @@ core/http.py (shared httpx client: retry, same-host redirects, 10MB cap)
   fixtures + results). Groups: static seed only (effectively infinite TTL). Odds: The Odds API only.
 - **F1:** OpenF1 (live telemetry, keyless) and Jolpica (Ergast successor, keyless); optional
   local fastf1. No quotas, but cached aggressively for latency.
-- **Cricket:** CricAPI (100 req/day!) → RapidAPI Cricbuzz (paid escape hatch) → opt-in scrapers
-  (NDTV `SPORTIQ_ENABLE_NDTV=1`, Cricbuzz `SPORTIQ_ENABLE_CRICBUZZ=1`; disabled by default for
-  ToS reasons, ADR-0007) → static seed terminators.
+- **Cricket live:** CricAPI (100 req/day!) → NDTV scraper (opt-in, `SPORTIQ_ENABLE_NDTV=1`) →
+  Cricbuzz scraper (opt-in, `SPORTIQ_ENABLE_CRICBUZZ=1`; scrapers disabled by default for ToS
+  reasons, ADR-0007) → RapidAPI Cricbuzz (paid escape hatch). Squads and venues end in static
+  seed terminators.
 - **The Odds API** budget is shared cricket+football: one `theodds` source, `per_day=16`
   ≈ 480/month under the 500/month cap (there is no per-month unit in `Budget`).
 
@@ -220,8 +223,10 @@ toggle so a developer's `.env` can never cause live HTTP in tests). CI gates: ru
 1. **Everything routes through `FallbackChain`** (ADR-0005). Free-tier APIs die routinely; the
    product promise is "the tool always answers something honest." The envelope's `meta.source` /
    `is_stale` / `fallback_used` lets the AI adapt its wording ("as of ~4 minutes ago…").
-2. **Budget tokens consumed only after success** (peek before, consume after). A failed or
-   missing-key call must not burn quota — CricAPI's 100/day dies for *everyone* when exhausted.
+2. **Budget tokens are reserved before the fetch and refunded on failure** (`fallback.py`
+   `reserve`/`refund`). A failed or missing-key call must not burn quota — CricAPI's 100/day
+   dies for *everyone* when exhausted. Each chain also has a 15 s total budget
+   (`total_budget_s`); adapters left when it runs out are skipped without reserving a token.
 3. **429 is never retried on quota-capped APIs** (`get_json`), but IS retried on burst-limited
    no-quota sources (`get_json_burst`, OpenF1 only). Getting this backwards burns 3× quota on
    guaranteed failures.
@@ -254,7 +259,7 @@ toggle so a developer's `.env` can never cause live HTTP in tests). CI gates: ru
 ## 5. Critical paths — what's load-bearing vs. safe
 
 **Maximum blast radius (change with tests + review, never casually):**
-- `src/sportiq/core/fallback.py` — every one of the 44 tools flows through it.
+- `src/sportiq/core/fallback.py` — every one of the 46 tools flows through it.
 - `src/sportiq/core/tool_response.py` + `errors.py` — the envelope contract every client depends on.
 - `src/sportiq/core/cache.py`, `ratelimit.py`, `http.py` — quota protection; a bug here can
   exhaust a shared free-tier key for all users of the hosted instance.
@@ -272,7 +277,7 @@ toggle so a developer's `.env` can never cause live HTTP in tests). CI gates: ru
 model files (each has focused unit tests).
 
 **Safe to change casually:** `docs/wiki/` pages, `README.md`, `scripts/dashboard.py` (local-only
-analytics), `launch/` marketing copy, wiki lint tooling.
+analytics), `done/launch/` marketing copy, wiki lint tooling.
 
 ---
 
@@ -312,9 +317,11 @@ analytics), `launch/` marketing copy, wiki lint tooling.
     `apt-get install coinor-cbc` (CI/Docker do this explicitly).
 11. **Coverage gate lives in the CI command, not pyproject `addopts`** — deliberately, so partial
     local runs don't fail. Don't "fix" that.
-12. **The repo root is full of local-only business docs** (`launch/`, `sponsor-ledger.md`,
-    `monetization-*.md`, `v2*.md`, `free-rollback-plan.md`, …). They are variously gitignored or
-    committed-but-sdist-excluded. Never reference them from shipped code, never let a new one leak
+12. **The repo root holds local-only business docs** (`sponsor-ledger.md`, `BACKLOG.md`,
+    `API-KEYS-AND-SETTINGS.md`, …); finished or superseded plans (`launch/`, `monetization-*.md`,
+    `v2*.md`, `free-rollback-plan.md`, `grok_*`, `grokbot*`, `order.md`, …) are archived in the
+    gitignored `done/` folder, with a status ledger in `done/README.md`. They are variously
+    gitignored or committed-but-sdist-excluded. Never reference them from shipped code, never let a new one leak
     into dist (check `check_release_build.py`), and never commit `step*.md`.
 13. **DNS-rebinding protection is intentionally disabled** on the HTTP transport —
     `sportiq.utkarshgupta.org` (and historically Cloud Run) host headers trip the
@@ -322,3 +329,7 @@ analytics), `launch/` marketing copy, wiki lint tooling.
     Not a security hole to "fix" by publishing host ports.
 14. **`docs/log.md` is a hard-rule journal** — every meaningful operation appends an entry.
     If you're wondering "what happened recently", read its tail before anything else.
+15. **HTTP runs one uvicorn worker in one container.** Per-process stampede locks
+    (`fallback.py` `_key_locks`), the expensive-tool semaphore, the sim memo and diskcache
+    counters rely on it. Never add `--workers`, replicas or a second container without moving
+    that state to Redis first.

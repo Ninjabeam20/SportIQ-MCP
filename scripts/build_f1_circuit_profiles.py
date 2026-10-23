@@ -35,6 +35,7 @@ Run (OpenF1 responses are cached under ``datasets/openf1/`` — re-runs are offl
 
 F1DB credit (CC BY 4.0 requirement) lives in the README "Data sources & credits".
 """
+
 from __future__ import annotations
 
 import csv
@@ -55,16 +56,22 @@ OUT = ROOT / "src" / "sportiq" / "f1" / "data" / "circuits.json"
 # Seasons that reflect the current pit-lane layouts / car spec. Older data uses
 # different pit procedures and is excluded for accuracy, not for data volume.
 # F1DB side (stops/lap-length) can reach back to 2022; OpenF1 starts 2023.
-SEASONS = {"2022", "2023", "2024", "2025"}
-OPENF1_SEASONS = (2023, 2024, 2025)
+SEASONS = {"2022", "2023", "2024", "2025", "2026"}
+OPENF1_SEASONS = (2023, 2024, 2025, 2026)
+# Only races that ended before this date are measured. A fixed cutoff (not
+# "now") keeps re-runs from the datasets/openf1 cache byte-identical; bump it to
+# pick up newer races.
+AS_OF = "2026-10-22"
 # Per-stop losses outside this band are SC/VSC-pit artefacts, penalties or
 # red-flag stops — not representative green-flag pit losses.
 LOSS_BAND = (8.0, 45.0)
-# A circuit needs at least this many in-band loss samples to trust the median.
+# Below this many in-band loss samples a profile is still written (so a new,
+# one-race circuit like Madrid is usable) but flagged ``"low_sample": true``.
 MIN_LOSS_SAMPLES = 20
 
 # F1DB circuitId -> (OpenF1 circuit_key, OpenF1 circuit_short_name, country).
-# Built once from the OpenF1 sessions feed; the current calendar's 24 circuits.
+# A join table only: the circuit LIST comes from the OpenF1 race sessions
+# (OPENF1_SEASONS, ended before AS_OF). Any raced circuit missing here fails loud.
 ALIAS: dict[str, tuple[int, str, str]] = {
     "silverstone": (2, "Silverstone", "United Kingdom"),
     "hungaroring": (4, "Hungaroring", "Hungary"),
@@ -90,6 +97,10 @@ ALIAS: dict[str, tuple[int, str, str]] = {
     "lusail": (150, "Lusail", "Qatar"),
     "miami": (151, "Miami", "United States"),
     "las-vegas": (152, "Las Vegas", "United States"),
+    "madring": (153, "Madring", "Spain"),
+    # 2026: OpenF1 lists the relocated "Bahrain" round at Kuala Lumpur (Sepang);
+    # the circuit's own country is used here, not the event's.
+    "sepang": (12, "Kuala Lumpur", "Malaysia"),
 }
 
 
@@ -99,6 +110,7 @@ def _read(name: str) -> list[dict]:
 
 
 _CLIENT = httpx.Client(timeout=60.0)  # shared: reuse connections, no port churn
+_REQUESTS = 0  # uncached OpenF1 requests this run (printed by main)
 
 
 def _openf1_get(path: str, **params) -> list[dict]:
@@ -107,7 +119,9 @@ def _openf1_get(path: str, **params) -> list[dict]:
     cache = OPENF1_CACHE / f"{slug}.json"
     if cache.exists():
         return json.loads(cache.read_text())
+    global _REQUESTS
     for attempt in range(8):
+        _REQUESTS += 1
         try:
             resp = _CLIENT.get(f"{OPENF1_BASE}/{path.strip('/')}", params=params)
         except httpx.TransportError:  # transient connect/read hiccup — back off
@@ -131,17 +145,24 @@ def _openf1_get(path: str, **params) -> list[dict]:
     raise SystemExit(f"FAIL: OpenF1 rate-limited 8x on {path} {params}")
 
 
-def measure_pit_losses() -> dict[int, list[float]]:
-    """Per-circuit green-flag pit-loss samples from OpenF1 laps.
+def measure_pit_losses() -> tuple[dict[int, list[float]], set[int]]:
+    """Per-circuit green-flag pit-loss samples from OpenF1 laps, plus the set of
+    circuits that were actually raced (sessions with lap data).
 
     loss = in_lap + out_lap - 2 x baseline, baseline = median of the fastest
     half of the driver's non-pit laps (robust to SC/VSC laps).
     """
     losses: dict[int, list[float]] = defaultdict(list)
+    raced: set[int] = set()
     for year in OPENF1_SEASONS:
         for sess in _openf1_get("sessions", session_name="Race", year=year):
+            if sess.get("is_cancelled") or (sess.get("date_end") or "") >= AS_OF:
+                continue  # cancelled, or not completed at the cutoff
             key, circuit = sess["session_key"], sess["circuit_key"]
             laps = _openf1_get("laps", session_key=key)
+            if not laps:
+                continue  # cancelled / no data (or a skipped 401)
+            raced.add(circuit)
             pits = _openf1_get("pit", session_key=key)
             by_driver: dict[int, dict[int, dict]] = defaultdict(dict)
             for lap in laps:
@@ -169,7 +190,7 @@ def measure_pit_losses() -> dict[int, list[float]]:
                     loss = lap_in["lap_duration"] + lap_out["lap_duration"] - 2 * baseline
                     if LOSS_BAND[0] <= loss <= LOSS_BAND[1]:
                         losses[circuit].append(loss)
-    return losses
+    return losses, raced
 
 
 def build_profiles() -> dict[str, dict]:
@@ -189,17 +210,22 @@ def build_profiles() -> dict[str, dict]:
         key = (p["raceId"], p["driverId"])
         stops[cid][key] = max(stops[cid].get(key, 0), int(p["stop"]))
 
-    losses = measure_pit_losses()
+    losses, raced = measure_pit_losses()
+    by_key = {ckey: cid for cid, (ckey, _short, _country) in ALIAS.items()}
+    unmapped = sorted(raced - set(by_key))
+    if unmapped:
+        raise SystemExit(f"FAIL: raced OpenF1 circuit_keys missing from ALIAS: {unmapped}")
 
     profiles: dict[str, dict] = {}
-    missing = []
-    for cid, (ckey, short, country) in ALIAS.items():
+    for ckey in sorted(raced):
+        cid = by_key[ckey]
+        _, short, country = ALIAS[cid]
         samples = losses.get(ckey, [])
-        if len(samples) < MIN_LOSS_SAMPLES:
-            missing.append(f"{cid} (n={len(samples)})")
+        if not samples:
+            print(f"  WARN: {cid} raced but has no in-band pit-loss samples — skipped")
             continue
         stop_counts = list(stops[cid].values())
-        profiles[str(ckey)] = {
+        profile = {
             "circuit": short,
             "country": country,
             "f1db_id": cid,
@@ -208,8 +234,9 @@ def build_profiles() -> dict[str, dict]:
             "lap_length_km": round(float(circuit_len.get(cid, 0.0)), 3),
             "sample_size": len(samples),
         }
-    if missing:
-        raise SystemExit(f"FAIL: calendar circuits with too few pit-loss samples: {missing}")
+        if len(samples) < MIN_LOSS_SAMPLES:
+            profile["low_sample"] = True
+        profiles[str(ckey)] = profile
     return dict(sorted(profiles.items(), key=lambda kv: int(kv[0])))
 
 
@@ -220,7 +247,9 @@ def main() -> None:
     print(f"Wrote {len(profiles)} circuit profiles to {OUT.relative_to(ROOT)}")
     print(f"pit_loss range [{min(vals)}, {max(vals)}]s  (flat hardcode was 22.0s)")
     for p in sorted(profiles.values(), key=lambda x: x["pit_loss_s"]):
-        print(f"  {p['circuit']:<18} {p['pit_loss_s']:>5}s  ({p['sample_size']} stops)")
+        flag = "  LOW SAMPLE" if p.get("low_sample") else ""
+        print(f"  {p['circuit']:<18} {p['pit_loss_s']:>5}s  ({p['sample_size']} stops){flag}")
+    print(f"OpenF1 uncached requests this run: {_REQUESTS}")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 """Tests for match_resolver.resolve_match()."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
@@ -36,7 +37,9 @@ async def test_resolve_match_from_fixtures():
 async def test_resolve_match_falls_back_to_scorecard():
     from sportiq.cricket import match_resolver
 
-    scorecard_val = {"data": {"teamInfo": [{"name": "IND"}, {"name": "AUS"}], "venue": "eden_gardens"}}
+    scorecard_val = {
+        "data": {"teamInfo": [{"name": "IND"}, {"name": "AUS"}], "venue": "eden_gardens"}
+    }
     with (
         patch("sportiq.cricket.match_resolver.fixtures_chain") as mock_f,
         patch("sportiq.cricket.match_resolver.scorecard_chain") as mock_s,
@@ -97,3 +100,88 @@ async def test_resolve_match_reraises_unexpected_chain_failure(source):
         mock_s.fetch = AsyncMock(side_effect=RuntimeError("unexpected scorecard bug"))
         with pytest.raises(RuntimeError, match=f"unexpected {source} bug"):
             await match_resolver.resolve_match("m123")
+
+
+async def test_resolve_match_returns_series_id_from_fixtures():
+    # opus cook8 T8.2: CricAPI match objects carry series_id; the squad chain needs it.
+    from sportiq.cricket import match_resolver
+
+    fixtures_val = {
+        "matches": [{"id": "m7", "teams": ["MI", "CSK"], "venue": "Wankhede", "series_id": "s2026"}]
+    }
+    with patch("sportiq.cricket.match_resolver.fixtures_chain") as mock_f:
+        mock_f.fetch = AsyncMock(return_value=_fr(fixtures_val))
+        result = await match_resolver.resolve_match("m7")
+
+    assert result["series_id"] == "s2026"
+
+
+async def test_resolve_match_series_id_none_when_absent():
+    from sportiq.cricket import match_resolver
+
+    fixtures_val = {"data": [{"id": "m123", "teams": ["MI", "CSK"], "venue": "wankhede"}]}
+    with patch("sportiq.cricket.match_resolver.fixtures_chain") as mock_f:
+        mock_f.fetch = AsyncMock(return_value=_fr(fixtures_val))
+        result = await match_resolver.resolve_match("m123")
+
+    assert result["series_id"] is None
+
+
+async def test_resolve_match_maps_rapidapi_match_info_shape():
+    # opus cook8 T8.9: RapidAPI Cricbuzz matchInfo (matchId, team1.teamName, venueInfo.ground).
+    from sportiq.cricket import match_resolver
+
+    fixtures_val = {
+        "matches": [
+            {
+                "matchId": 99001,
+                "seriesId": 9237,
+                "team1": {"teamName": "India", "teamSName": "IND"},
+                "team2": {"teamName": "Australia", "teamSName": "AUS"},
+                "venueInfo": {"ground": "MCG", "city": "Melbourne"},
+            }
+        ]
+    }
+    with patch("sportiq.cricket.match_resolver.fixtures_chain") as mock_f:
+        mock_f.fetch = AsyncMock(return_value=_fr(fixtures_val))
+        result = await match_resolver.resolve_match("99001")
+
+    assert result == {
+        "team_a": "India",
+        "team_b": "Australia",
+        "venue": "MCG",
+        "series_id": "9237",
+    }
+
+
+def _fixture(*parts: str) -> dict:
+    import json
+    from pathlib import Path
+
+    return json.loads(Path(__file__).parents[1].joinpath("fixtures", *parts).read_text())
+
+
+@pytest.mark.parametrize(
+    ("chain_value", "venue"),
+    [
+        # CricAPI adapter returns the unwrapped `data` (teams = names list).
+        (_fixture("cricapi", "match_scorecard.json")["data"], "Wankhede Stadium, Mumbai"),
+        # RapidAPI Cricbuzz scard is returned raw (matchHeader.team1/team2 objects).
+        (_fixture("rapidapi", "scorecard.json"), ""),
+    ],
+    ids=["cricapi", "rapidapi"],
+)
+async def test_resolve_match_scorecard_fallback_reads_recorded_provider_shapes(chain_value, venue):
+    # Review R6: both committed scorecard fixtures must resolve via the fallback.
+    from sportiq.cricket import match_resolver
+
+    with (
+        patch("sportiq.cricket.match_resolver.fixtures_chain") as mock_f,
+        patch("sportiq.cricket.match_resolver.scorecard_chain") as mock_s,
+    ):
+        mock_f.fetch = AsyncMock(side_effect=AllSourcesFailedError("fixtures failed"))
+        mock_s.fetch = AsyncMock(return_value=_fr(chain_value))
+        result = await match_resolver.resolve_match("m789")
+
+    assert (result["team_a"], result["team_b"]) == ("India", "Australia")
+    assert result["venue"] == venue

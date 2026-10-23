@@ -16,7 +16,7 @@ from sportiq import server
 _EXPECTED = {
     "dream11_team_builder",
     "f1_race_strategy",
-    "world_cup_winner_prediction",
+    "world_cup_2026_retrospective",
     "cricket_value_bets",
     "f1_driver_comparison",
     "cricket_captain_pick",
@@ -30,7 +30,7 @@ _EXPECTED = {
 _ARGS: dict[str, dict] = {
     "dream11_team_builder": {"team_a": "MI", "team_b": "CSK", "venue": "wankhede"},
     "f1_race_strategy": {"year": 2025, "country": "Monaco", "driver_number": 1},
-    "world_cup_winner_prediction": {},
+    "world_cup_2026_retrospective": {},
     "cricket_value_bets": {},
     "f1_driver_comparison": {
         "year": 2025,
@@ -64,6 +64,14 @@ async def test_prompt_renders_nonempty_user_message(name):
 
 async def test_prompt_rejects_blank_string_arg():
     with pytest.raises(Exception):  # noqa: B017 — FastMCP wraps the ValueError
-        await server.mcp.get_prompt(
-            "predict_match", {"home_team": "  ", "away_team": "FRA"}
-        )
+        await server.mcp.get_prompt("predict_match", {"home_team": "  ", "away_team": "FRA"})
+
+
+async def test_prompts_wc_prompt_is_retrospective():
+    """The tournament is over: the WC prompt reviews it instead of asking for a prediction."""
+    names = {p.name for p in _PROMPTS}
+    assert "world_cup_winner_prediction" not in names
+    result = await server.mcp.get_prompt("world_cup_2026_retrospective", {})
+    text = result.messages[0].content.text
+    assert "Predict" not in text
+    assert "meta.mode" in text

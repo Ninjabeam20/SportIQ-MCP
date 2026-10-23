@@ -3,8 +3,8 @@ title: FallbackChain pattern
 type: decision
 tags: [architecture, resilience]
 sources: [chat]
-last_updated: 2026-09-25
-related: []
+last_updated: 2026-10-22
+related: [[0003-redis-with-diskcache-fallback]], [[0007-cricket-fallback-strategy]], [[0008-football-fallback-strategy]], [[0009-secret-redaction]]
 ---
 
 # ADR 0005 — FallbackChain pattern

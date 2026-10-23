@@ -20,10 +20,11 @@ import re
 REDACTED = "***"
 
 # Query params whose NAME is a known secret. Matched positionally right after
-# `?`/`&` so non-secret params that merely *contain* "key" (e.g. OpenF1's
+# `?`/`&`, whitespace or string start (a bare `apikey=...` in exception text),
+# so non-secret params that merely *contain* "key" (e.g. OpenF1's
 # `session_key`) are left intact.
 _QUERY_SECRET = re.compile(
-    r"(?i)([?&](?:api[_-]?key|access[_-]?token|auth[_-]?token|token|secret|password|signature|sig|key)=)"
+    r"(?i)((?:^|[?&\s])(?:api[_-]?key|access[_-]?token|auth[_-]?token|token|secret|password|signature|sig|key)=)"
     r"([^&\s#'\"<>]+)"
 )
 

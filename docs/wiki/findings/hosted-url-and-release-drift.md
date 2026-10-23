@@ -3,7 +3,7 @@ title: Hosted URL and release-channel drift
 type: finding
 tags: [cloud-run, docs, release, version, mcp]
 sources: [chat]
-last_updated: 2026-09-02
+last_updated: 2026-10-22
 related: [[0012-hosted-abuse-controls]], [[0010-trusted-publishing]], [[0011-pro-entitlement-gate]], [[home-server-cutover]], [[product-hosting-arc]]
 ---
 
@@ -51,6 +51,7 @@ than CI. Dockerfile now copies `uv.lock` and installs with `--frozen`. `mcp` is 
 Leftover public tagged revision URLs (`v2a---`, `candidate---`, …) still initialize. Provider
 keys on the public Cloud Run host are plaintext env. Home-server cutover (and later GCP
 teardown) is `grok_changes12.md`, not a Cloud Run canary (`grok_changes7.md` is git/PyPI).
+Both are local-only and were archived to `done/` on 2026-10-22.
 See [[home-server-cutover]] and [[product-hosting-arc]].
 
 ## Addendum — Task 8 flip (2026-08-30)

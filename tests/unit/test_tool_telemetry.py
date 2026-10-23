@@ -5,9 +5,12 @@ succeeded (MCP errors are HTTP 200), how long it took, and which client called
 it. We assert the wrapper classifies ok / error-envelope / exception correctly
 and never alters the tool's return value.
 """
+
 from __future__ import annotations
 
 import asyncio
+import re
+import time
 from typing import ClassVar
 
 import pytest
@@ -85,6 +88,61 @@ async def test_exception_logs_and_reraises(rec: _Recorder):
     assert fields["error"] == "ValueError"
 
 
+async def test_tool_telemetry_logs_scrubbed_exception_detail_and_frame(rec: _Recorder):
+    async def fn(**kw):
+        raise RuntimeError("boom apikey=SECRET123")
+
+    wrapped = tool_telemetry._instrument("f1_get_drivers", fn, asyncio.Semaphore(2))
+    with pytest.raises(RuntimeError):
+        await wrapped()
+
+    _, _, fields = rec.calls[0]
+    assert fields["error"] == "RuntimeError"
+    assert "boom" in fields["error_detail"]
+    assert "SECRET123" not in fields["error_detail"]
+    assert re.match(r".+\.py:\d+ \w+", fields["error_frame"])
+
+
+async def test_tool_deadline_returns_upstream_timeout_envelope(
+    rec: _Recorder, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(tool_telemetry.settings, "tool_deadline_seconds", 0.05)
+
+    async def fn(**kw):
+        await asyncio.sleep(1)
+        return {"data": {}, "meta": {}}
+
+    wrapped = tool_telemetry._instrument("football_get_fixtures", fn, asyncio.Semaphore(2))
+    started = time.perf_counter()
+    result = await wrapped()
+    elapsed = time.perf_counter() - started
+
+    assert result["error"]["code"] == "UPSTREAM_TIMEOUT"
+    assert result["error"]["retry_after_seconds"] == 60
+    _, _, fields = rec.calls[0]
+    assert fields["outcome"] == "error"
+    assert fields["error"] == "UPSTREAM_TIMEOUT"
+    assert elapsed < 0.5
+
+
+async def test_tool_deadline_includes_semaphore_wait(
+    rec: _Recorder, monkeypatch: pytest.MonkeyPatch
+):
+    # Each call's own work (0.15 s) fits the 0.2 s deadline; only the queued
+    # second call, which first waits ~0.15 s for the single slot, overruns it.
+    monkeypatch.setattr(tool_telemetry.settings, "tool_deadline_seconds", 0.2)
+
+    async def fn(**kw):
+        await asyncio.sleep(0.15)
+        return {"data": {}, "meta": {}}
+
+    wrapped = tool_telemetry._instrument("football_simulate_bracket", fn, asyncio.Semaphore(1))
+    first, second = await asyncio.gather(wrapped(), wrapped())
+
+    assert "data" in first
+    assert second["error"]["code"] == "UPSTREAM_TIMEOUT"
+
+
 def test_instrument_tools_wraps_only_async_tools():
     class _Tool:
         def __init__(self, name, fn, is_async):
@@ -125,9 +183,7 @@ async def test_expensive_tools_share_configured_concurrency_limit(rec: _Recorder
         active -= 1
         return {"data": {}, "meta": {}}
 
-    wrapped = tool_telemetry._instrument(
-        "football_simulate_bracket", probe, asyncio.Semaphore(2)
-    )
+    wrapped = tool_telemetry._instrument("football_simulate_bracket", probe, asyncio.Semaphore(2))
     tasks = [asyncio.create_task(wrapped()) for _ in range(4)]
 
     await asyncio.wait_for(two_entered.wait(), timeout=1)
@@ -154,12 +210,54 @@ async def test_cheap_tools_are_not_serialized_by_expensive_limit(rec: _Recorder)
         active -= 1
         return {"data": {}, "meta": {}}
 
-    wrapped = tool_telemetry._instrument(
-        "football_get_fixtures", probe, asyncio.Semaphore(2)
-    )
+    wrapped = tool_telemetry._instrument("football_get_fixtures", probe, asyncio.Semaphore(2))
     tasks = [asyncio.create_task(wrapped()) for _ in range(4)]
 
     await asyncio.wait_for(four_entered.wait(), timeout=1)
     assert peak == 4
     release.set()
     await asyncio.gather(*tasks)
+
+
+def test_instrument_tools_wrapped_every_registered_tool():
+    # Guard: instrument_tools silently no-ops if FastMCP's private registry moves
+    # (SDK v2 renames it). The public list and the wrapped registry must agree.
+    import sportiq.server as server
+
+    registry = server.mcp._tool_manager._tools
+    listed = asyncio.run(server.mcp.list_tools())
+    assert len(registry) == len(listed) == 46
+    unwrapped = [name for name, tool in registry.items() if not hasattr(tool.fn, "__wrapped__")]
+    assert unwrapped == []
+
+
+async def test_expensive_slot_held_until_offloaded_work_finishes(monkeypatch: pytest.MonkeyPatch):
+    # A timed-out to_thread sim keeps running; its slot must stay taken until it
+    # ends, so no more than `limit` sims ever run at once.
+    import threading
+
+    monkeypatch.setattr(tool_telemetry.settings, "tool_deadline_seconds", 0.05)
+    lock = threading.Lock()
+    active = {"now": 0, "max": 0}
+
+    def work():
+        with lock:
+            active["now"] += 1
+            active["max"] = max(active["max"], active["now"])
+        time.sleep(0.3)
+        with lock:
+            active["now"] -= 1
+
+    async def fn(**kw):
+        await asyncio.to_thread(work)
+        return {"data": {}, "meta": {}}
+
+    sem = asyncio.Semaphore(2)
+    wrapped = tool_telemetry._instrument("football_simulate_bracket", fn, sem)
+    first = await asyncio.gather(wrapped(), wrapped())
+    third = await wrapped()  # both slots still busy with the timed-out sims
+    await asyncio.sleep(0.4)  # let the offloaded threads finish
+
+    assert all(r["error"]["code"] == "UPSTREAM_TIMEOUT" for r in [*first, third])
+    assert active["max"] <= 2
+    assert sem._value == 2  # every slot released once the work ended

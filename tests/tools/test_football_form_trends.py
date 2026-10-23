@@ -1,4 +1,5 @@
 """Tool-layer tests for football_form_trends — chain stubbed, envelope shape asserted."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -73,7 +74,13 @@ async def test_valid_returns_envelope():
 async def test_off_season_no_error():
     """Chain returns empty (no completed) fixtures → matches_analysed==0, no error key."""
     fixtures = [
-        {"home": "Brazil", "away": "Germany", "home_goals": None, "away_goals": None, "date": "2026-12-01"}
+        {
+            "home": "Brazil",
+            "away": "Germany",
+            "home_goals": None,
+            "away_goals": None,
+            "date": "2026-12-01",
+        }
     ]
     with patch("sportiq.football.intel_tools.football_fixtures_chain") as mock:
         mock.fetch = AsyncMock(return_value=_fr(fixtures))
@@ -84,3 +91,27 @@ async def test_off_season_no_error():
     assert result["data"]["form_string"] == ""
     assert result["meta"]["note"] == "No completed fixtures found for this team."
     assert result["meta"]["estimated"] is True
+
+
+async def test_form_trends_accepts_fifa_code():
+    """A FIFA code resolves through the draw's team metadata to the same rows."""
+    fixtures = [
+        _completed_fixture("Argentina", "Algeria", 2, 0, "2026-06-12"),
+        _completed_fixture("Austria", "Argentina", 1, 1, "2026-06-17"),
+    ]
+    with patch("sportiq.football.intel_tools.football_fixtures_chain") as mock:
+        mock.fetch = AsyncMock(return_value=_fr(fixtures))
+        by_code = await football_form_trends(team="ARG")
+        by_name = await football_form_trends(team="Argentina")
+    assert by_code["data"]["matches_analysed"] == 2
+    assert by_code["data"]["form_string"] == by_name["data"]["form_string"] == "WD"
+
+
+async def test_form_trends_accepts_alias():
+    """ "South Korea" matches fixtures labelled "Korea Republic"."""
+    fixtures = [_completed_fixture("Korea Republic", "Mexico", 1, 0, "2026-06-12")]
+    with patch("sportiq.football.intel_tools.football_fixtures_chain") as mock:
+        mock.fetch = AsyncMock(return_value=_fr(fixtures))
+        result = await football_form_trends(team="South Korea")
+    assert result["data"]["matches_analysed"] == 1
+    assert result["data"]["form_string"] == "W"

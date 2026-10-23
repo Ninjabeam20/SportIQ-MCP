@@ -3,9 +3,21 @@
 fit_degradation() fits a linear model (lap_time = intercept + slope * lap_on_tyre)
 to a list of lap dicts, returning the model parameters.
 """
+
 from __future__ import annotations
 
 import numpy as np
+
+from sportiq.f1.data.tyres import normalize_compound
+
+
+def compound_key(raw: str | None) -> str:
+    """Canonical compound label for grouping/comparison ("INTERMEDIATE" → "INTER").
+
+    Unknown labels pass through upper-cased so nothing is silently re-bucketed.
+    """
+    compound = normalize_compound(raw)
+    return str(compound) if compound is not None else (raw or "").strip().upper()
 
 
 def annotate_laps_with_stints(laps: list[dict], stints: list[dict]) -> list[dict]:
@@ -46,6 +58,14 @@ def annotate_laps_with_stints(laps: list[dict], stints: list[dict]) -> list[dict
     return annotated
 
 
+def slow_outlier_mask(durations: np.ndarray) -> np.ndarray:
+    """Keep-mask dropping slow outliers (SC laps, in/out laps): > mean + 2*std."""
+    mean, std = durations.mean(), durations.std()
+    if std > 0:
+        return durations <= mean + 2 * std
+    return np.ones(len(durations), dtype=bool)
+
+
 def fit_degradation(laps: list[dict], compound: str) -> dict:
     """Fit a linear tyre degradation model for one compound.
 
@@ -68,8 +88,9 @@ def fit_degradation(laps: list[dict], compound: str) -> dict:
             sample_count (int): number of valid laps used in the fit
     """
     valid = [
-        lap for lap in laps
-        if lap.get("compound", "").upper() == compound.upper()
+        lap
+        for lap in laps
+        if compound_key(lap.get("compound")) == compound_key(compound)
         and lap.get("lap_duration") is not None
         and float(lap["lap_duration"]) > 0
     ]
@@ -79,23 +100,37 @@ def fit_degradation(laps: list[dict], compound: str) -> dict:
 
     durations = np.array([float(lap["lap_duration"]) for lap in valid])
 
-    # Remove outliers (SC laps, in/out laps): drop anything > mean + 2*std
-    mean, std = durations.mean(), durations.std()
-    if std > 0:
-        mask = durations <= mean + 2 * std
-        valid = [lap for lap, keep in zip(valid, mask, strict=True) if keep]
-        durations = durations[mask]
+    mask = slow_outlier_mask(durations)
+    valid = [lap for lap, keep in zip(valid, mask, strict=True) if keep]
+    durations = durations[mask]
 
     if len(valid) < 2:
-        return {"intercept": float(durations[0]), "slope": 0.0, "residual_std": 0.0, "sample_count": 1}
+        return {
+            "intercept": float(durations[0]),
+            "slope": 0.0,
+            "residual_std": 0.0,
+            "sample_count": 1,
+        }
 
     # Tyre age axis: use tyre_life if present, else fallback to enumerate index i.
     # Note on intercept: with tyre_life telemetry, the intercept extrapolates to tyre_age=0
     # (brand-new tyre); without tyre_life, 0-based index i anchors intercept at the first valid lap.
-    tyre_ages = np.array([
-        float(lap.get("tyre_life", i))
-        for i, lap in enumerate(valid)
-    ])
+    tyre_ages = np.array([float(lap.get("tyre_life", i)) for i, lap in enumerate(valid)])
+
+    # A slope needs independent age variation: repeated ages (e.g. two fresh
+    # stints at age 0) crash polyfit or give an arbitrary slope. Report the
+    # distinct-age count as the effective sample count so callers' "< 2"
+    # fallback applies.
+    finite = np.isfinite(tyre_ages)
+    tyre_ages, durations = tyre_ages[finite], durations[finite]
+    distinct_ages = len(np.unique(tyre_ages))
+    if distinct_ages < 2:
+        return {
+            "intercept": float(durations.mean()) if len(durations) else 0.0,
+            "slope": 0.0,
+            "residual_std": float(durations.std()) if len(durations) else 0.0,
+            "sample_count": distinct_ages,
+        }
 
     coeffs = np.polyfit(tyre_ages, durations, deg=1)
     fitted = np.polyval(coeffs, tyre_ages)
@@ -105,5 +140,5 @@ def fit_degradation(laps: list[dict], compound: str) -> dict:
         "intercept": float(coeffs[1]),
         "slope": float(coeffs[0]),
         "residual_std": float(residuals.std()),
-        "sample_count": len(valid),
+        "sample_count": len(tyre_ages),
     }

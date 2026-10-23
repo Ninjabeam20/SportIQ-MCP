@@ -49,38 +49,61 @@ async def has_budget(budget: Budget) -> bool:
     return True
 
 
-async def reserve(budget: Budget) -> bool:
+@dataclass(frozen=True)
+class Reservation:
+    """The exact window counters one :func:`reserve_window` call incremented."""
+
+    minute_key: str | None
+    day_key: str | None
+
+
+async def reserve_window(budget: Budget) -> Reservation | None:
     """Atomically take one token in each configured window, or take none.
 
-    Returns True if the caller may proceed to fetch. On False the counters are
-    unchanged. Pair with :func:`refund` if the subsequent fetch fails so failed
-    / missing-key calls still burn no quota.
+    Returns the :class:`Reservation` (the window keys charged) if the caller may
+    proceed to fetch, else None with the counters unchanged. Pass it to
+    :func:`refund` if the fetch fails, so the refund hits the windows that were
+    charged even when the fetch ends in a later minute or UTC day.
     """
     cache = get_cache()
     now = int(time.time())
     minute_key: str | None = None
+    day_key: str | None = None
 
     if budget.per_minute is not None:
         minute_key = _minute_key(budget.source, now)
         taken = await cache.incr_counter_if_below(minute_key, budget.per_minute, ttl_seconds=120)
         if taken is None:
-            return False
+            return None
 
     if budget.per_day is not None:
-        taken = await cache.incr_counter_if_below(
-            _day_key(budget.source, now), budget.per_day, ttl_seconds=172800
-        )
+        day_key = _day_key(budget.source, now)
+        taken = await cache.incr_counter_if_below(day_key, budget.per_day, ttl_seconds=172800)
         if taken is None:
             if minute_key is not None:
                 await cache.decr_counter(minute_key)
-            return False
+            return None
 
-    return True
+    return Reservation(minute_key=minute_key, day_key=day_key)
 
 
-async def refund(budget: Budget) -> None:
-    """Give back one token in each configured window after a failed fetch."""
+async def reserve(budget: Budget) -> bool:
+    """Boolean form of :func:`reserve_window` (True = a token was taken)."""
+    return await reserve_window(budget) is not None
+
+
+async def refund(budget: Budget, reservation: Reservation | None = None) -> None:
+    """Give back one token in each configured window after a failed fetch.
+
+    With ``reservation`` the exact charged windows are refunded; without it the
+    current windows are (only correct if no minute/day boundary was crossed).
+    """
     cache = get_cache()
+    if reservation is not None:
+        for key in (reservation.minute_key, reservation.day_key):
+            if key is not None:
+                await cache.decr_counter(key)
+        return
     now = int(time.time())
     if budget.per_minute is not None:
         await cache.decr_counter(_minute_key(budget.source, now))

@@ -35,7 +35,7 @@ class FallbackChain(Generic[T]):
 3. All adapters fail. Try stale cache (within `stale_ttl`). Hit → return with `is_stale=True`.
 4. No stale cache available → raise. If **every** adapter that ran raised `NotFoundError` (none skipped for budget, none failed another way), the entity genuinely doesn't exist → raise `NotFoundError` so the tool's `except NotFoundError` yields a `NOT_FOUND` envelope. Otherwise raise `AllSourcesFailedError`.
 
-Budget tokens are **consumed only after a successful fetch** (peek before, consume after) — a failed or missing-key call burns no quota.
+Budget tokens are **reserved before the fetch and refunded on failure** (`fallback.py` `reserve`/`refund`) — a failed or missing-key call burns no quota. Each adapter call is capped at `time_budget_s` (12 s) and the whole walk at `total_budget_s` (15 s); adapters left when the total runs out are skipped without reserving a token, and the chain falls through to stale cache / `AllSourcesFailedError`.
 
 ## Tool integration
 

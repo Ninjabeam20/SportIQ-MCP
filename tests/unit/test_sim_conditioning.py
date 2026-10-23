@@ -1,4 +1,5 @@
 """Unit tests for conditioning the group + bracket sims on real results."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -91,3 +92,59 @@ def test_bracket_conditioning_zeros_eliminated_team():
     out = simulate_tournament(groups, ratings, n_iter=300, seed=3, results=state)
     assert out["teams"]["ARG"]["win"] == 0.0
     assert out["teams"]["ARG"]["reach_r32"] == 0.0
+
+
+# -- completed WC 2026 replay pin (cook6 T6.3) ---------------------------------
+
+
+async def _complete_wc2026_state():
+    """Replay state from the full openfootball 2026 file.
+
+    Fixture ``tests/fixtures/openfootball/worldcup-2026-complete.json`` is one
+    unmodified keyless GET of the public-domain openfootball/worldcup.json
+    ``2026/worldcup.json``, downloaded 2026-10-22 (104 matches, final 2026-07-19).
+    """
+    import json
+    from pathlib import Path
+
+    import respx
+    from httpx import Response
+
+    from sportiq.football.adapters.openfootball import (
+        _OPENFOOTBALL_URL,
+        OpenFootballFixturesAdapter,
+    )
+    from sportiq.football.adapters.static_seed import load_wc2026
+    from sportiq.football.models.results_state import build_results_state
+
+    path = (
+        Path(__file__).parent.parent / "fixtures" / "openfootball" / "worldcup-2026-complete.json"
+    )
+    with respx.mock:
+        respx.get(_OPENFOOTBALL_URL).mock(
+            return_value=Response(200, json=json.loads(path.read_text()))
+        )
+        fixtures = (await OpenFootballFixturesAdapter().fetch())["fixtures"]
+    wc = load_wc2026()
+    return fixtures, wc, build_results_state(fixtures, wc["groups"], wc["teams"])
+
+
+async def test_bracket_replay_of_complete_wc2026_locks_spain():
+    """Every real result matched → the replay is deterministic: Spain won, Argentina lost the final."""
+    from sportiq.football.adapters.static_seed import load_elo_seed
+
+    _fixtures, wc, state = await _complete_wc2026_state()
+    assert (state.matched, state.dropped) == (104, 0)
+    assert state.champion == "ESP"
+    out = simulate_tournament(wc["groups"], load_elo_seed(), n_iter=200, seed=42, results=state)
+    assert out["teams"]["ESP"]["win"] == 1.0
+    assert out["teams"]["ARG"]["win"] == 0.0
+
+
+async def test_derived_standings_complete_wc2026_every_team_played_three():
+    from sportiq.football.models.results_state import derived_standings
+
+    fixtures, wc, _state = await _complete_wc2026_state()
+    table = derived_standings(fixtures, wc["groups"], wc["teams"])["standings"]
+    assert len(table) == 48
+    assert all(row["played"] == 3 for row in table)

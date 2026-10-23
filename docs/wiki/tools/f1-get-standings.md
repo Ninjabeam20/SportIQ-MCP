@@ -3,7 +3,7 @@ title: f1_get_standings
 type: tool
 tags: [f1, standings]
 sources: []
-last_updated: 2026-09-02
+last_updated: 2026-10-22
 related: [[f1-standings-chain]], [[jolpica]]
 ---
 
@@ -27,12 +27,18 @@ async def f1_get_standings(year: int) -> dict
 ```json
 {
   "data": {
-    "drivers": [{"position": 1, "driver": "Max Verstappen", "points": 575}],
-    "constructors": [{"position": 1, "constructor": "Red Bull", "points": 860}]
+    "season": 2026,
+    "round": 17,
+    "drivers": [{"position": 1, "driver_number": 12, "code": "ANT", "name": "Andrea Kimi Antonelli", "team": "Mercedes", "points": 325.0, "wins": 7}],
+    "constructors": [{"position": 1, "team": "Mercedes", "points": 561.0, "wins": 10}]
   },
   "meta": {"source": "jolpica", "is_stale": false}
 }
 ```
+
+Jolpica (primary) and the FastF1 fallback return this same shape. FastF1
+sums per-race points into season totals and omits sprint points. Illustrative
+values; driver numbers change by season.
 
 ## Chain
 

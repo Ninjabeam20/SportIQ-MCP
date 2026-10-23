@@ -1,4 +1,5 @@
 """fastf1 local adapter — patches the fastf1 import to test lazy-import behavior."""
+
 from __future__ import annotations
 
 import asyncio
@@ -132,10 +133,122 @@ async def test_fastf1_standings_offloads_to_thread_and_bounds_rounds(monkeypatch
         result = await adapter.fetch(year=2025)
 
     assert to_thread_called is True
-    assert "standings" in result
     # Only round 1 was processed (round 0 skipped as testing, round 99 skipped as out of bounds)
-    assert len(result["standings"]) == 1
-    assert result["standings"][0]["round"] == 1
-    assert result["standings"][0]["driver"] == "Max Verstappen"
+    assert result["round"] == 1
+    assert len(result["drivers"]) == 1
+    assert result["drivers"][0]["name"] == "Max Verstappen"
     # Verify get_session was called only for round 1
     mock_fastf1.get_session.assert_called_once_with(2025, 1, "R")
+
+
+async def test_fastf1_standings_sums_season_points_per_driver(monkeypatch):
+    from sportiq.f1.adapters.fastf1_local import FastF1StandingsAdapter
+
+    mock_fastf1 = MagicMock()
+    schedule = MagicMock()
+    schedule.iterrows.return_value = [(0, {"RoundNumber": 1}), (1, {"RoundNumber": 2})]
+    mock_fastf1.get_event_schedule.return_value = schedule
+    rows_by_round = {
+        1: [
+            {
+                "FullName": "Lando Norris",
+                "Abbreviation": "NOR",
+                "DriverNumber": "1",
+                "TeamName": "McLaren",
+                "Position": 1,
+                "Points": 25,
+            },
+            {
+                "FullName": "Max Verstappen",
+                "Abbreviation": "VER",
+                "DriverNumber": "3",
+                "TeamName": "Red Bull Racing",
+                "Position": 2,
+                "Points": 18,
+            },
+        ],
+        2: [
+            {
+                "FullName": "Max Verstappen",
+                "Abbreviation": "VER",
+                "DriverNumber": "3",
+                "TeamName": "Red Bull Racing",
+                "Position": 1,
+                "Points": 25,
+            },
+            {
+                "FullName": "Lando Norris",
+                "Abbreviation": "NOR",
+                "DriverNumber": "1",
+                "TeamName": "McLaren",
+                "Position": 2,
+                "Points": 18,
+            },
+        ],
+    }
+
+    def _session(year, round_num, kind):
+        session = MagicMock()
+        session.results.iterrows.return_value = list(enumerate(rows_by_round[round_num]))
+        return session
+
+    mock_fastf1.get_session.side_effect = _session
+    with patch.dict(sys.modules, {"fastf1": mock_fastf1}):
+        result = await FastF1StandingsAdapter().fetch(year=2026)
+
+    assert result["season"] == 2026
+    assert result["round"] == 2
+    by_code = {d["code"]: d for d in result["drivers"]}
+    assert by_code["NOR"]["points"] == 43.0
+    assert by_code["VER"]["points"] == 43.0
+    assert by_code["NOR"]["wins"] == 1
+    assert by_code["NOR"]["driver_number"] == 1
+    assert [d["position"] for d in result["drivers"]] == [1, 2]
+    assert {t["team"]: t["points"] for t in result["constructors"]} == {
+        "McLaren": 43.0,
+        "Red Bull Racing": 43.0,
+    }
+
+
+async def test_fastf1_laps_session_9877_loads_mexico_2025_round_20():
+    # Review R7: 9877 is the 2025 Mexico City GP (OpenF1 + F1DB), not round 8.
+    from sportiq.f1.adapters.fastf1_local import FastF1LapsAdapter
+
+    mock_fastf1 = MagicMock()
+    mock_laps = MagicMock()
+    mock_laps.iterrows.return_value = [
+        (0, {"LapNumber": 1, "LapTime": MagicMock(total_seconds=lambda: 80.0), "TyreLife": 1})
+    ]
+    mock_fastf1.get_session.return_value.laps.pick_drivers.return_value = mock_laps
+
+    with patch.dict(sys.modules, {"fastf1": mock_fastf1}):
+        await FastF1LapsAdapter().fetch(session_key=9877, driver_number=1)
+
+    mock_fastf1.get_session.assert_called_once_with(2025, 20, "R")
+
+
+async def test_fastf1_laps_absent_driver_raises_not_found():
+    # Review R8: no laps for the driver → NotFoundError, not a cacheable empty success.
+    from sportiq.core.errors import NotFoundError
+    from sportiq.f1.adapters.fastf1_local import FastF1LapsAdapter
+
+    mock_fastf1 = MagicMock()
+    mock_fastf1.get_session.return_value.laps.pick_drivers.return_value.iterrows.return_value = []
+
+    with patch.dict(sys.modules, {"fastf1": mock_fastf1}), pytest.raises(NotFoundError):
+        await FastF1LapsAdapter().fetch(session_key=9877, driver_number=99)
+
+
+async def test_fastf1_standings_all_rounds_failing_raises_not_found():
+    from sportiq.core.errors import NotFoundError
+    from sportiq.f1.adapters.fastf1_local import FastF1StandingsAdapter
+
+    mock_fastf1 = MagicMock()
+    mock_fastf1.get_event_schedule.return_value.iterrows.return_value = [
+        (0, {"RoundNumber": 1}),
+        (1, {"RoundNumber": 2}),
+    ]
+    mock_fastf1.get_session.side_effect = RuntimeError("load failed")
+
+    with patch.dict(sys.modules, {"fastf1": mock_fastf1}), pytest.raises(NotFoundError):
+        await FastF1StandingsAdapter().fetch(year=2025)

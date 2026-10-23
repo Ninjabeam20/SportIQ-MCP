@@ -28,11 +28,15 @@ from __future__ import annotations
 import asyncio
 import functools
 import time
+import traceback
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import Any
 
 from sportiq.config import settings
 from sportiq.core.logging import get_logger
+from sportiq.core.redact import scrub
+from sportiq.core.tool_response import error_envelope
 
 _log = get_logger("tool_telemetry")
 
@@ -41,7 +45,9 @@ _EXPENSIVE_TOOLS = frozenset(
         "football_simulate_group",
         "football_simulate_bracket",
         "football_knockout_path",
+        "football_what_if",
         "f1_predict_pit_strategy",
+        "f1_simulate_championship",
         "cricket_build_dream11_team",
     }
 )
@@ -70,20 +76,50 @@ def _instrument(
     @functools.wraps(fn)
     async def wrapper(**kwargs: Any) -> Any:
         start = time.perf_counter()
+        deadline = settings.tool_deadline_seconds
+
+        async def _call_expensive() -> Any:
+            # The deadline covers the semaphore wait too. Work offloaded with
+            # asyncio.to_thread keeps running after the deadline (threads can't be
+            # cancelled), so the slot is held until the work really ends — releasing
+            # it at the deadline would let more sims run than the limit allows.
+            t0 = time.monotonic()
+            await asyncio.wait_for(expensive_semaphore.acquire(), timeout=deadline)
+            task = asyncio.ensure_future(fn(**kwargs))
+
+            def _release(t: asyncio.Future) -> None:
+                expensive_semaphore.release()
+                if not t.cancelled():
+                    t.exception()  # retrieve, so a late failure isn't logged as unhandled
+
+            task.add_done_callback(_release)
+            remaining = max(deadline - (time.monotonic() - t0), 0.0)
+            return await asyncio.wait_for(asyncio.shield(task), timeout=remaining)
+
         try:
             if name in _EXPENSIVE_TOOLS:
-                async with expensive_semaphore:
-                    result = await fn(**kwargs)
+                result = await _call_expensive()
             else:
-                result = await fn(**kwargs)
+                result = await asyncio.wait_for(fn(**kwargs), timeout=deadline)
+        except TimeoutError:
+            result = error_envelope(
+                code="UPSTREAM_TIMEOUT",
+                message=f"{name} exceeded the {deadline:g}s tool deadline.",
+                retry_after_seconds=60,
+                suggestion="Retry shortly; upstream sources were slow or a simulation was queued.",
+            )
         except Exception as exc:
             # An uncaught exception is the worst "bad": no envelope was returned.
+            frames = traceback.extract_tb(exc.__traceback__)
+            f = frames[-1] if frames else None
             _log.error(
                 "tool_call",
                 tool=name,
                 success=False,
                 outcome="exception",
                 error=type(exc).__name__,
+                error_detail=scrub(str(exc))[:300],
+                error_frame=f"{Path(f.filename).name}:{f.lineno} {f.name}" if f else None,
                 latency_ms=round((time.perf_counter() - start) * 1000, 1),
             )
             raise

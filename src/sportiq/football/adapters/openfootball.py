@@ -12,6 +12,7 @@ football-data.org adapter runs first and serves fresher scores.
 
 Output is normalised to the common fixtures shape (see base.py).
 """
+
 from __future__ import annotations
 
 from sportiq.core.errors import NotFoundError
@@ -20,6 +21,24 @@ from sportiq.core.http import get_json
 _OPENFOOTBALL_URL = (
     "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json"
 )
+
+
+def _is_pair(value: object) -> bool:
+    return isinstance(value, list) and len(value) == 2
+
+
+def _winner(match: dict, final: list, pens: list | None) -> str | None:
+    """Winning team NAME (football_data_org convention): penalties, then the final score.
+
+    None only when the match is still level (e.g. a group-stage draw).
+    """
+    home, away = match.get("team1"), match.get("team2")
+    for a, b in ((pens or [0, 0]), final):
+        if a > b:
+            return home
+        if b > a:
+            return away
+    return None
 
 
 class OpenFootballFixturesAdapter:
@@ -33,8 +52,12 @@ class OpenFootballFixturesAdapter:
             raise NotFoundError("openfootball returned no matches")
         fixtures = []
         for match in matches:
-            ft = (match.get("score") or {}).get("ft")
-            played = isinstance(ft, list) and len(ft) == 2
+            score = match.get("score") or {}
+            ft = score.get("ft")
+            played = _is_pair(ft)
+            et = score.get("et") if played and _is_pair(score.get("et")) else None
+            pens = score.get("p") if played and _is_pair(score.get("p")) else None
+            final = et or ft  # goals after extra time when it was played
             fixtures.append(
                 {
                     "match_id": match.get("id"),
@@ -44,9 +67,13 @@ class OpenFootballFixturesAdapter:
                     "group": match.get("group"),
                     "stage": match.get("round"),
                     "status": "FINISHED" if played else "SCHEDULED",
-                    "home_goals": ft[0] if played else None,
-                    "away_goals": ft[1] if played else None,
-                    "winner": None,
+                    "home_goals": final[0] if played else None,
+                    "away_goals": final[1] if played else None,
+                    "regulation_home_goals": ft[0] if played else None,
+                    "regulation_away_goals": ft[1] if played else None,
+                    "penalties_home": pens[0] if pens else None,
+                    "penalties_away": pens[1] if pens else None,
+                    "winner": _winner(match, final, pens) if played else None,
                 }
             )
         return {"fixtures": fixtures}

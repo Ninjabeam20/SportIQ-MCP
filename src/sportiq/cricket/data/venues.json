@@ -110,5 +110,21 @@
     "avg_first_innings": 180,
     "avg_chasing": 170,
     "boundary_size_m": 63
+  },
+  "mullanpur": {
+    "name": "Maharaja Yadavindra Singh International Cricket Stadium",
+    "city": "Mullanpur",
+    "pitch_type": "batting",
+    "avg_first_innings": 187,
+    "avg_chasing": 176,
+    "boundary_size_m": 66
+  },
+  "raipur": {
+    "name": "Shaheed Veer Narayan Singh International Stadium",
+    "city": "Raipur",
+    "pitch_type": "balanced",
+    "avg_first_innings": 178,
+    "avg_chasing": 165,
+    "boundary_size_m": 66
   }
 }

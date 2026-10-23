@@ -1,11 +1,16 @@
 """Unit tests for results_state — pure name-join + result partitioning, no I/O."""
+
 from __future__ import annotations
+
+import pytest
 
 from sportiq.football.models.results_state import (
     build_code_index,
     build_results_state,
     derived_standings,
+    flip_knockout_winner,
     resolve_code,
+    truncate_results_state,
 )
 
 # A two-group toy draw is enough to exercise the partitioning logic.
@@ -49,10 +54,24 @@ def test_resolve_code_matches_name_accent_and_alias():
     """Names, accents, fifa codes and aliases all resolve to the right code."""
     index = build_code_index(_TEAMS)
     assert resolve_code("Argentina", index) == "ARG"
-    assert resolve_code("CÔTE D'IVOIRE", index) == "CIV"   # accents + case
-    assert resolve_code("Ivory Coast", index) == "CIV"     # alias
-    assert resolve_code("ARG", index) == "ARG"             # raw code
-    assert resolve_code("South Korea", index) == "KOR"     # alias (not in draw)
+    assert resolve_code("CÔTE D'IVOIRE", index) == "CIV"  # accents + case
+    assert resolve_code("Ivory Coast", index) == "CIV"  # alias
+    assert resolve_code("ARG", index) == "ARG"  # raw code
+    assert resolve_code("South Korea", index) == "KOR"  # alias (not in draw)
+
+
+def test_results_state_resolves_cape_verde_and_dr_congo_aliases():
+    """openfootball's "Cape Verde" / "DR Congo" resolve against the real WC 2026 draw."""
+    import json
+    from pathlib import Path
+
+    import sportiq.football as football_pkg
+
+    draw = json.loads((Path(football_pkg.__file__).parent / "data" / "wc2026.json").read_text())
+    index = build_code_index(draw["teams"])
+    assert resolve_code("Cape Verde", index) == "CPV"
+    assert resolve_code("DR Congo", index) == "COD"
+    assert resolve_code("DR. Congo", index) == "COD"
 
 
 def test_unmatched_name_returns_none():
@@ -218,7 +237,7 @@ def test_completed_chrono_sorted_by_date():
 def test_derived_standings_points_and_order():
     """Standings reflect 3/1/0 points and order by points within a group."""
     fixtures = [
-        _fx("Argentina", "Colombia", 2, 0),   # ARG +3
+        _fx("Argentina", "Colombia", 2, 0),  # ARG +3
         _fx("Ecuador", "Côte d'Ivoire", 1, 1),  # ECU/CIV +1 each
     ]
     out = derived_standings(fixtures, _GROUPS, _TEAMS)
@@ -228,3 +247,80 @@ def test_derived_standings_points_and_order():
     assert group_a[0]["played"] == 1
     assert sorted(r["points"] for r in group_a) == [0, 1, 1, 3]
     assert out["source"] == "derived_standings"
+
+
+# -- what-if helpers (opus cook11 T11.2) ----------------------------------------
+
+
+def _staged_state():
+    """Two group games, one QF (ARG beat FRA) and the final (ARG beat COL)."""
+    fixtures = [
+        _fx("Argentina", "Colombia", 2, 0, date="2026-06-12", stage="Matchday 1"),
+        _fx("France", "Morocco", 1, 1, date="2026-06-13", stage="Matchday 1"),
+        _fx("Argentina", "France", 1, 0, date="2026-07-10", stage="Quarter-final"),
+        _fx("Argentina", "Colombia", 0, 0, date="2026-07-19", stage="Final", winner="Argentina"),
+    ]
+    return build_results_state(fixtures, _GROUPS, _TEAMS)
+
+
+def test_results_state_labels_knockout_rounds_from_stage():
+    state = _staged_state()
+    assert state.knockout_rounds == {
+        frozenset(("ARG", "FRA")): "qf",
+        frozenset(("ARG", "COL")): "final",
+    }
+    assert state.champion == "ARG"
+
+
+def test_truncate_results_state_from_group_keeps_nothing():
+    state = _staged_state()
+    out = truncate_results_state(state, "group")
+    assert out.knockout == [] and out.completed_chrono == [] and out.matched == 0
+    assert all(not g.completed for g in out.groups.values())
+    assert all(len(g.remaining) == 6 for g in out.groups.values())
+    assert out.champion is None
+    assert state.matched == 4  # the input is not mutated
+
+
+def test_truncate_results_state_from_final_keeps_earlier_knockout_only():
+    out = truncate_results_state(_staged_state(), "final")
+    assert out.knockout == [("ARG", "FRA", "ARG")]
+    assert out.champion is None
+    # The group ARG-COL game stays in the Elo walk; the final ARG-COL is dropped.
+    assert out.completed_chrono == [
+        ("ARG", "COL", 2, 0),
+        ("FRA", "MAR", 1, 1),
+        ("ARG", "FRA", 1, 0),
+    ]
+    assert out.matched == 3
+
+
+def test_truncate_results_state_rejects_unknown_stage():
+    with pytest.raises(ValueError):
+        truncate_results_state(_staged_state(), "playoffs")
+
+
+def test_flip_knockout_winner_returns_new_state_with_other_winner():
+    state = truncate_results_state(_staged_state(), "final")
+    flipped = flip_knockout_winner(state, "FRA", "ARG")
+    assert flipped.knockout == [("ARG", "FRA", "FRA")]
+    assert state.knockout == [("ARG", "FRA", "ARG")]
+
+
+def test_flip_knockout_winner_rejects_tie_not_in_state():
+    state = truncate_results_state(_staged_state(), "qf")
+    with pytest.raises(ValueError):
+        flip_knockout_winner(state, "ARG", "FRA")
+
+
+def test_results_complete_before_false_for_empty_state_and_true_for_group():
+    from sportiq.football.models.results_state import (
+        GroupResults,
+        ResultsState,
+        results_complete_before,
+    )
+
+    empty = ResultsState(groups={"A": GroupResults(completed=[], remaining=[("MEX", "RSA")])})
+    assert results_complete_before(empty, "group") is True
+    assert results_complete_before(empty, "r32") is False
+    assert results_complete_before(empty, "final") is False

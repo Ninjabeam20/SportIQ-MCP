@@ -90,9 +90,7 @@ async def test_openf1_weather_adapter_returns_weather():
 async def test_openf1_drivers_empty_raises_not_found():
     from sportiq.f1.adapters.openf1 import OpenF1DriversAdapter
 
-    respx.get("https://api.openf1.org/v1/drivers").mock(
-        return_value=Response(200, json=[])
-    )
+    respx.get("https://api.openf1.org/v1/drivers").mock(return_value=Response(200, json=[]))
     with pytest.raises(NotFoundError, match="no drivers"):
         await OpenF1DriversAdapter().fetch(session_key=9877)
 
@@ -101,9 +99,7 @@ async def test_openf1_drivers_empty_raises_not_found():
 async def test_openf1_laps_empty_raises_not_found():
     from sportiq.f1.adapters.openf1 import OpenF1LapsAdapter
 
-    respx.get("https://api.openf1.org/v1/laps").mock(
-        return_value=Response(200, json=[])
-    )
+    respx.get("https://api.openf1.org/v1/laps").mock(return_value=Response(200, json=[]))
     with pytest.raises(NotFoundError, match="no laps"):
         await OpenF1LapsAdapter().fetch(session_key=9877, driver_number=1)
 
@@ -112,9 +108,7 @@ async def test_openf1_laps_empty_raises_not_found():
 async def test_openf1_stints_empty_raises_not_found():
     from sportiq.f1.adapters.openf1 import OpenF1StintsAdapter
 
-    respx.get("https://api.openf1.org/v1/stints").mock(
-        return_value=Response(200, json=[])
-    )
+    respx.get("https://api.openf1.org/v1/stints").mock(return_value=Response(200, json=[]))
     with pytest.raises(NotFoundError, match="no stints"):
         await OpenF1StintsAdapter().fetch(session_key=9877, driver_number=1)
 
@@ -123,9 +117,7 @@ async def test_openf1_stints_empty_raises_not_found():
 async def test_openf1_sessions_empty_returns_empty_structure():
     from sportiq.f1.adapters.openf1 import OpenF1SessionsAdapter
 
-    respx.get("https://api.openf1.org/v1/sessions").mock(
-        return_value=Response(200, json=[])
-    )
+    respx.get("https://api.openf1.org/v1/sessions").mock(return_value=Response(200, json=[]))
     result = await OpenF1SessionsAdapter().fetch(year=2025)
     assert result == {"sessions": []}
 
@@ -134,8 +126,72 @@ async def test_openf1_sessions_empty_returns_empty_structure():
 async def test_openf1_weather_empty_returns_empty_structure():
     from sportiq.f1.adapters.openf1 import OpenF1WeatherAdapter
 
-    respx.get("https://api.openf1.org/v1/weather").mock(
-        return_value=Response(200, json=[])
-    )
+    respx.get("https://api.openf1.org/v1/weather").mock(return_value=Response(200, json=[]))
     result = await OpenF1WeatherAdapter().fetch(session_key=9877)
     assert result == {"weather": []}
+
+
+# OpenF1 answers empty queries with 404 {"detail": "No results found."}, not 200 [].
+_NO_RESULTS = {"detail": "No results found."}
+
+
+@respx.mock
+async def test_openf1_laps_adapter_maps_404_to_not_found():
+    from sportiq.f1.adapters.openf1 import OpenF1LapsAdapter
+
+    respx.get("https://api.openf1.org/v1/laps").mock(return_value=Response(404, json=_NO_RESULTS))
+    with pytest.raises(NotFoundError):
+        await OpenF1LapsAdapter().fetch(session_key=9877, driver_number=1)
+
+
+@respx.mock
+async def test_openf1_drivers_adapter_maps_404_to_not_found():
+    from sportiq.f1.adapters.openf1 import OpenF1DriversAdapter
+
+    respx.get("https://api.openf1.org/v1/drivers").mock(
+        return_value=Response(404, json=_NO_RESULTS)
+    )
+    with pytest.raises(NotFoundError):
+        await OpenF1DriversAdapter().fetch(session_key=9877)
+
+
+@respx.mock
+async def test_openf1_stints_adapter_maps_404_to_not_found():
+    from sportiq.f1.adapters.openf1 import OpenF1StintsAdapter
+
+    respx.get("https://api.openf1.org/v1/stints").mock(return_value=Response(404, json=_NO_RESULTS))
+    with pytest.raises(NotFoundError):
+        await OpenF1StintsAdapter().fetch(session_key=9877, driver_number=1)
+
+
+@respx.mock
+async def test_openf1_weather_adapter_maps_404_to_not_found():
+    from sportiq.f1.adapters.openf1 import OpenF1WeatherAdapter
+
+    respx.get("https://api.openf1.org/v1/weather").mock(
+        return_value=Response(404, json=_NO_RESULTS)
+    )
+    with pytest.raises(NotFoundError):
+        await OpenF1WeatherAdapter().fetch(session_key=9877)
+
+
+@respx.mock
+async def test_openf1_sessions_adapter_maps_404_to_not_found():
+    from sportiq.f1.adapters.openf1 import OpenF1SessionsAdapter
+
+    respx.get("https://api.openf1.org/v1/sessions").mock(
+        return_value=Response(404, json=_NO_RESULTS)
+    )
+    with pytest.raises(NotFoundError):
+        await OpenF1SessionsAdapter().fetch(year=2025, country="Atlantis")
+
+
+@respx.mock
+async def test_openf1_sessions_country_is_title_cased():
+    from sportiq.f1.adapters.openf1 import OpenF1SessionsAdapter
+
+    route = respx.get("https://api.openf1.org/v1/sessions").mock(
+        return_value=Response(200, json=_load("sessions_2025.json"))
+    )
+    await OpenF1SessionsAdapter().fetch(year=2025, country="monaco")
+    assert route.calls.last.request.url.params["country_name"] == "Monaco"

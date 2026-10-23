@@ -3,8 +3,8 @@ title: respx for HTTP test mocking
 type: decision
 tags: [testing, http]
 sources: [chat]
-last_updated: 2026-09-25
-related: []
+last_updated: 2026-10-22
+related: [[0005-fallback-chain-pattern]], [[cricapi-envelope-leak]]
 ---
 
 # ADR 0006 — respx for HTTP test mocking

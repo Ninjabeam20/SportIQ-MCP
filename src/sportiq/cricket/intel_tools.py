@@ -16,12 +16,15 @@ import asyncio
 
 from sportiq.core.errors import AllSourcesFailedError, InvalidInputError, NotFoundError
 from sportiq.core.tool_response import Envelope, error_envelope, staleness_meta, tool_response
+from sportiq.core.value_bet import has_commenced
+from sportiq.cricket.adapters.static_seed import seed_team_codes
 from sportiq.cricket.chains import (
     odds_chain,
     pitch_data_chain,
     player_stats_chain,
     squad_chain,
 )
+from sportiq.cricket.data.scoring import SCORING_PROFILE
 from sportiq.cricket.match_resolver import resolve_match
 from sportiq.cricket.models.captain_score import expected_points
 from sportiq.cricket.models.dream11_solver import solve as _solve_dream11
@@ -35,6 +38,7 @@ from sportiq.cricket.models.player_matchup import (
     extract_player_stats,
 )
 from sportiq.cricket.models.win_probability import win_prob
+from sportiq.cricket.teams import resolve_team_code
 
 # Cap concurrent per-player stats fetches during H2H analysis.
 _PLAYER_STATS_SEMAPHORE = asyncio.Semaphore(5)
@@ -59,19 +63,67 @@ def _estimated_ownership_pct(credits: float) -> float:
     return max(1.0, min(99.0, pct))
 
 
-async def _candidate_pool(team_a: str, team_b: str, venue_record: dict) -> tuple[list[dict], list]:
+def _team_args_error() -> Envelope:
+    """INVALID_INPUT for the match-scoped tools when neither argument form is given."""
+    return error_envelope(
+        code="INVALID_INPUT",
+        message="Provide match_id, or team_a + team_b + venue.",
+        suggestion="e.g. team_a='MI', team_b='CSK', venue='wankhede', or a match_id.",
+    )
+
+
+def _resolve_teams(team_a: str, team_b: str) -> tuple[str, str] | Envelope:
+    """Map codes or official names to seed codes; NOT_FOUND lists the known teams."""
+    codes = seed_team_codes()
+    resolved = []
+    for team in (team_a, team_b):
+        code = resolve_team_code(team, codes)
+        if code is None:
+            return error_envelope(
+                code="NOT_FOUND",
+                message=f"Unknown team {team!r}.",
+                suggestion=f"Known teams: {', '.join(sorted(codes))}",
+            )
+        resolved.append(code)
+    return resolved[0], resolved[1]
+
+
+# Every player gets the same neutral form/opposition (D17: real per-player form is
+# deferred — about 22 CricAPI calls per uncached match). Say so in meta.
+_DEFAULT_FORM_META = {
+    "form_source": "default_neutral",
+    "note": (
+        "Default neutral form and opposition for every player: these are "
+        "role-based projections, not player-specific forecasts."
+    ),
+    "scoring_profile": SCORING_PROFILE,
+}
+
+
+async def _candidate_pool(
+    team_a: str, team_b: str, venue_record: dict, series_id: str | None = None
+) -> tuple[list[dict], list, int]:
     """Compose the candidate list the solver/captain ranker consumes.
 
-    Returns the candidate dicts plus the two squad ``FallbackResult``s so callers
-    can aggregate freshness into ``meta`` (per fallback-contract.md).
+    Returns the candidate dicts, the two squad ``FallbackResult``s (so callers
+    can aggregate freshness into ``meta``, per fallback-contract.md), and how
+    many players were excluded for having no contest credits.
     """
     # Independent fetches — gather so a cold cache costs one round-trip, not two.
-    a, b = await asyncio.gather(squad_chain.fetch(team=team_a), squad_chain.fetch(team=team_b))
+    a, b = await asyncio.gather(
+        squad_chain.fetch(team=team_a, series_id=series_id),
+        squad_chain.fetch(team=team_b, series_id=series_id),
+    )
     candidates: list[dict] = []
+    excluded_missing_credits = 0
     for squad_result in (a, b):
         squad = squad_result.value
         team_label = squad.get("team") or ""
         for player in squad.get("players", []):
+            if player.get("credits") is None:
+                # No contest credits → not a valid XI candidate (never a fake price).
+                excluded_missing_credits += 1
+                continue
             pp = expected_points(
                 player,
                 venue_record,
@@ -82,12 +134,13 @@ async def _candidate_pool(team_a: str, team_b: str, venue_record: dict) -> tuple
                 {
                     "name": player.get("name", ""),
                     "role": player.get("role", "BAT"),
-                    "credits": float(player.get("credits", 8.0)),
+                    "credits": float(player["credits"]),
                     "team": player.get("team") or team_label,
+                    "player_id": player.get("player_id"),
                     "projected_points": round(pp, 2),
                 }
             )
-    return candidates, [a, b]
+    return candidates, [a, b], excluded_missing_credits
 
 
 async def cricket_build_dream11_team(
@@ -113,11 +166,15 @@ async def cricket_build_dream11_team(
         data.total_credits: sum of credits used (<= 100).
         data.total_projected_points: fantasy points including C x2 and VC x1.5 boosts.
         meta.estimated: true — projections are model output, not a fantasy oracle.
+        meta.form_source: "default_neutral" (role-based projections; see meta.note).
+        meta.scoring_profile: the Dream11 T20 points profile id.
+        meta.excluded_missing_credits: players dropped for having no contest credits.
 
     Example:
         cricket_build_dream11_team(team_a="MI", team_b="CSK", venue="wankhede")
         cricket_build_dream11_team(match_id="abc123")
     """
+    series_id: str | None = None
     if match_id:
         try:
             resolved = await resolve_match(match_id)
@@ -126,9 +183,17 @@ async def cricket_build_dream11_team(
         team_a = resolved["team_a"]
         team_b = resolved["team_b"]
         venue = venue or resolved["venue"]
+        series_id = resolved.get("series_id")
 
-    if not team_a or not team_a.strip() or not team_b or not team_b.strip():
-        return error_envelope(code="INVALID_INPUT", message="team_a and team_b must be non-empty.")
+    if (
+        not team_a
+        or not team_a.strip()
+        or not team_b
+        or not team_b.strip()
+        or not venue
+        or not venue.strip()
+    ):
+        return _team_args_error()
     if len(team_a) > 100:
         return error_envelope(
             code="INVALID_INPUT", message="team_a must not exceed 100 characters."
@@ -137,15 +202,19 @@ async def cricket_build_dream11_team(
         return error_envelope(
             code="INVALID_INPUT", message="team_b must not exceed 100 characters."
         )
-    if not venue or not venue.strip():
-        return error_envelope(code="INVALID_INPUT", message="venue must be non-empty.")
     if len(venue) > 200:
         return error_envelope(code="INVALID_INPUT", message="venue must not exceed 200 characters.")
+    teams = _resolve_teams(team_a, team_b)
+    if isinstance(teams, dict):
+        return teams
+    team_a, team_b = teams
 
     try:
         venue_result = await pitch_data_chain.fetch(venue=venue)
-        candidates, squad_results = await _candidate_pool(team_a, team_b, venue_result.value)
-        squad_result = _solve_dream11(candidates, strategy=strategy)
+        candidates, squad_results, excluded = await _candidate_pool(
+            team_a, team_b, venue_result.value, series_id=series_id
+        )
+        squad_result = await asyncio.to_thread(_solve_dream11, candidates, strategy=strategy)
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
@@ -164,6 +233,8 @@ async def cricket_build_dream11_team(
             "venue": venue_result.value.get("name"),
             "strategy": strategy,
             "estimated": True,
+            **_DEFAULT_FORM_META,
+            "excluded_missing_credits": excluded,
             **staleness_meta(venue_result, *squad_results),
         },
     }
@@ -191,8 +262,9 @@ async def cricket_captain_recommendation(
     Returns:
         data.candidates: list of 3 dicts with name/role/team/projected_points.
         meta.source: model:captain_score.
-        meta.estimated: true.
+        meta.estimated: true. meta.form_source: "default_neutral".
     """
+    series_id: str | None = None
     if match_id:
         try:
             resolved = await resolve_match(match_id)
@@ -201,6 +273,7 @@ async def cricket_captain_recommendation(
         team_a = resolved["team_a"]
         team_b = resolved["team_b"]
         venue = venue or resolved["venue"]
+        series_id = resolved.get("series_id")
 
     if (
         not team_a
@@ -210,9 +283,7 @@ async def cricket_captain_recommendation(
         or not venue
         or not venue.strip()
     ):
-        return error_envelope(
-            code="INVALID_INPUT", message="team_a, team_b, venue must all be non-empty."
-        )
+        return _team_args_error()
     if len(team_a) > 100:
         return error_envelope(
             code="INVALID_INPUT", message="team_a must not exceed 100 characters."
@@ -223,10 +294,16 @@ async def cricket_captain_recommendation(
         )
     if len(venue) > 200:
         return error_envelope(code="INVALID_INPUT", message="venue must not exceed 200 characters.")
+    teams = _resolve_teams(team_a, team_b)
+    if isinstance(teams, dict):
+        return teams
+    team_a, team_b = teams
 
     try:
         venue_result = await pitch_data_chain.fetch(venue=venue)
-        candidates, squad_results = await _candidate_pool(team_a, team_b, venue_result.value)
+        candidates, squad_results, excluded = await _candidate_pool(
+            team_a, team_b, venue_result.value, series_id=series_id
+        )
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
@@ -242,6 +319,8 @@ async def cricket_captain_recommendation(
         "meta": {
             "source": "model:captain_score",
             "estimated": True,
+            **_DEFAULT_FORM_META,
+            "excluded_missing_credits": excluded,
             **staleness_meta(venue_result, *squad_results),
         },
     }
@@ -269,10 +348,12 @@ async def cricket_differential_picks(
 
     Returns:
         data.picks: list of {name, role, team, credits, projected_points,
-            estimated_ownership_pct}.
+            estimated_ownership_pct, ownership_pct_estimated}.
         meta.source: model:captain_score (filtered).
-        meta.estimated: true.
+        meta.estimated: true. meta.ownership_source: "heuristic_from_credits".
+        meta.form_source: "default_neutral".
     """
+    series_id: str | None = None
     if match_id:
         try:
             resolved = await resolve_match(match_id)
@@ -281,6 +362,7 @@ async def cricket_differential_picks(
         team_a = resolved["team_a"]
         team_b = resolved["team_b"]
         venue = venue or resolved["venue"]
+        series_id = resolved.get("series_id")
 
     if (
         not team_a
@@ -290,9 +372,7 @@ async def cricket_differential_picks(
         or not venue
         or not venue.strip()
     ):
-        return error_envelope(
-            code="INVALID_INPUT", message="team_a, team_b, venue must all be non-empty."
-        )
+        return _team_args_error()
     if len(team_a) > 100:
         return error_envelope(
             code="INVALID_INPUT", message="team_a must not exceed 100 characters."
@@ -303,6 +383,10 @@ async def cricket_differential_picks(
         )
     if len(venue) > 200:
         return error_envelope(code="INVALID_INPUT", message="venue must not exceed 200 characters.")
+    teams = _resolve_teams(team_a, team_b)
+    if isinstance(teams, dict):
+        return teams
+    team_a, team_b = teams
     if not 0 <= ownership_threshold <= 100:
         return error_envelope(
             code="INVALID_INPUT", message="ownership_threshold must be in [0, 100]."
@@ -310,7 +394,9 @@ async def cricket_differential_picks(
 
     try:
         venue_result = await pitch_data_chain.fetch(venue=venue)
-        candidates, squad_results = await _candidate_pool(team_a, team_b, venue_result.value)
+        candidates, squad_results, excluded = await _candidate_pool(
+            team_a, team_b, venue_result.value, series_id=series_id
+        )
     except AllSourcesFailedError as e:
         return error_envelope(
             code="ALL_SOURCES_FAILED",
@@ -324,13 +410,23 @@ async def cricket_differential_picks(
     for c in candidates:
         est_own = _estimated_ownership_pct(c["credits"])
         if est_own <= ownership_threshold and c["projected_points"] >= 40:
-            picks.append({**c, "estimated_ownership_pct": round(est_own, 1)})
+            picks.append(
+                {
+                    **c,
+                    "estimated_ownership_pct": round(est_own, 1),
+                    "ownership_pct_estimated": True,
+                }
+            )
     picks.sort(key=lambda c: c["projected_points"], reverse=True)
     return {
         "data": {"picks": picks[:5], "ownership_threshold": ownership_threshold},
         "meta": {
             "source": "model:captain_score",
             "estimated": True,
+            # Ownership is a credits-only heuristic, never measured contest data.
+            "ownership_source": "heuristic_from_credits",
+            **_DEFAULT_FORM_META,
+            "excluded_missing_credits": excluded,
             **staleness_meta(venue_result, *squad_results),
         },
     }
@@ -448,6 +544,8 @@ async def cricket_head_to_head(team_a: str, team_b: str) -> Envelope:
                key_players_a, key_players_b, h2h_win_rate_a, h2h_win_rate_b,
                win_prob_a, win_prob_b}.
         meta.estimated: true.
+        meta.estimate_quality: "uninformative" when no player stats were available
+            (both sides at default form), else "player_stats".
     """
     team_a = team_a.strip()
     team_b = team_b.strip()
@@ -481,15 +579,19 @@ async def cricket_head_to_head(team_a: str, team_b: str) -> Envelope:
     squad_b_players: list[dict] = squad_result_b.value.get("players", [])
 
     # --- fetch player stats concurrently (best-effort, up to 11 per side) ---
-    def _pids(players: list[dict]) -> list[str]:
+    def _pids(squad_value: dict) -> list[str]:
+        # Seed squads carry Cricsheet registry IDs; the stats providers (CricAPI,
+        # RapidAPI) use their own IDs, so forwarding them only burns quota.
+        if squad_value.get("source") == "static_seed":
+            return []
         pids = []
-        for p in players[:11]:
+        for p in squad_value.get("players", [])[:11]:
             pid = p.get("player_id") or p.get("id")
             if pid:
                 pids.append(str(pid))
         return pids
 
-    all_pids = _pids(squad_a_players) + _pids(squad_b_players)
+    all_pids = _pids(squad_result_a.value) + _pids(squad_result_b.value)
     if all_pids:
         fetch_results = await asyncio.gather(
             *[_fetch_player_stats_safe(pid) for pid in all_pids],
@@ -529,6 +631,9 @@ async def cricket_head_to_head(team_a: str, team_b: str) -> Envelope:
         "meta": {
             "source": squad_result_a.source,
             "estimated": True,
+            # No per-player stats on either side → every player sits at the neutral
+            # default form and the 50/50 is a non-answer, not an equal-strength finding.
+            "estimate_quality": "player_stats" if stats_by_player else "uninformative",
             **staleness_meta(squad_result_a, squad_result_b),
         },
     }
@@ -546,7 +651,9 @@ async def cricket_find_value_bets(
     every market underdog, which would be misleading. It
     still reports how many events were screened so callers know odds were
     available. For raw de-vigged prices use ``cricket_get_live_odds``. Real edge
-    detection lands when a cricket win model is wired (see cricket_head_to_head).
+    detection lands when a cricket win model is wired (see cricket_head_to_head);
+    it will flag outcomes where the model beats the de-vigged market by
+    ``min_edge`` **and** the offered price has positive expected value.
 
     Args:
         team: Optional team name to filter events (case-insensitive substring).
@@ -556,7 +663,7 @@ async def cricket_find_value_bets(
 
     Returns:
         data.value_bets: always ``[]`` until a cricket model is wired.
-        data.events_analysed: count of events screened (both teams present).
+        data.events_analysed: count of not-yet-started events screened (both teams present).
         data.model: ``"neutral_baseline"``. data.note: why no bets are emitted.
         meta.estimated: true.
     """
@@ -584,7 +691,7 @@ async def cricket_find_value_bets(
         events = [
             ev
             for ev in events
-            if needle in ev.get("home", "").lower() or needle in ev.get("away", "").lower()
+            if needle in (ev.get("home") or "").lower() or needle in (ev.get("away") or "").lower()
         ]
 
     # Cricket has no calibrated team-strength model wired yet (unlike football's
@@ -592,7 +699,10 @@ async def cricket_find_value_bets(
     # every market underdog as +EV — false confidence in a betting tool. So we
     # screen the events for de-vig readiness but emit NO value bets until a real
     # model lands (the eventual signal source is cricket_head_to_head's win_prob).
-    analysed = sum(1 for ev in events if ev.get("home") and ev.get("away"))
+    # Started / in-play events are not priced against a pre-match model.
+    analysed = sum(
+        1 for ev in events if ev.get("home") and ev.get("away") and not has_commenced(ev)
+    )
 
     return {
         "data": {
@@ -621,8 +731,8 @@ async def cricket_player_matchup(player_a: str, player_b: str) -> Envelope:
     """Analyse the head-to-head matchup between two cricket players based on role and career stats.
 
     Args:
-        player_a: Player ID or name for the first player.
-        player_b: Player ID or name for the second player.
+        player_a: CricAPI player ID for the first player (names are not resolved).
+        player_b: CricAPI player ID for the second player (names are not resolved).
 
     Returns:
         data: {matchup_type, edge_holder, edge_reason, signals, role_a, role_b}.
@@ -642,6 +752,15 @@ async def cricket_player_matchup(player_a: str, player_b: str) -> Envelope:
         return error_envelope(
             code="INVALID_INPUT", message="player_a and player_b must be different."
         )
+    # Player-search is not wired (CricAPIPlayerSearchAdapter is reserved), so a
+    # name like "Virat Kohli" can never resolve. IDs contain no whitespace.
+    for label, value in (("player_a", player_a), ("player_b", player_b)):
+        if any(ch.isspace() for ch in value):
+            return error_envelope(
+                code="INVALID_INPUT",
+                message=f"{label} looks like a name; this tool takes CricAPI player IDs.",
+                suggestion="Names are not resolved: pass the CricAPI player ID.",
+            )
 
     stats_a_r, stats_b_r = await asyncio.gather(
         player_stats_chain.fetch(player_id=player_a),

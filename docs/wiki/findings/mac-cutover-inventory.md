@@ -3,7 +3,7 @@ title: Mac worktree inventory before home-server apply
 type: finding
 tags: [home-server, cloud-run, release, inventory]
 sources: [chat]
-last_updated: 2026-08-30
+last_updated: 2026-10-22
 related: [[home-server-cutover]], [[hosted-url-and-release-drift]], [[0012-hosted-abuse-controls]]
 ---
 
@@ -22,7 +22,7 @@ still needed owner `yes` (that apply later landed the same day).
 
 | Host | Role after this push | Must not happen |
 |---|---|---|
-| Cloud Run `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` | **Live** Claude/ChatGPT/README/`links.ts` | No `gcloud run deploy`, no teardown |
+| Cloud Run `https://sportiq-mcp-ey2eariulq-uc.a.run.app/mcp` (historical — Cloud Run deleted 2026-09-02) | **Live** Claude/ChatGPT/README/`links.ts` at the time | No `gcloud run deploy`, no teardown |
 | Dell `sportiq.utkarshgupta.org` | Code ready in git; hostname still NXDOMAIN | No compose up / Caddy reload / tunnel until `yes` |
 
 ## Code

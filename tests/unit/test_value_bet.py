@@ -88,3 +88,25 @@ def test_find_value_skips_nonfinite_odds_without_poisoning_other_prices(bad_pric
 
     assert [pick["outcome"] for pick in picks] == ["home"]
     assert picks[0]["edge"] == pytest.approx(0.1333, abs=0.0001)
+
+
+def test_value_bet_requires_positive_expected_value():
+    """+6.88 pp edge but EV at 1.90 is 0.51*1.90-1 = -3.10% -> no home pick (10-10 audit)."""
+    model = {"home_win": 0.51, "draw": 0.25, "away_win": 0.24}
+    bookmaker = {"name": "Book", "home": 1.90, "draw": 3.00, "away": 3.00}
+    picks = find_value(model, bookmaker, min_edge=0.05)
+    assert all(p["outcome"] != "home" for p in picks)
+
+
+def test_value_bet_reports_ev_pct():
+    model = {"home_win": 0.50, "draw": 0.25, "away_win": 0.25}
+    bookmaker = {
+        "name": "TestBook",
+        "home": 2.5,
+        "draw": 3.5,
+        "away": 2.5,
+        "last_update": "2026-06-11T18:30:00Z",
+    }
+    home = next(p for p in find_value(model, bookmaker, min_edge=0.05) if p["outcome"] == "home")
+    assert home["ev_pct"] == round((0.50 * 2.5 - 1) * 100, 2)
+    assert home["price_updated_at"] == "2026-06-11T18:30:00Z"

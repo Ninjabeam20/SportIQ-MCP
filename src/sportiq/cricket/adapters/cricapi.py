@@ -49,7 +49,15 @@ class CricAPILiveMatchesAdapter:
     async def fetch(self, **kwargs) -> dict:
         k = _key()
         raw = await get_json(f"{_BASE}/currentMatches", params={"apikey": k, "offset": 0})
-        return {"matches": _unwrap(raw) or []}
+        # currentMatches also lists recently ended and not-yet-started fixtures;
+        # "live" means started and not ended. Empty after filtering is a valid
+        # off-season answer, not NotFoundError.
+        matches = [
+            m
+            for m in (_unwrap(raw) or [])
+            if m.get("matchStarted") is True and m.get("matchEnded") is not True
+        ]
+        return {"matches": matches}
 
     async def healthcheck(self) -> bool:
         # Key-presence only — a live call here would burn a CricAPI quota token
@@ -108,9 +116,7 @@ class CricAPIPlayerInfoAdapter:
 
     async def fetch(self, player_id: str, **kwargs) -> dict:
         k = _key()
-        raw = await get_json(
-            f"{_BASE}/players_info", params={"apikey": k, "id": player_id}
-        )
+        raw = await get_json(f"{_BASE}/players_info", params={"apikey": k, "id": player_id})
         return _unwrap(raw)
 
     async def healthcheck(self) -> bool:
@@ -126,9 +132,7 @@ class CricAPIPlayerSearchAdapter:
 
     async def fetch(self, name: str, **kwargs) -> dict:
         k = _key()
-        return await get_json(
-            f"{_BASE}/players", params={"apikey": k, "offset": 0, "search": name}
-        )
+        return await get_json(f"{_BASE}/players", params={"apikey": k, "offset": 0, "search": name})
 
     async def healthcheck(self) -> bool:
         return bool(settings.cricapi_key)
@@ -149,9 +153,7 @@ class CricAPISquadAdapter:
             raise NotFoundError("CricAPI squad requires a series_id")
 
         k = _key()
-        raw = await get_json(
-            f"{_BASE}/series_squad", params={"apikey": k, "id": series_id}
-        )
+        raw = await get_json(f"{_BASE}/series_squad", params={"apikey": k, "id": series_id})
         if raw.get("status") != "success":
             raise NotFoundError(raw.get("reason") or "CricAPI squad lookup failed")
         return normalise_squad_payload(raw, source="cricapi", team=team)

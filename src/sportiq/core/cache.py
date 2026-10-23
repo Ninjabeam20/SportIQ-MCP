@@ -160,7 +160,7 @@ class Cache:
                 self._disk.delete(key)
                 value = self._disk.incr(key, delta=1, default=0)
             if value == 1:
-                self._disk.expire(key, ttl_seconds)
+                self._disk.touch(key, expire=ttl_seconds)
         return int(value)
 
     async def incr_counter_if_below(self, key: str, limit: int, ttl_seconds: int) -> int | None:
@@ -206,7 +206,7 @@ class Cache:
                 return None
             value = self._disk.incr(key, delta=1, default=0)
             if value == 1:
-                self._disk.expire(key, ttl_seconds)
+                self._disk.touch(key, expire=ttl_seconds)
             return int(value)
 
     async def decr_counter(self, key: str) -> int:

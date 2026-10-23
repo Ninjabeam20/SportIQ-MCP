@@ -7,10 +7,11 @@
 | Data class | Fresh TTL | Stale-ok ceiling |
 | :--- | :--- | :--- |
 | Live cricket scorecard | 30s | 5min (flagged) |
-| F1 live telemetry | 10s | 1min (flagged) |
+| F1 live telemetry (only if OpenF1 live auth is ever wired; none today) | 10s | 1min (flagged) |
+| F1 completed-session laps/stints | 24h | 7d |
 | Fixtures / schedule (static) | 6h | 24h |
-| Live-tournament fixtures + results (football WC) | 30min | 24h |
-| Standings / points table | 10min | 1h |
+| Live-tournament fixtures + results (football WC) — while a tournament is in progress; WC 2026 fixtures use the static class since the 2026-07-19 final | 30min | 24h |
+| Standings / points table (exception: `f1_standings` 24h / 7d — updates once per race weekend) | 10min | 1h |
 | Player career stats | 24h | 7d |
 | Squad rosters | 12h | 3d |
 | Bookmaker odds (h2h) | 5min | 24h (flagged) |

@@ -1,4 +1,5 @@
 """Redaction guard — secrets must never survive scrub()."""
+
 from __future__ import annotations
 
 import pytest
@@ -51,3 +52,12 @@ def test_scrub_leaves_clean_text_unchanged():
 @pytest.mark.parametrize("value", ["", None])
 def test_scrub_handles_empty(value):
     assert scrub(value) == value
+
+
+def test_scrub_redacts_bare_apikey_assignment():
+    assert "SECRET123" not in scrub("boom apikey=SECRET123")
+
+
+def test_scrub_keeps_session_key_param():
+    text = "?session_key=9158&x=1"
+    assert scrub(text) == text

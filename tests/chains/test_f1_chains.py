@@ -54,7 +54,10 @@ async def test_f1_sessions_chain_first_adapter_wins():
 async def test_f1_sessions_chain_falls_back_to_jolpica():
     chain = FallbackChain(
         name="f1:sessions",
-        adapters=[_Fail("openf1"), _OK("jolpica", {"sessions": [{"round": 1, "country": "Bahrain"}]})],
+        adapters=[
+            _Fail("openf1"),
+            _OK("jolpica", {"sessions": [{"round": 1, "country": "Bahrain"}]}),
+        ],
         cache_key_fn=_key,
         fresh_ttl=21600,
         stale_ttl=86400,
@@ -134,3 +137,12 @@ async def test_f1_weather_chain_keys_by_session():
     assert key_a != key_b
     assert "9158" in key_a
     assert "9999" in key_b
+
+
+def test_f1_schedule_chain_wiring_uses_jolpica_static_schedule_ttls():
+    from sportiq.f1.adapters.jolpica import JolpicaScheduleAdapter
+    from sportiq.f1.chains import f1_schedule_chain
+
+    assert [type(a) for a in f1_schedule_chain.adapters] == [JolpicaScheduleAdapter]
+    assert f1_schedule_chain.cache_key_fn(year=2026) == "sportiq:f1:schedule:2026"
+    assert (f1_schedule_chain.fresh_ttl, f1_schedule_chain.stale_ttl) == (21600, 86400)

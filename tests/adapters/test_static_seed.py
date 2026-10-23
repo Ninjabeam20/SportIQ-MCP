@@ -33,6 +33,39 @@ async def test_team_lookup_is_case_insensitive():
     assert upper["players"] == lower["players"]
 
 
+async def test_static_seed_squad_resolves_full_team_name():
+    adapter = StaticSeedSquadAdapter()
+    by_name = await adapter.fetch(team="Mumbai Indians")
+    by_code = await adapter.fetch(team="MI")
+    assert by_name["players"]
+    assert by_name["players"] == by_code["players"]
+    assert by_name["team"] == "MI"
+
+
+async def test_static_seed_players_carry_player_id_key():
+    # opus cook8 T8.1: the key is always present; None until the seed carries IDs
+    # (cook9 regenerates it with them).
+    result = await StaticSeedSquadAdapter().fetch(team="MI")
+    for p in result["players"]:
+        assert "player_id" in p
+        assert p["player_id"] is None or isinstance(p["player_id"], str)
+
+
+async def test_static_seed_squads_have_meta_and_ids():
+    # opus cook9 T9.1: the generated seed carries provenance in `_meta`, which is
+    # never served as a team, and every player has a Cricsheet registry ID.
+    from sportiq.cricket.adapters import static_seed
+
+    raw = static_seed._load("squads.json")
+    assert raw["_meta"]["script"] == "scripts/build_cricket_squads.py"
+    assert "2027 retentions not reflected" in raw["_meta"]["note"]
+    assert "_meta" not in static_seed.seed_team_codes()
+    assert "_meta" not in (await StaticSeedSquadAdapter().fetch())["squads"]
+    result = await StaticSeedSquadAdapter().fetch(team="CSK")
+    assert result["players"]
+    assert all(p["player_id"] for p in result["players"])
+
+
 async def test_healthcheck_true_when_json_exists():
     adapter = StaticSeedSquadAdapter()
     assert await adapter.healthcheck() is True
@@ -56,6 +89,24 @@ async def test_venue_adapter_raises_for_unknown_venue():
     adapter = StaticSeedVenueAdapter()
     with pytest.raises(NotFoundError):
         await adapter.fetch(venue="unknown-stadium")
+
+
+async def test_venue_adapter_matches_provider_venue_string():
+    adapter = StaticSeedVenueAdapter()
+    result = await adapter.fetch(venue="Wankhede Stadium, Mumbai")
+    assert result["key"] == "wankhede"
+
+
+async def test_venue_adapter_matches_slug_and_city_to_same_key():
+    adapter = StaticSeedVenueAdapter()
+    assert (await adapter.fetch(venue="wankhede"))["key"] == "wankhede"
+    assert (await adapter.fetch(venue="Mumbai"))["key"] == "wankhede"
+
+
+async def test_venue_adapter_not_found_lists_known_keys():
+    adapter = StaticSeedVenueAdapter()
+    with pytest.raises(NotFoundError, match="wankhede"):
+        await adapter.fetch(venue="Nowhere Ground")
 
 
 async def test_venue_adapter_healthcheck_true_when_json_exists():

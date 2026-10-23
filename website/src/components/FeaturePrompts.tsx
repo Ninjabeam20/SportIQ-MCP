@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 
 const PROMPTS = [
-  "Simulate the World Cup 2026 bracket 10,000 times — who actually lifts the trophy?",
-  "Find me the best value bets in this weekend's fixtures based on real bookmaker odds.",
+  "Replay the World Cup 2026 final 10,000 times — what if France had beaten Spain in the semi?",
+  "Who can still win the 2026 F1 drivers' title? Simulate the rest of the season.",
   "Where is the market wrong? Show me the biggest model-vs-bookmaker probability edges tonight.",
   "What's the smartest pit-stop strategy if it rains at the next Grand Prix?",
   "Compare these two F1 drivers' race pace and tell me who's quicker.",
-  "Build me the optimal Dream11 team for tonight's IPL match under the credit cap.",
+  "Build me the optimal Dream11 XI for any IPL fixture under the credit cap.",
 ];
 
 export default function FeaturePrompts() {

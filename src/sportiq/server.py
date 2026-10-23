@@ -12,6 +12,9 @@ from contextlib import asynccontextmanager
 
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
+from starlette.applications import Starlette
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse
 
 from sportiq import __version__
 from sportiq.config import settings
@@ -22,6 +25,7 @@ from sportiq.core.instructions import register_instructions_resource
 from sportiq.core.logging import configure_logging
 from sportiq.core.param_docs import apply_param_descriptions
 from sportiq.core.prompts import register_prompts
+from sportiq.core.resources import register_static_resources
 from sportiq.core.tool_telemetry import instrument_tools
 from sportiq.cricket.tools import register_cricket_tools
 from sportiq.f1.tools import register_f1_tools
@@ -31,23 +35,35 @@ from sportiq.server_tools.cross_sport import register_cross_sport_tools
 configure_logging()
 
 
+def _is_http_transport() -> bool:
+    return os.getenv("SPORTIQ_TRANSPORT", "stdio").lower() in ("http", "streamable-http")
+
+
+async def _close_shared_resources() -> None:
+    await close_client()
+    await close_cache()
+
+
 @asynccontextmanager
 async def _lifespan(_server):
     try:
         yield {}
     finally:
-        await close_client()
-        await close_cache()
+        # stdio runs this once per process. Stateless HTTP runs it once per
+        # request, so HTTP closes the shared singletons in build_http_app() instead.
+        if not _is_http_transport():
+            await _close_shared_resources()
 
 
 mcp = FastMCP("sportiq", lifespan=_lifespan)
-# FastMCP 1.27/1.28 does not forward version= to the low-level Server, so
+# FastMCP 1.27/1.28 (still required on 1.30) does not forward version= to the low-level Server, so
 # initialize.serverInfo.version would be the SDK version. Bind the package
 # version explicitly.
 mcp._mcp_server.version = __version__
 
 register_health_tool(mcp)
 register_instructions_resource(mcp)
+register_static_resources(mcp)
 register_prompts(mcp)
 # Registration order is the order of relevance (football → F1 → cricket); it
 # determines how tools are listed to MCP clients. Imports above stay alphabetical
@@ -66,6 +82,64 @@ apply_param_descriptions(mcp)
 instrument_tools(mcp)
 
 
+@mcp.custom_route("/healthz", methods=["GET"])
+async def _healthz(_request: Request) -> PlainTextResponse:
+    # Liveness only: never touches the cache, chains or network.
+    return PlainTextResponse("ok", status_code=200)
+
+
+def build_http_app() -> Starlette:
+    """Build the streamable-HTTP Starlette app with SportIQ middleware attached."""
+    from sportiq.core.client_info import ClientInfoMiddleware
+    from sportiq.core.path_compat import LegacyKeyPathMiddleware
+    from sportiq.core.request_limits import RequestLimitMiddleware
+
+    mcp.settings.host = "0.0.0.0"  # nosec B104  # container must bind all interfaces
+    mcp.settings.port = int(os.getenv("PORT", "8080"))
+    # Stateless streamable-HTTP: every POST stands alone, no server-side
+    # session table, no Mcp-Session-Id. The home server rebuilds the image
+    # in place (`docker compose up -d --build`), which restarts the process;
+    # with sessions, every live connector would hold a dead session id until
+    # the user removed and re-added the connector. SportIQ has no per-session
+    # state to lose — tools read the shared cache and return one envelope.
+    # json_response stays False: SSE framing is how tool results stream.
+    mcp.settings.stateless_http = True
+    # DNS rebinding protection blocks real Host headers (Dell hostname, and
+    # historically Cloud Run); disable it — Cloudflare + Caddy is the perimeter.
+    mcp.settings.transport_security = TransportSecuritySettings(
+        enable_dns_rebinding_protection=False
+    )
+    # Build the Starlette app ourselves so we can attach client-identification
+    # logging (HTTP transport only), then run uvicorn directly. We do NOT call
+    # mcp.run("streamable-http") here — it rebuilds the app and would drop the
+    # middleware. Host/port/security settings above are read by the app build.
+    app = mcp.streamable_http_app()
+    # Shared singletons close at app shutdown, never per request (stateless
+    # mode runs the FastMCP lifespan per request).
+    sdk_lifespan = app.router.lifespan_context
+
+    @asynccontextmanager
+    async def _app_lifespan(app_: Starlette):
+        try:
+            async with sdk_lifespan(app_):
+                yield
+        finally:
+            await _close_shared_resources()
+
+    app.router.lifespan_context = _app_lifespan
+    app.add_middleware(ClientInfoMiddleware)
+    app.add_middleware(
+        RequestLimitMiddleware,
+        max_body_bytes=settings.http_max_body_bytes,
+        per_client_per_minute=settings.http_rate_limit_per_minute,
+        global_per_minute=settings.http_global_rate_limit_per_minute,
+    )
+    # Outermost (added last = runs first): legacy /u/<key>/mcp paths are
+    # rewritten to /mcp before client-info logging and MCP routing see them.
+    app.add_middleware(LegacyKeyPathMiddleware)
+    return app
+
+
 def main() -> None:
     """Entry point. Defaults to stdio (the uvx contract); serves streamable-HTTP
     when ``SPORTIQ_TRANSPORT=http`` (used by the remote/container deployment).
@@ -74,43 +148,10 @@ def main() -> None:
     (Cloud Run / Fly / Render convention, default 8080) and bound on all interfaces.
     The MCP endpoint is served at ``/mcp``.
     """
-    if os.getenv("SPORTIQ_TRANSPORT", "stdio").lower() in ("http", "streamable-http"):
+    if _is_http_transport():
         import uvicorn
 
-        from sportiq.core.client_info import ClientInfoMiddleware
-        from sportiq.core.path_compat import LegacyKeyPathMiddleware
-        from sportiq.core.request_limits import RequestLimitMiddleware
-
-        mcp.settings.host = "0.0.0.0"  # nosec B104  # container must bind all interfaces
-        mcp.settings.port = int(os.getenv("PORT", "8080"))
-        # Stateless streamable-HTTP: every POST stands alone, no server-side
-        # session table, no Mcp-Session-Id. The home server rebuilds the image
-        # in place (`docker compose up -d --build`), which restarts the process;
-        # with sessions, every live connector would hold a dead session id until
-        # the user removed and re-added the connector. SportIQ has no per-session
-        # state to lose — tools read the shared cache and return one envelope.
-        # json_response stays False: SSE framing is how tool results stream.
-        mcp.settings.stateless_http = True
-        # DNS rebinding protection blocks real Host headers (Dell hostname, and
-        # historically Cloud Run); disable it — Cloudflare + Caddy is the perimeter.
-        mcp.settings.transport_security = TransportSecuritySettings(
-            enable_dns_rebinding_protection=False
-        )
-        # Build the Starlette app ourselves so we can attach client-identification
-        # logging (HTTP transport only), then run uvicorn directly. We do NOT call
-        # mcp.run("streamable-http") here — it rebuilds the app and would drop the
-        # middleware. Host/port/security settings above are read by the app build.
-        app = mcp.streamable_http_app()
-        app.add_middleware(ClientInfoMiddleware)
-        app.add_middleware(
-            RequestLimitMiddleware,
-            max_body_bytes=settings.http_max_body_bytes,
-            per_client_per_minute=settings.http_rate_limit_per_minute,
-            global_per_minute=settings.http_global_rate_limit_per_minute,
-        )
-        # Outermost (added last = runs first): legacy /u/<key>/mcp paths are
-        # rewritten to /mcp before client-info logging and MCP routing see them.
-        app.add_middleware(LegacyKeyPathMiddleware)
+        app = build_http_app()
         uvicorn.run(
             app,
             host=mcp.settings.host,

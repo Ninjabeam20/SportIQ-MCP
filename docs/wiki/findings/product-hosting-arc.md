@@ -1,10 +1,10 @@
 ---
 title: Product and hosting arc (GCP → paid → free → home server)
 type: finding
-tags: [hosting, cloud-run, home-server, monetization, history]
+tags: [hosting, cloud-run, home-server, monetization, history, uptime, waf]
 sources: [chat, cloud.md, 0011-pro-entitlement-gate, home-server-cutover]
-last_updated: 2026-09-25
-related: [[0011-pro-entitlement-gate]], [[home-server-cutover]], [[hosted-url-and-release-drift]], [[mac-cutover-inventory]]
+last_updated: 2026-10-23
+related: [[0011-pro-entitlement-gate]], [[home-server-cutover]], [[hosted-url-and-release-drift]], [[mac-cutover-inventory]], [[stateless-lifespan-teardown]], [[sportiq-health]]
 ---
 
 # Product and hosting arc (GCP → paid → free → home server)
@@ -21,13 +21,13 @@ One-page timeline of how SportIQ was hosted and sold. Read this when GitHub and 
 4. **Home-server migration (2026-08).** Production live is the Dell Compose stack behind Cloudflare Tunnel + Caddy: `https://sportiq.utkarshgupta.org/mcp`. Cutover: [[home-server-cutover]].
 5. **GCP Task 9 teardown (2026-09-02).** Scheduler, Cloud Run, Artifact Registry deleted. Project `sportiq-mcp-prod` shut down (`DELETE_REQUESTED`, billing unlinked). Owner also removed the GCP billing card. `ey2eariulq` HTTP 404.
 
-## Current (2026-09-25)
+## Current (2026-10-23)
 
 | Channel | Reality |
 | :--- | :--- |
-| Live connector | `https://sportiq.utkarshgupta.org/mcp` (Dell, stateless HTTP, package 0.3.2) |
+| Live connector | `https://sportiq.utkarshgupta.org/mcp` (Dell, stateless HTTP; package 0.3.2 until the v0.4.0 deploy) |
 | Cloud Run / Artifact Registry / project | **deleted** — project `sportiq-mcp-prod` is `DELETE_REQUESTED`; billing account/card removed |
-| PyPI / `uvx sportiq-mcp` | **0.3.2**; official MCP registry remotes = Dell URL |
+| PyPI / `uvx sportiq-mcp` | **0.4.0** (tag `v0.4.0`, 2026-10-23); official MCP registry 0.4.0, remotes = Dell URL |
 | Glama listing | Dell URL after owner GitHub sync (2026-09-02) |
 | Product | every tool free; no SportIQ paywall |
 
@@ -50,6 +50,44 @@ Ruff and release-build pass. The Dell container and public MCP initialize,
 the deployment smoke check. GitHub Actions status for `0bc1232` has not been
 verified from this repository snapshot. Source changes after the `v0.3.2` tag
 are deployed on Dell but are not part of the published PyPI 0.3.2 artifact.
+
+## Uptime alerting (owner runbook, D14 — 2026-10-22)
+
+Nothing alerted on the historical Cloudflare 530s (tunnel could not reach the origin). Since
+opus cook1, the server exposes `GET /healthz`: a liveness-only route that returns `200 ok`
+without touching the cache, chains or network (see [[stateless-lifespan-teardown]]). The
+Docker HEALTHCHECK probes it on localhost. External checks may call it too; the rule is
+`GET /healthz` at **≥ 5-minute** intervals, never `/mcp`, and never a keep-warm or scheduler
+on the host.
+
+The owner sets this up in a dashboard (agents must not):
+
+1. **Cloudflare Health Checks** (preferred, same account as the tunnel): Cloudflare dashboard →
+   the `utkarshgupta.org` zone → Traffic → Health Checks → Create.
+   - URL: `https://sportiq.utkarshgupta.org/healthz`, method `GET`, expected code `200`.
+   - Interval: 5 minutes. Retries: 2. Timeout: 5 s.
+   - Notifications → add an email notification for this health check (healthy ↔ unhealthy).
+2. **Or UptimeRobot** (free tier): new HTTP(s) monitor on the same URL, 5-minute interval,
+   keyword `ok` optional, alert contact = owner email.
+
+Verify: the check shows "healthy" within one interval; stop the container on the Dell once to
+confirm an alert email arrives, then restart it.
+
+## Cloudflare WAF rate limit (owner runbook, D13 — 2026-10-22)
+
+App-level limits (60 requests/client/minute, 300/process/minute, 1 MiB bodies; see GAPS #1)
+stay as defence in depth. An edge rule stops abusive clients before they reach the tunnel.
+
+Owner steps: Cloudflare dashboard → `utkarshgupta.org` zone → Security → WAF → Rate limiting
+rules → Create rule.
+- **Match:** hostname equals `sportiq.utkarshgupta.org` **and** URI path contains `/mcp`
+  ("contains" covers both `/mcp` and the legacy `/u/<key>/mcp` paths).
+- **Rate:** 60 requests per 1 minute, counted per IP (Cloudflare's client IP characteristic).
+- **Action:** Block, duration 1 minute.
+- Leave `/healthz` and the website out of the rule.
+
+Verify: from one machine, more than 60 `POST /mcp` in a minute gets a Cloudflare 429/block page;
+normal connector use is unaffected.
 
 ## Do not
 

@@ -17,6 +17,31 @@
       "team1": "Argentina",
       "team2": "Colombia",
       "group": "Group B"
+    },
+    {
+      "round": "Final",
+      "date": "2026-07-19",
+      "time": "15:00",
+      "team1": "Spain",
+      "team2": "Argentina",
+      "score": { "et": [1, 0], "ft": [0, 0], "ht": [0, 0] }
+    },
+    {
+      "round": "Round of 32",
+      "date": "2026-06-29",
+      "time": "12:00",
+      "team1": "Germany",
+      "team2": "Paraguay",
+      "score": { "p": [3, 4], "et": [1, 1], "ft": [1, 1], "ht": [0, 1] }
+    },
+    {
+      "round": "Matchday 2",
+      "date": "2026-06-18",
+      "time": "18:00",
+      "team1": "Mexico",
+      "team2": "South Korea",
+      "score": { "ft": [1, 1], "ht": [0, 1] },
+      "group": "Group A"
     }
   ]
 }

@@ -1,10 +1,18 @@
 """Unit tests for sportiq.core.parlay.build_accumulator."""
+
 from __future__ import annotations
 
 from sportiq.core.parlay import build_accumulator
 
 
-def _pick(event_id: str, outcome: str, edge: float, model_prob: float, market_odds: float, bookmaker: str = "betfair") -> dict:
+def _pick(
+    event_id: str,
+    outcome: str,
+    edge: float,
+    model_prob: float,
+    market_odds: float,
+    bookmaker: str = "betfair",
+) -> dict:
     return {
         "event_id": event_id,
         "outcome": outcome,
@@ -134,3 +142,26 @@ def test_independence_warning_always_present():
     result_one = build_accumulator(picks, legs=3, min_edge=0.05)
     assert "independence_warning" in result_one
     assert "independence assumption" in result_one["independence_warning"]
+
+
+def test_build_accumulator_zero_legs_returns_none_combined_values():
+    """No qualifying leg → combined values are None (not a 1.0 "certainty") plus a note."""
+    result = build_accumulator([_pick("m1", "home", 0.01, 0.55, 2.0)], legs=3, min_edge=0.05)
+    assert result["legs_used"] == 0
+    assert result["combined_odds"] is None
+    assert result["combined_model_prob"] is None
+    assert result["combined_edge"] is None
+    assert result["note"] == "No legs met the edge threshold."
+
+
+def test_build_accumulator_reports_odds_basis():
+    """Combined odds multiply each leg's best price; the output says so and keeps bookmakers."""
+    picks = [
+        _pick("m1", "home", 0.10, 0.55, 2.0, bookmaker="betfair"),
+        _pick("m2", "away", 0.08, 0.45, 2.5, bookmaker="paddypower"),
+    ]
+    result = build_accumulator(picks, legs=2, min_edge=0.05)
+    assert result["combined_odds_basis"] == (
+        "best price per leg across bookmakers (not a single-bookmaker acca)"
+    )
+    assert [leg["bookmaker"] for leg in result["legs"]] == ["betfair", "paddypower"]

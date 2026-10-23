@@ -3,7 +3,7 @@ title: f1_get_drivers
 type: tool
 tags: [f1, drivers]
 sources: []
-last_updated: 2026-09-25
+last_updated: 2026-10-22
 related: [[f1-drivers-chain]], [[openf1]]
 ---
 
@@ -24,7 +24,7 @@ async def f1_get_drivers(session_key: int) -> dict
 
 ```json
 {
-  "data": {"drivers": [{"driver_number": 1, "full_name": "Max Verstappen", "team_name": "Red Bull Racing", "country_code": "NED"}]},
+  "data": {"drivers": [{"driver_number": 1, "full_name": "Lando Norris", "team_name": "McLaren", "country_code": "GBR"}]},
   "meta": {"source": "openf1", "is_stale": false}
 }
 ```

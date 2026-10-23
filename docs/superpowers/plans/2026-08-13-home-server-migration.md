@@ -8,6 +8,8 @@
 > Do not set `K_SERVICE` on the Dell. Do not copy `sportiq-keepwarm`. Do not
 > advertise `*.run.app`. The body below is the original apply plan (keep as
 > history). Rollback to Cloud Run is no longer possible.
+> The local-only `grok_changes*.md` / `grok_index.md` / `grok_agent.md` files named below were
+> archived to the gitignored `done/` folder on 2026-10-22 (ledger: `done/README.md`).
 
 > **Grok overlay (2026-08-13, model locked 2026-08-23):** `grok_changes8.md` (index + agent brief + Task 0 inventory) → `grok_changes9.md` (identity) → `grok_changes10.md` (Compose/HEALTHCHECK) → `grok_changes11.md` (vault + steel docs) → `grok_changes12.md` (gated Dell / flip / GCP). Stay on tree `mcp>=1.27.2,<2`; do not pin `mcp==1.27.1`. HEALTHCHECK uses exec-form `python -c` (Docker flattens the draft's `def _ok()`). **Two systems, one public URL** until Task 8 — see Operating model.
 >
@@ -43,7 +45,7 @@ Nothing on the Dell, Caddy, Cloudflare, or GCP gets applied until the owner says
 
 ## Global Constraints
 
-- Owner: Utkarsh. Mac writes code. Dell laptop is the headless server (`ssh home-server` → user `ninjabeam20`, LAN `192.168.29.66`).
+- Owner: Utkarsh. Mac writes code. Dell laptop is the headless server (`ssh home-server` → user `ninjabeam20`, LAN `<dell-lan-ip>`).
 - **Do not deploy, ssh apply, reload Caddy, change Cloudflare, rotate keys, flip connectors/docs, or delete GCP resources unless the owner says the matching phrase in the same message** (`yes` / `flip` / `yes, delete GCP`). Inventory SSH (read-only) is allowed in Task 0.
 - Never commit, print, or paste secrets (`.env`, tunnel token, Resend, OpenRouter, `gcal-sa.json`, SportIQ provider keys).
 - Never port-forward on the router. Never publish app ports on the host (`ports:` is forbidden on the SportIQ compose file). Never expose Jarvis anonymously. Do not add Cloudflare Access to Jarvis's allow-list as a side effect.
@@ -772,7 +774,7 @@ Cloudflare dashboard → Zero Trust → Networks → Tunnels → `home-server` �
 
 Do **not** point at `sportiq:8080` (tunnel only sees Caddy on network `edge`).  
 Do **not** create an Access application for this hostname.  
-Do **not** create an A/AAAA to `192.168.29.66` or the IPv6 `2405:201:4:0009:21e:64ff:fed7:a9d3`.  
+Do **not** create an A/AAAA to `<dell-lan-ip>` or the IPv6 `<dell-ipv6-redacted>`.  
 Do **not** add a router port-forward.
 
 Optional defense in depth (same session, still no Access): Cloudflare WAF rate limit 60 req/min / IP on `sportiq.utkarshgupta.org`. Skip if the owner does not want to click WAF today.

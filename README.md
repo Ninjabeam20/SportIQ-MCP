@@ -11,7 +11,7 @@
 [![sportiq-mcp MCP connector – tool definition quality and endpoint health on Glama](https://glama.ai/mcp/connectors/io.github.Ninjabeam20/sportiq-mcp/badges/score.svg)](https://glama.ai/mcp/connectors/io.github.Ninjabeam20/sportiq-mcp)
 [![Listed on Skillselion](https://skillselion.com/badge/mcp/tool/io.github.Ninjabeam20/sportiq-mcp.svg)](https://skillselion.com/mcp/tool/io.github.Ninjabeam20/sportiq-mcp)
 
-MCP server that turns any AI assistant into a sports analyst across **FIFA World Cup 2026 football, Formula 1, and IPL cricket** — 44 AI-callable tools.
+MCP server that turns any AI assistant into a sports analyst across **FIFA World Cup 2026 football, Formula 1, and IPL cricket** — 46 AI-callable tools.
 
 <a href="https://mcpbeat.com/mcp-servers/ninjabeam20/sportiq-mcp/"><img src="https://mcpbeat.com/badge/ninjabeam20/sportiq-mcp.svg?style=card&amp;corners=round&amp;metric=security&amp;theme=light&amp;w=auto" alt="SportIQ on MCPbeat — live status and code findings" width="300"></a>
 
@@ -27,6 +27,26 @@ MCP server that turns any AI assistant into a sports analyst across **FIFA World
 
 > **Every tool is free to use** — the three flagships and everything in the INTEL columns below have no SportIQ paywall or account requirement. Live/provider-backed data still depends on the keys and quota available to the host or local operator. If SportIQ is useful to you, [sponsor the project](https://github.com/sponsors/Ninjabeam20) to support ongoing development.
 
+## What's new in v0.4.0
+
+- **Two new tools (46 total):**
+  - `f1_simulate_championship`: a title-race Monte Carlo with exact elimination maths.
+  - `football_what_if`: replays World Cup 2026 from any stage, optionally flipping one real knockout result.
+- **Completed-tournament mode:** World Cup tools now answer from the real 2026 results (Spain won the final 1–0 after extra time) instead of re-simulating.
+- **7 MCP resources:** static reference data (the WC draw, team codes, F1 circuits, IPL venues and teams, the Dream11 scoring profile) plus the instructions.
+- **Accuracy fixes:**
+  - Official Dream11 T20 scoring and IPL squads generated from Cricsheet.
+  - An F1 pit model that sums the whole remaining race, legal compound sequences and the regulation race distance.
+  - Positive-EV value bets only.
+  - Extra-time and penalty results kept, team-name and venue resolution, and many more.
+- **Reliability:**
+  - A fix for a cache bug that wiped the cache about once a minute.
+  - No more per-request teardown errors.
+  - A `/healthz` liveness route.
+  - A 30 s per-tool deadline (`TOOL_DEADLINE_SECONDS`) and a 15 s budget per data chain.
+  - API keys no longer appear in logs.
+- **Upgrade:** `uvx sportiq-mcp@latest` picks up 0.4.0. The hosted connector URL stays the same.
+
 ## What it does
 
 Raw-data tools are table stakes; the intelligence layer is the product. Three flagships:
@@ -35,18 +55,20 @@ Raw-data tools are table stakes; the intelligence layer is the product. Three fl
 - **`f1_predict_pit_strategy`** — tyre-degradation model on OpenF1 telemetry → optimal stop laps + compound sequence.
 - **`cricket_build_dream11_team`** — PuLP constraint solver → a valid fantasy XI under credit/role/team caps.
 
-### Tools (44 total)
+### Tools (46 total)
 
 | Sport | RAW data | INTEL |
 |-------|----------|-------|
-| **Football** (WC 2026) | groups, fixtures, standings, squad, match stats, top scorers, odds | xg_model, match_predictor, simulate_group, **simulate_bracket**, knockout_path, form_trends, find_value_bets, build_accumulator |
-| **F1** | sessions, drivers, lap_times, standings, race_results, weather | tyre_degradation, undercut_window, head_to_head_pace, weather_strategy_impact, qualifying_analysis, race_pace_compare, **predict_pit_strategy** |
+| **Football** (WC 2026) | groups, fixtures, standings, squad, match stats, top scorers, odds | xg_model, match_predictor, simulate_group, **simulate_bracket**, knockout_path, form_trends, find_value_bets, build_accumulator, what_if |
+| **F1** | sessions, drivers, lap_times, standings, race_results, weather | tyre_degradation, undercut_window, head_to_head_pace, weather_strategy_impact, qualifying_analysis, race_pace_compare, **predict_pit_strategy**, simulate_championship |
 | **Cricket** (IPL) | live_matches, scorecard, points_table, schedule, squad, live_odds | **build_dream11_team**, captain_recommendation, differential_picks, player_form_index, pitch_report, head_to_head, player_matchup, find_value_bets |
 | **Cross-sport** | — | build_accumulator |
 
-Plus `sportiq_health` (included in the 44; cache backend + per-adapter status and remaining API quota).
+Plus `sportiq_health` (included in the 46; cache backend + per-adapter status and remaining API quota).
 
-**Data sources** (per chain, with keyless fallbacks): football → [API-Football](https://www.api-football.com) → [football-data.org](https://football-data.org) → bundled `wc2026.json`. F1 → [OpenF1](https://openf1.org) → [Jolpica](https://jolpi.ca) → `fastf1`. Cricket → CricAPI + static seeds (NDTV/Cricbuzz scrapers opt-in).
+**MCP resources** (static JSON, readable without a tool call): `sportiq://instructions`, `sportiq://football/wc2026/draw`, `sportiq://football/team-codes`, `sportiq://f1/circuits`, `sportiq://cricket/venues`, `sportiq://cricket/teams`, `sportiq://cricket/scoring-profile`.
+
+**Data sources** (per chain, with keyless fallbacks): football → [API-Football](https://www.api-football.com) → [football-data.org](https://football-data.org) → [openfootball](https://github.com/openfootball/worldcup.json) (keyless) → bundled `wc2026.json`; standings fall back to a table derived from fixture results. F1 → [OpenF1](https://openf1.org) → [Jolpica](https://jolpi.ca) → `fastf1`. Cricket → CricAPI → [RapidAPI Cricbuzz](https://rapidapi.com) (paid fallback) + static seeds (NDTV/Cricbuzz scrapers opt-in). Odds (football + cricket) → [The Odds API](https://the-odds-api.com).
 
 ## Where it works
 
@@ -70,7 +92,7 @@ Hosting history (GCP Cloud Run → home server): [`docs/wiki/findings/product-ho
 - **claude.ai (web):** Settings → Connectors → Add custom connector → paste URL → Save.
 - **ChatGPT:** Settings → Apps & Connectors → enable **Developer mode** → Create app (MCP) → paste URL → No authentication → Connect.
 
-All 44 tools register on the plain URL. Whether a live/provider-backed call can return current data depends on the credentials, quota, and fallbacks available to the hosted operator; the repository does not claim the public instance's current key inventory.
+All 46 tools register on the plain URL. Whether a live/provider-backed call can return current data depends on the credentials, quota, and fallbacks available to the hosted operator; the repository does not claim the public instance's current key inventory.
 
 | Mode | What is available |
 |------|-------------------|
@@ -85,8 +107,8 @@ The hosted HTTP boundary rejects request bodies over 1 MiB, limits traffic to 60
 ```bash
 uvx sportiq-mcp                       # from PyPI
 # or from source:
-git clone https://github.com/Ninjabeam20/SportIQ-MCP && cd sportiq-mcp
-uv sync --extra dev --extra analytics && uv run python -m sportiq.server
+git clone https://github.com/Ninjabeam20/SportIQ-MCP && cd SportIQ-MCP
+uv sync --extra dev && uv run python -m sportiq.server   # --extra dev = pytest/ruff for contributors
 ```
 
 **Claude Desktop config:**
@@ -113,18 +135,19 @@ The server boots and registers every tool without keys. Seed/keyless fallbacks a
 |-----|---------|-----------|
 | `APIFOOTBALL_KEY` | Live football fixtures / standings / squads / scorers | 100 req/day |
 | `THEODDS_KEY` | Market odds (football + cricket probability tools) | 500 req/month |
-| `FOOTBALLDATA_KEY` | football-data.org fallback (token optional) | 10 req/min |
+| `FOOTBALLDATA_KEY` | football-data.org fallback — **required for World Cup endpoints** (they return 403 without it) | 10 req/min, 100/day |
 | `CRICAPI_KEY` | Live cricket scores / scorecards / schedules / squads | 100 req/day |
 | `RAPIDAPI_KEY` | Paid Cricbuzz fallback (player career stats) | plan-dependent |
 | `SPORTIQ_ENABLE_NDTV` / `SPORTIQ_ENABLE_CRICBUZZ` | Opt-in cricket scrapers (off by default — ToS) | — |
 | `REDIS_URL` | Shared cache backend (defaults to local diskcache) | — |
 | `SPORTIQ_TRANSPORT` | `stdio` (default, local) or `http` (remote / home server) | — |
+| `TOOL_DEADLINE_SECONDS` | Per-tool deadline (default 30); a slower call returns `UPSTREAM_TIMEOUT` | — |
 
 > macOS arm64: the Dream11 solver needs CBC — `brew install cbc` (the binary bundled with PuLP is x86-only).
 
 ### Self-host
 
-Set `SPORTIQ_TRANSPORT=http` and the server serves the MCP endpoint at `/mcp` (binds `0.0.0.0:$PORT`). A ready-to-build `Dockerfile` and home-server `docker-compose.yml` are included. `cloud.md` is the old Cloud Run runbook (historical). With your own keys set, the live-score and odds tools come online too.
+Set `SPORTIQ_TRANSPORT=http` and the server serves the MCP endpoint at `/mcp` (binds `0.0.0.0:$PORT`). `GET /healthz` returns `200 ok` for liveness only (it never touches the cache, chains or network). A ready-to-build `Dockerfile` and home-server `docker-compose.yml` are included. `cloud.md` is the old Cloud Run runbook (historical). With your own keys set, the live-score and odds tools come online too.
 
 ## Support SportIQ
 
@@ -137,11 +160,11 @@ If SportIQ saves you time, **[sponsor the project at github.com/sponsors/Ninjabe
 - **Open source, MIT licensed**, published on [PyPI](https://pypi.org/project/sportiq-mcp/) with signed build attestations — read the code before you connect it.
 - **Read-only.** Tools only fetch and analyse public sports data — no write, delete, payment, email, or file-system tools.
 - **Limited operational telemetry.** HTTP mode logs client software name/version, User-Agent, tool name, outcome, latency, selected source, and staleness. The public host (Dell) can persist `tool_call` / `mcp_request` lines to a local JSONL volume. Local stdio emits local logs but sends no telemetry to a SportIQ-hosted service.
-- **Hosted abuse controls.** HTTP POST bodies are capped at 1 MiB; requests are limited to 60/client/minute and 300/process/minute; the five expensive simulation/strategy/solver tools share a concurrency limit of two.
+- **Hosted abuse controls.** HTTP POST bodies are capped at 1 MiB; requests are limited to 60/client/minute and 300/process/minute; the seven expensive simulation/strategy/solver tools share a concurrency limit of two; every tool call has a 30 s deadline (`TOOL_DEADLINE_SECONDS`) and each fallback chain a 15 s total budget.
 - **Credential-aware.** A hosted operator may configure provider credentials; the repository does not claim the public instance's current key inventory. Keys are redacted from application logs and envelopes.
 - Historical automated AI code-review results are documented in [`SECURITY.md`](SECURITY.md#independent-review); they are not a current third-party certification.
 
-Every response carries a `meta.is_stale` flag + data age, so the AI tells you how fresh each answer is. Live scores refresh ~30s, F1 telemetry ~10s, standings ~10min, fixtures ~6h.
+Every response carries a `meta.is_stale` flag + data age, so the AI tells you how fresh each answer is. Cricket live scores refresh ~30s, F1 completed-session laps/stints ~24h, standings ~10min, football fixtures ~6h (the WC 2026 is over).
 
 ## Develop
 
@@ -171,7 +194,7 @@ SportIQ derives some model constants offline from open datasets. Raw datasets ar
 - **[F1DB](https://github.com/f1db/f1db)** (CC BY 4.0) — per-circuit stop counts + lap lengths; pit **loss** measured offline from OpenF1 laps.
 - **[Cricsheet](https://cricsheet.org)** — ball-by-ball IPL data → derived venue scoring priors (`venues.json`).
 - **[martj42 international football results](https://github.com/martj42/international_results)** (CC0) — Elo backtesting.
-- **[OpenF1](https://openf1.org)** — keyless live F1 telemetry (runtime source).
+- **[OpenF1](https://openf1.org)** — F1 timing data (runtime source). Historical sessions are keyless; live-session telemetry needs paid auth, which SportIQ does not wire.
 - **[football-data.org](https://football-data.org)** — free football data (runtime source).
 
 ## License & author

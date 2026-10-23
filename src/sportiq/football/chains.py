@@ -1,7 +1,7 @@
 """Module-level FallbackChain singletons for all football tools.
 
 Resolution order:
-  fixtures   : api_football -> football_data_org -> openfootball -> static wc2026 (30min / 24h)
+  fixtures   : api_football -> football_data_org -> openfootball -> static wc2026 (6h / 24h)
   standings  : api_football -> football_data_org -> derived (keyless) (10min / 1h)
   groups     : static wc2026 terminator (effectively infinite)
   team_stats : api_football -> football_data_org (24h / 7d)
@@ -11,10 +11,12 @@ Resolution order:
 Discipline (F1 audit finding #2): every fallback adapter in a chain shares the
 same call signature and returns the same output shape.
 """
+
 from __future__ import annotations
 
 import hashlib
 
+from sportiq import __version__
 from sportiq.core.fallback import FallbackChain
 from sportiq.core.health import register_adapter_for_health
 from sportiq.football.adapters.api_football import (
@@ -60,7 +62,14 @@ _seed_squad = StaticSeedSquadAdapter()
 _theodds_football = TheOddsFootballAdapter()
 
 # Register one healthcheck per upstream identity (deduped by name).
-for _a in [_af_fixtures, _fd_fixtures, _openfootball_fixtures, _seed_groups, _theodds_football, _derived_standings]:
+for _a in [
+    _af_fixtures,
+    _fd_fixtures,
+    _openfootball_fixtures,
+    _seed_groups,
+    _theodds_football,
+    _derived_standings,
+]:
     register_adapter_for_health(_a)
 
 # -- Chain singletons ---------------------------------------------------------
@@ -69,7 +78,8 @@ football_fixtures_chain: FallbackChain[dict] = FallbackChain(
     name="football:fixtures",
     adapters=[_af_fixtures, _fd_fixtures, _openfootball_fixtures, _seed_fixtures],
     cache_key_fn=lambda **_: "sportiq:football:fixtures:wc2026",
-    fresh_ttl=1800,
+    # WC 2026 ended 2026-07-19 — static class per caching-policy.md
+    fresh_ttl=21600,
     stale_ttl=86400,
 )
 
@@ -84,7 +94,9 @@ football_standings_chain: FallbackChain[dict] = FallbackChain(
 football_groups_chain: FallbackChain[dict] = FallbackChain(
     name="football:groups",
     adapters=[_seed_groups],
-    cache_key_fn=lambda **_: "sportiq:football:groups:wc2026",
+    # Versioned key: a regenerated seed (or a payload shape change) ships with a new
+    # package version and must not be shadowed by a year-old cached payload.
+    cache_key_fn=lambda **_: f"sportiq:football:groups:wc2026:{__version__}",
     # ~1y TTL is intentional: static draw seed and baseline Elo ratings are immutable
     # across the tournament cycle. Live match results and Elo nudges are applied in-memory.
     fresh_ttl=31536000,
@@ -102,7 +114,10 @@ football_team_stats_chain: FallbackChain[dict] = FallbackChain(
 football_squad_chain: FallbackChain[dict] = FallbackChain(
     name="football:squad",
     adapters=[_af_squad, _seed_squad],
-    cache_key_fn=lambda team, **_: "sportiq:football:squad:" + hashlib.blake2s(str(team).lower().encode(), digest_size=8).hexdigest(),
+    cache_key_fn=lambda team, **_: (
+        "sportiq:football:squad:"
+        + hashlib.blake2s(str(team).lower().encode(), digest_size=8).hexdigest()
+    ),
     fresh_ttl=43200,
     stale_ttl=259200,
 )

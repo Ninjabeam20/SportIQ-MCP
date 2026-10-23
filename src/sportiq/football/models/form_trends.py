@@ -5,18 +5,24 @@ No I/O. Input is the ``fixtures`` list from ``football_fixtures_chain``.
 
 from __future__ import annotations
 
-from sportiq.football.models.results_state import _FINISHED_STATUSES
+from sportiq.football.models.results_state import _FINISHED_STATUSES, resolve_code
 
 
-def compute_form_trends(fixtures: list[dict], team: str) -> dict:
+def compute_form_trends(
+    fixtures: list[dict], team: str, code_index: dict[str, str] | None = None
+) -> dict:
     """Compute rolling form + xG trajectory for *team* from fixture history.
 
     Args:
         fixtures: List of fixture dicts from ``football_fixtures_chain``.
             Each dict has at minimum ``home``, ``away``,
             ``home_goals``, ``away_goals`` (``None`` for future), ``date``.
-        team: Team name to analyse (case-insensitive match against
-            ``home`` / ``away``).
+        team: FIFA code (e.g. ARG) or name to analyse.
+        code_index: Optional ``build_code_index`` output. When given, fixtures
+            match by resolved team code, so "ARG", "Argentina" and aliases
+            ("South Korea" vs "Korea Republic") all hit the same rows. Without
+            it (or if *team* doesn't resolve), the match is a case-insensitive
+            name comparison against ``home`` / ``away``.
 
     Returns:
         dict with keys: team, matches_analysed, form_string, wins, draws,
@@ -24,13 +30,17 @@ def compute_form_trends(fixtures: list[dict], team: str) -> dict:
         recent_trend.
     """
     team_lower = team.strip().lower()
+    target = resolve_code(team, code_index) if code_index else None
+
+    def _is_team(label: str | None) -> bool:
+        if target is not None:
+            return resolve_code(label or "", code_index) == target
+        return (label or "").lower() == team_lower
 
     # Filter to this team's completed fixtures (both scores present).
     completed: list[dict] = []
     for fx in fixtures:
-        home = (fx.get("home") or "").lower()
-        away = (fx.get("away") or "").lower()
-        if team_lower not in (home, away):
+        if not (_is_team(fx.get("home")) or _is_team(fx.get("away"))):
             continue
         hs = fx.get("home_goals")
         as_ = fx.get("away_goals")
@@ -57,11 +67,10 @@ def compute_form_trends(fixtures: list[dict], team: str) -> dict:
     goal_list: list[int] = []  # goals scored per match (for trend)
 
     for fx in completed:
-        home = (fx.get("home") or "").lower()
         hs = int(fx["home_goals"])
         as_ = int(fx["away_goals"])
 
-        is_home = team_lower == home
+        is_home = _is_team(fx.get("home"))
         gf = hs if is_home else as_
         ga = as_ if is_home else hs
 

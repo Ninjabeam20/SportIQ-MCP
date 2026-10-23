@@ -62,9 +62,10 @@ def register_prompts(mcp: FastMCP) -> None:
         """Predict pit strategy for a driver at a specific Grand Prix.
 
         Args:
-            year: Season year (e.g. 2025).
-            country: Grand Prix host country (e.g. "Monaco").
-            driver_number: Driver's car number (e.g. 1 for Verstappen).
+            year: Season year (e.g. 2026).
+            country: Grand Prix host country (e.g. "Netherlands").
+            driver_number: Driver's car number (e.g. 1 = Norris in 2026; driver
+                numbers change by season; use f1_get_drivers).
         """
         country = _clean(country, "country")
         return [
@@ -73,8 +74,8 @@ def register_prompts(mcp: FastMCP) -> None:
                 "content": (
                     f"Predict the optimal pit strategy for driver number "
                     f"{driver_number} at the {year} {country} Grand Prix. First "
-                    f'call f1_get_sessions(year={year}, country="{country}") and '
-                    "pick the race session_key, then call "
+                    f'call f1_get_sessions(year={year}, country="{country}", '
+                    'session_name="Race") and pick the race session_key, then call '
                     f"f1_predict_pit_strategy(session_key=<key>, "
                     f"driver_number={driver_number}). Report the stop laps and "
                     "compound sequence."
@@ -83,19 +84,22 @@ def register_prompts(mcp: FastMCP) -> None:
         ]
 
     @mcp.prompt(
-        title="World Cup Winner Prediction",
-        description="Simulate the FIFA World Cup 2026 and predict the winner.",
+        title="World Cup 2026 Retrospective",
+        description="Review the completed FIFA World Cup 2026 against the model's simulation.",
     )
-    def world_cup_winner_prediction() -> list[dict]:
-        """Simulate the FIFA World Cup 2026 and predict the winner."""
+    def world_cup_2026_retrospective() -> list[dict]:
+        """Review the completed FIFA World Cup 2026 against the model's simulation."""
         return [
             {
                 "role": "user",
                 "content": (
-                    "Predict the FIFA World Cup 2026 winner. Call "
-                    "football_simulate_bracket() — one call, default 10,000 "
-                    "iterations (±2% stable). Report the top teams by title "
-                    "probability."
+                    "Review the FIFA World Cup 2026, which finished with the "
+                    "2026-07-19 final. Call football_simulate_bracket() — one call. "
+                    'Check meta.mode: when it is "completed", report meta.champion '
+                    "as the actual winner and summarise how far the top-rated teams "
+                    'got; when it is "pre_tournament_prior", say the result data '
+                    "was unavailable and present the output only as the model's "
+                    "pre-tournament view, not a forecast."
                 ),
             }
         ]
@@ -122,15 +126,14 @@ def register_prompts(mcp: FastMCP) -> None:
         title="F1 Driver Comparison",
         description="Compare two F1 drivers' pace at a Grand Prix.",
     )
-    def f1_driver_comparison(
-        year: int, country: str, driver_a: int, driver_b: int
-    ) -> list[dict]:
+    def f1_driver_comparison(year: int, country: str, driver_a: int, driver_b: int) -> list[dict]:
         """Compare two F1 drivers' pace at a Grand Prix.
 
         Args:
-            year: Season year (e.g. 2025).
-            country: Grand Prix host country (e.g. "Monaco").
-            driver_a: First driver's car number.
+            year: Season year (e.g. 2026).
+            country: Grand Prix host country (e.g. "Netherlands").
+            driver_a: First driver's car number (driver numbers change by season;
+                use f1_get_drivers).
             driver_b: Second driver's car number.
         """
         country = _clean(country, "country")
@@ -140,8 +143,9 @@ def register_prompts(mcp: FastMCP) -> None:
                 "content": (
                     f"Compare the race pace of drivers {driver_a} and {driver_b} "
                     f"at the {year} {country} Grand Prix. First call "
-                    f'f1_get_sessions(year={year}, country="{country}") and pick '
-                    "the session_key, then call f1_head_to_head_pace("
+                    f'f1_get_sessions(year={year}, country="{country}", '
+                    'session_name="Race") and pick the session_key, then call '
+                    "f1_head_to_head_pace("
                     f"session_key=<key>, driver_a={driver_a}, "
                     f"driver_b={driver_b}). Report who is faster and by how much."
                 ),
